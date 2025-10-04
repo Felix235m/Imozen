@@ -4,7 +4,7 @@ import * as React from "react";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 import * as z from "zod";
-import { Home, Loader2, Lock, User } from "lucide-react";
+import { Loader2, Lock, User } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import {
@@ -29,6 +29,55 @@ const formSchema = z.object({
   username: z.string().min(1, { message: "Username is required." }),
   password: z.string().min(1, { message: "Password is required." }),
 });
+
+const ImoZenLogo = () => (
+  <svg
+    width="80"
+    height="80"
+    viewBox="0 0 125 40"
+    fill="none"
+    xmlns="http://www.w3.org/2000/svg"
+  >
+    <text
+      x="5"
+      y="30"
+      fontFamily="sans-serif"
+      fontSize="24"
+      fill="hsl(var(--foreground))"
+      stroke="hsl(var(--foreground))"
+      strokeWidth="0.5"
+    >
+      ImoZen
+    </text>
+    <path
+      d="M95 35V15C95 12.2386 97.2386 10 100 10H110C112.761 10 115 12.2386 115 15V35"
+      stroke="hsl(var(--primary))"
+      strokeWidth="2"
+    />
+    <rect x="95" y="10" width="20" height="25" fill="hsl(var(--primary))" />
+    <circle cx="110" cy="28" r="1.5" fill="hsl(var(--background))" />
+    <style>
+      {`
+      @import url('https://fonts.googleapis.com/css2?family=PT+Sans:wght@700&display=swap');
+      text {
+        font-family: 'PT Sans', sans-serif;
+        font-weight: 700;
+        letter-spacing: -1px;
+        paint-order: stroke;
+        stroke-linejoin: round;
+        stroke-linecap: round;
+      }
+      @media (prefers-color-scheme: dark) {
+        text {
+          fill: hsl(var(--foreground));
+          stroke: hsl(var(--foreground));
+        }
+      }
+      `}
+    </style>
+  </svg>
+);
+
 
 export function LoginForm() {
   const [isLoading, setIsLoading] = React.useState(false);
@@ -69,8 +118,8 @@ export function LoginForm() {
   return (
     <Card className="w-full max-w-sm shadow-xl">
       <CardHeader className="items-center text-center">
-        <div className="mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-primary/10">
-          <Home className="h-8 w-8 text-primary" />
+        <div className="mb-4 flex h-20 w-20 items-center justify-center rounded-full bg-primary/10">
+          <ImoZenLogo />
         </div>
         <CardTitle className="font-headline text-3xl">ImoZen</CardTitle>
         <CardDescription>Enter your credentials to access the admin panel</CardDescription>
