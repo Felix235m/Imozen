@@ -9,6 +9,10 @@ import {
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
+  DropdownMenuRadioGroup,
+  DropdownMenuRadioItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator
 } from '@/components/ui/dropdown-menu';
 import {
   Card,
@@ -21,39 +25,60 @@ const allAgents = [
     name: 'Ethan Carter',
     id: '12345',
     avatar: 'https://i.pravatar.cc/150?u=ethan',
+    status: 'Active',
+    location: 'New York',
   },
   {
     name: 'Sophia Ramirez',
     id: '67890',
     avatar: 'https://i.pravatar.cc/150?u=sophia',
+    status: 'Active',
+    location: 'Los Angeles',
   },
   {
     name: 'Liam O\'Connell',
     id: '24680',
     avatar: 'https://i.pravatar.cc/150?u=liam',
+    status: 'Inactive',
+    location: 'Chicago',
   },
   {
     name: 'Isabella Rossi',
     id: '13579',
     avatar: 'https://i.pravatar.cc/150?u=isabella',
+    status: 'Active',
+    location: 'New York',
   },
   {
     name: 'Noah Dubois',
     id: '97531',
     avatar: 'https://i.pravatar.cc/150?u=noah',
+    status: 'Inactive',
+    location: 'Los Angeles',
   },
 ];
 
 export default function AgentsPage() {
   const [searchTerm, setSearchTerm] = useState('');
   const [filteredAgents, setFilteredAgents] = useState(allAgents);
+  const [statusFilter, setStatusFilter] = useState('All');
+  const [locationFilter, setLocationFilter] = useState('All');
 
   useEffect(() => {
-    const results = allAgents.filter(agent =>
+    let results = allAgents.filter(agent =>
       agent.name.toLowerCase().includes(searchTerm.toLowerCase())
     );
+
+    if (statusFilter !== 'All') {
+      results = results.filter(agent => agent.status === statusFilter);
+    }
+
+    if (locationFilter !== 'All') {
+      results = results.filter(agent => agent.location === locationFilter);
+    }
+    
     setFilteredAgents(results);
-  }, [searchTerm]);
+  }, [searchTerm, statusFilter, locationFilter]);
 
   return (
     <div className="p-4 pb-20">
@@ -79,12 +104,17 @@ export default function AgentsPage() {
               variant="outline"
               className="flex items-center gap-2 bg-white"
             >
-              Status <ChevronDown className="h-4 w-4" />
+              Status: {statusFilter} <ChevronDown className="h-4 w-4" />
             </Button>
           </DropdownMenuTrigger>
           <DropdownMenuContent>
-            <DropdownMenuItem>Active</DropdownMenuItem>
-            <DropdownMenuItem>Inactive</DropdownMenuItem>
+            <DropdownMenuRadioGroup value={statusFilter} onValueChange={setStatusFilter}>
+              <DropdownMenuLabel>Filter by Status</DropdownMenuLabel>
+              <DropdownMenuSeparator />
+              <DropdownMenuRadioItem value="All">All</DropdownMenuRadioItem>
+              <DropdownMenuRadioItem value="Active">Active</DropdownMenuRadioItem>
+              <DropdownMenuRadioItem value="Inactive">Inactive</DropdownMenuRadioItem>
+            </DropdownMenuRadioGroup>
           </DropdownMenuContent>
         </DropdownMenu>
         <DropdownMenu>
@@ -93,13 +123,18 @@ export default function AgentsPage() {
               variant="outline"
               className="flex items-center gap-2 bg-white"
             >
-              Location <ChevronDown className="h-4 w-4" />
+              Location: {locationFilter} <ChevronDown className="h-4 w-4" />
             </Button>
           </DropdownMenuTrigger>
           <DropdownMenuContent>
-            <DropdownMenuItem>New York</DropdownMenuItem>
-            <DropdownMenuItem>Los Angeles</DropdownMenuItem>
-            <DropdownMenuItem>Chicago</DropdownMenuItem>
+            <DropdownMenuRadioGroup value={locationFilter} onValueChange={setLocationFilter}>
+              <DropdownMenuLabel>Filter by Location</DropdownMenuLabel>
+              <DropdownMenuSeparator />
+              <DropdownMenuRadioItem value="All">All</DropdownMenuRadioItem>
+              <DropdownMenuRadioItem value="New York">New York</DropdownMenuRadioItem>
+              <DropdownMenuRadioItem value="Los Angeles">Los Angeles</DropdownMenuRadioItem>
+              <DropdownMenuRadioItem value="Chicago">Chicago</DropdownMenuRadioItem>
+            </DropdownMenuRadioGroup>
           </DropdownMenuContent>
         </DropdownMenu>
       </div>
