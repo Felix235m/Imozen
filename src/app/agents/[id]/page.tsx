@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from 'react';
-import { ArrowLeft, ExternalLink, Save } from 'lucide-react';
+import { ArrowLeft, ExternalLink, Save, Edit } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
@@ -74,13 +74,27 @@ export default function AgentDetailPage({ params }: { params: { id: string } }) 
 
   return (
     <div className="flex h-screen flex-col bg-gray-50">
-      <header className="flex items-center border-b bg-white px-4 py-3">
-        <Link href="/agents">
-          <Button variant="ghost" size="icon">
-            <ArrowLeft className="h-6 w-6" />
-          </Button>
-        </Link>
-        <h1 className="ml-4 text-xl font-semibold">Agent Details</h1>
+      <header className="flex items-center justify-between border-b bg-white px-4 py-3">
+        <div className="flex items-center">
+          <Link href="/agents">
+            <Button variant="ghost" size="icon">
+              <ArrowLeft className="h-6 w-6" />
+            </Button>
+          </Link>
+          <h1 className="ml-4 text-xl font-semibold">Agent Details</h1>
+        </div>
+        <div>
+          {isEditing ? (
+             <Button size="sm" className="bg-primary" onClick={handleSave} disabled={isSaving}>
+              {isSaving ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Save className="mr-2 h-4 w-4" />}
+              Save
+            </Button>
+          ) : (
+            <Button variant="ghost" size="icon" onClick={() => setIsEditing(true)}>
+              <Edit className="h-5 w-5" />
+            </Button>
+          )}
+        </div>
       </header>
 
       <main className="flex-1 overflow-y-auto p-4">
@@ -148,14 +162,14 @@ export default function AgentDetailPage({ params }: { params: { id: string } }) 
         {isEditing ? (
           <>
             <Button variant="outline" size="lg" onClick={handleCancel} disabled={isSaving}>Cancel</Button>
-            <Button size="lg" className="bg-primary" onClick={handleSave} disabled={isSaving}>
-              {isSaving ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Save className="mr-2 h-4 w-4" />}
-              Save
-            </Button>
+             <Button variant="default" size="lg" className="bg-red-500 hover:bg-red-600">Deactivate</Button>
           </>
         ) : (
           <>
-            <Button variant="outline" size="lg" onClick={() => setIsEditing(true)}>Edit</Button>
+            <Button variant="outline" size="lg" onClick={() => {
+              setIsEditing(true);
+              window.scrollTo(0, 0);
+            }}>Edit</Button>
             <Button variant="default" size="lg" className="bg-primary">Deactivate</Button>
           </>
         )}
