@@ -1,3 +1,6 @@
+"use client";
+
+import { useState, useEffect } from 'react';
 import { Plus, Search, ChevronDown, MoreVertical } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -13,7 +16,7 @@ import {
 } from '@/components/ui/card';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 
-const agents = [
+const allAgents = [
   {
     name: 'Ethan Carter',
     id: '12345',
@@ -42,6 +45,16 @@ const agents = [
 ];
 
 export default function AgentsPage() {
+  const [searchTerm, setSearchTerm] = useState('');
+  const [filteredAgents, setFilteredAgents] = useState(allAgents);
+
+  useEffect(() => {
+    const results = allAgents.filter(agent =>
+      agent.name.toLowerCase().includes(searchTerm.toLowerCase())
+    );
+    setFilteredAgents(results);
+  }, [searchTerm]);
+
   return (
     <div className="p-4 pb-20">
       <header className="flex items-center justify-between py-4">
@@ -52,7 +65,12 @@ export default function AgentsPage() {
       </header>
       <div className="relative mb-4">
         <Search className="absolute left-3 top-1/2 h-5 w-5 -translate-y-1/2 text-gray-400" />
-        <Input placeholder="Search agents" className="pl-10" />
+        <Input 
+          placeholder="Search agents" 
+          className="pl-10"
+          value={searchTerm}
+          onChange={(e) => setSearchTerm(e.target.value)}
+        />
       </div>
       <div className="mb-6 flex gap-2">
         <DropdownMenu>
@@ -86,7 +104,7 @@ export default function AgentsPage() {
         </DropdownMenu>
       </div>
       <div className="space-y-3">
-        {agents.map((agent) => (
+        {filteredAgents.map((agent) => (
           <Card key={agent.id} className="shadow-md">
             <CardContent className="flex items-center justify-between p-4">
               <div className="flex items-center gap-4">
