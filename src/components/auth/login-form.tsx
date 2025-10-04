@@ -109,15 +109,14 @@ const ImoZenLogo = ({ size = "lg", variant = "gradient", className = "" }: { siz
           y="2"
           width="60"
           height="60"
-          rx="8"
+          rx="14"
           fill={currentColors.iconBg}
         />
         <path
-          d="M20 16C20 13.7909 21.7909 12 24 12H40C42.2091 12 44 13.7909 44 16V48H20V16Z"
+          d="M20 16C20 13.7909 21.7909 12 24 12H40C42.2091 12 44 13.7909 44 16V52H20V16Z"
           fill={currentColors.iconFg}
           opacity="0.95"
         />
-        <rect x="16" y="52" width="32" height="4" rx="2" fill={currentColors.iconFg} opacity="0.95" />
         <circle
           cx="36"
           cy="32"
@@ -128,7 +127,7 @@ const ImoZenLogo = ({ size = "lg", variant = "gradient", className = "" }: { siz
           x="22"
           y="14"
           width="20"
-          height="32"
+          height="36"
           rx="2"
           stroke={currentColors.iconBg}
           strokeWidth="1.5"
