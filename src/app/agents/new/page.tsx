@@ -9,6 +9,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { useToast } from '@/hooks/use-toast';
 import Link from 'next/link';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 
 export default function NewAgentPage() {
   const router = useRouter();
@@ -25,6 +26,10 @@ export default function NewAgentPage() {
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
     setAgentData(prev => ({ ...prev, [name]: value }));
+  };
+
+  const handleLanguageChange = (value: string) => {
+    setAgentData(prev => ({ ...prev, language: value }));
   };
 
   const handleSave = async () => {
@@ -116,7 +121,16 @@ export default function NewAgentPage() {
             </div>
             <div className="space-y-2">
               <Label htmlFor="language">Language</Label>
-              <Input id="language" name="language" value={agentData.language} onChange={handleInputChange} />
+               <Select name="language" value={agentData.language} onValueChange={handleLanguageChange}>
+                <SelectTrigger id="language">
+                  <SelectValue placeholder="Select a language" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="English">English</SelectItem>
+                  <SelectItem value="Portuguese">Portuguese</SelectItem>
+                  <SelectItem value="French">French</SelectItem>
+                </SelectContent>
+              </Select>
             </div>
           </CardContent>
         </Card>
