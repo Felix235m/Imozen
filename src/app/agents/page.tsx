@@ -85,9 +85,11 @@ export default function AgentsPage() {
     <div className="p-4 pb-20">
       <header className="flex items-center justify-between py-4">
         <h1 className="text-2xl font-bold">Agents</h1>
-        <Button variant="ghost" size="icon">
-          <Plus className="h-6 w-6" />
-        </Button>
+        <Link href="/agents/new">
+          <Button variant="ghost" size="icon">
+            <Plus className="h-6 w-6" />
+          </Button>
+        </Link>
       </header>
       <div className="relative mb-4">
         <Search className="absolute left-3 top-1/2 h-5 w-5 -translate-y-1/2 text-gray-400" />
