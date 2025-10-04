@@ -1,14 +1,17 @@
 "use client";
 
-import { ArrowLeft, ExternalLink } from 'lucide-react';
+import { useState } from 'react';
+import { ArrowLeft, ExternalLink, Save } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
 import Link from 'next/link';
+import { Input } from '@/components/ui/input';
+import { useToast } from '@/hooks/use-toast';
+import { Loader2 } from 'lucide-react';
 
-// In a real app, you would fetch this data based on the page params
-const agentData = {
+const initialAgentData = {
   name: 'Sophia Carter',
   id: '123e4567-e89b-12d3-a456-426614174000',
   avatar: 'https://i.pravatar.cc/150?u=sophia',
@@ -22,8 +25,52 @@ const agentData = {
 };
 
 export default function AgentDetailPage({ params }: { params: { id: string } }) {
-  // You can use params.id to fetch the correct agent data
-  const agent = agentData;
+  const [isEditing, setIsEditing] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
+  const [agent, setAgent] = useState(initialAgentData);
+  const { toast } = useToast();
+
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const { name, value } = e.target;
+    setAgent(prev => ({ ...prev, [name]: value }));
+  };
+
+  const handleSave = async () => {
+    setIsSaving(true);
+    try {
+      const response = await fetch('https://eurekagathr.app.n8n.cloud/webhook-test/Agent%20Data', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(agent),
+      });
+
+      if (response.ok) {
+        toast({
+          title: "Success",
+          description: "Agent details saved successfully.",
+        });
+        setIsEditing(false);
+      } else {
+        throw new Error('Failed to save agent data.');
+      }
+    } catch (error) {
+      console.error(error);
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: "Could not save agent details.",
+      });
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  const handleCancel = () => {
+    setAgent(initialAgentData);
+    setIsEditing(false);
+  }
 
   return (
     <div className="flex h-screen flex-col bg-gray-50">
@@ -42,7 +89,11 @@ export default function AgentDetailPage({ params }: { params: { id: string } }) 
             <AvatarImage src={agent.avatar} alt={agent.name} />
             <AvatarFallback>{agent.name.charAt(0)}</AvatarFallback>
           </Avatar>
-          <h2 className="text-2xl font-bold">{agent.name}</h2>
+          {isEditing ? (
+            <Input name="name" value={agent.name} onChange={handleInputChange} className="max-w-xs text-center text-2xl font-bold" />
+          ) : (
+            <h2 className="text-2xl font-bold">{agent.name}</h2>
+          )}
           <p className="text-sm text-gray-500">ID: {agent.id}</p>
         </div>
 
@@ -53,10 +104,10 @@ export default function AgentDetailPage({ params }: { params: { id: string } }) 
             </CardHeader>
             <CardContent>
               <div className="space-y-4">
-                <DetailRow label="Name" value={agent.name} />
-                <DetailRow label="Phone" value={agent.phone} isLink={`tel:${agent.phone}`} />
-                <DetailRow label="Email" value={agent.email} isLink={`mailto:${agent.email}`} />
-                <DetailRow label="Language" value={agent.language} />
+                <EditableDetailRow label="Name" name="name" value={agent.name} isEditing={isEditing} onChange={handleInputChange} />
+                <EditableDetailRow label="Phone" name="phone" value={agent.phone} isEditing={isEditing} onChange={handleInputChange} isLink={`tel:${agent.phone}`} />
+                <EditableDetailRow label="Email" name="email" value={agent.email} isEditing={isEditing} onChange={handleInputChange} isLink={`mailto:${agent.email}`} />
+                <EditableDetailRow label="Language" name="language" value={agent.language} isEditing={isEditing} onChange={handleInputChange} />
                 <DetailRow
                   label="Status"
                   value={
@@ -77,7 +128,7 @@ export default function AgentDetailPage({ params }: { params: { id: string } }) 
             </CardHeader>
             <CardContent>
               <div className="space-y-4">
-                <DetailRow label="Username" value={agent.username} />
+                <EditableDetailRow label="Username" name="username" value={agent.username} isEditing={isEditing} onChange={handleInputChange} />
                 <DetailRow label="Password Hash" value="••••••••" />
                 <DetailRow
                   label="Sheet URL"
@@ -94,15 +145,27 @@ export default function AgentDetailPage({ params }: { params: { id: string } }) 
       </main>
 
       <footer className="grid grid-cols-2 gap-4 border-t bg-white p-4">
-        <Button variant="outline" size="lg">Edit</Button>
-        <Button variant="default" size="lg" className="bg-primary">Deactivate</Button>
+        {isEditing ? (
+          <>
+            <Button variant="outline" size="lg" onClick={handleCancel} disabled={isSaving}>Cancel</Button>
+            <Button size="lg" className="bg-primary" onClick={handleSave} disabled={isSaving}>
+              {isSaving ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Save className="mr-2 h-4 w-4" />}
+              Save
+            </Button>
+          </>
+        ) : (
+          <>
+            <Button variant="outline" size="lg" onClick={() => setIsEditing(true)}>Edit</Button>
+            <Button variant="default" size="lg" className="bg-primary">Deactivate</Button>
+          </>
+        )}
       </footer>
     </div>
   );
 }
 
 function DetailRow({ label, value, isLink }: { label: string; value: React.ReactNode, isLink?: string }) {
-  const content = isLink ? (
+  const content = isLink && typeof value === 'string' ? (
     <a href={isLink} className="text-primary hover:underline">
       {value}
     </a>
@@ -116,4 +179,16 @@ function DetailRow({ label, value, isLink }: { label: string; value: React.React
       <div className="font-medium text-right">{content}</div>
     </div>
   );
+}
+
+function EditableDetailRow({ label, name, value, isEditing, onChange, isLink }: { label: string; name: string, value: string, isEditing: boolean, onChange: (e: React.ChangeEvent<HTMLInputElement>) => void, isLink?: string }) {
+  if (isEditing) {
+    return (
+      <div className="flex items-center justify-between border-b pb-4 last:border-b-0">
+        <p className="text-gray-500">{label}</p>
+        <Input name={name} value={value} onChange={onChange} className="max-w-[200px] text-right" />
+      </div>
+    )
+  }
+  return <DetailRow label={label} value={value} isLink={isLink} />
 }
