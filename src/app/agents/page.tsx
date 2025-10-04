@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect } from 'react';
+import Link from 'next/link';
 import { Plus, Search, ChevronDown, MoreVertical } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -29,8 +30,8 @@ const allAgents = [
     location: 'New York',
   },
   {
-    name: 'Sophia Ramirez',
-    id: '67890',
+    name: 'Sophia Carter',
+    id: '123e4567-e89b-12d3-a456-426614174000',
     avatar: 'https://i.pravatar.cc/150?u=sophia',
     status: 'Active',
     location: 'Los Angeles',
@@ -140,25 +141,27 @@ export default function AgentsPage() {
       </div>
       <div className="space-y-3">
         {filteredAgents.map((agent) => (
-          <Card key={agent.id} className="shadow-md">
-            <CardContent className="flex items-center justify-between p-4">
-              <div className="flex items-center gap-4">
-                <Avatar className="h-12 w-12">
-                  <AvatarImage src={agent.avatar} alt={agent.name} />
-                  <AvatarFallback>
-                    {agent.name.charAt(0)}
-                  </AvatarFallback>
-                </Avatar>
-                <div>
-                  <p className="font-semibold">{agent.name}</p>
-                  <p className="text-sm text-gray-500">Agent ID: {agent.id}</p>
+          <Link href={`/agents/${agent.id}`} key={agent.id}>
+            <Card className="shadow-md">
+              <CardContent className="flex items-center justify-between p-4">
+                <div className="flex items-center gap-4">
+                  <Avatar className="h-12 w-12">
+                    <AvatarImage src={agent.avatar} alt={agent.name} />
+                    <AvatarFallback>
+                      {agent.name.charAt(0)}
+                    </AvatarFallback>
+                  </Avatar>
+                  <div>
+                    <p className="font-semibold">{agent.name}</p>
+                    <p className="text-sm text-gray-500">Agent ID: {agent.id}</p>
+                  </div>
                 </div>
-              </div>
-              <Button variant="ghost" size="icon">
-                <MoreVertical className="h-5 w-5" />
-              </Button>
-            </CardContent>
-          </Card>
+                <Button variant="ghost" size="icon">
+                  <MoreVertical className="h-5 w-5" />
+                </Button>
+              </CardContent>
+            </Card>
+          </Link>
         ))}
       </div>
     </div>
