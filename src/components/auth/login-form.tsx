@@ -187,11 +187,8 @@ export function LoginForm() {
 
   return (
     <Card className="w-full max-w-sm shadow-xl">
-      <CardHeader className="items-center text-center">
-        <div className="mb-4">
-          <ImoZenLogo />
-        </div>
-        <CardTitle className="font-headline text-3xl">ImoZen</CardTitle>
+      <CardHeader className="items-center text-center space-y-4">
+        <ImoZenLogo size="md" />
         <CardDescription>Enter your credentials to access the admin panel</CardDescription>
       </CardHeader>
       <CardContent>
