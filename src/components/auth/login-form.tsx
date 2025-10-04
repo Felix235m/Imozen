@@ -30,94 +30,124 @@ const formSchema = z.object({
   password: z.string().min(1, { message: "Password is required." }),
 });
 
-const ImoZenLogo = () => (
-  <div className="inline-flex items-center gap-2" style={{ height: 64 }}>
-    <svg width="0" height="0">
-      <defs>
-        <linearGradient id="logoGradient" x1="0%" y1="0%" x2="100%" y2="100%">
-          <stop
-            offset="0%"
-            style={{
-              stopColor: "hsl(var(--primary))",
-              stopOpacity: 1,
-            }}
-          />
-          <stop
-            offset="100%"
-            style={{
-              stopColor: "hsl(var(--accent))",
-              stopOpacity: 1,
-            }}
-          />
-        </linearGradient>
-      </defs>
-    </svg>
+const ImoZenLogo = ({ size = "lg", variant = "gradient", className = "" }: { size?: 'sm' | 'md' | 'lg' | 'xl', variant?: 'default' | 'dark' | 'light' | 'gradient', className?: string }) => {
+  const sizes = {
+    sm: { height: 32, fontSize: '1.5rem', iconSize: 32 },
+    md: { height: 48, fontSize: '2.25rem', iconSize: 48 },
+    lg: { height: 64, fontSize: '3rem', iconSize: 64 },
+    xl: { height: 80, fontSize: '4rem', iconSize: 80 }
+  };
 
-    <div
-      style={{
-        fontSize: "3rem",
-        fontWeight: 700,
-        letterSpacing: "-0.02em",
-        color: "hsl(var(--foreground))",
-        fontFamily:
-          '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
-        lineHeight: 1,
-        display: "flex",
-        alignItems: "center",
-      }}
+  const currentSize = sizes[size];
+
+  // Using CSS variables for colors to respect the theme
+  const colors = {
+    default: {
+      primary: 'hsl(var(--primary))',
+      text: 'hsl(var(--foreground))',
+      iconBg: 'hsl(var(--primary))',
+      iconFg: 'hsl(var(--primary-foreground))'
+    },
+    dark: {
+      primary: 'hsl(var(--primary))',
+      text: 'hsl(var(--foreground))',
+      iconBg: 'hsl(var(--primary))',
+      iconFg: 'hsl(var(--primary-foreground))'
+    },
+    light: {
+      primary: 'hsl(var(--primary))',
+      text: 'hsl(var(--foreground))',
+      iconBg: 'hsl(var(--primary))',
+      iconFg: 'hsl(var(--primary-foreground))'
+    },
+    gradient: {
+      primary: 'url(#logoGradient)',
+      text: 'hsl(var(--foreground))',
+      iconBg: 'url(#logoGradient)',
+      iconFg: 'hsl(var(--primary-foreground))'
+    }
+  };
+
+  const currentColors = colors[variant];
+
+  return (
+    <div 
+      className={`inline-flex items-center gap-2 ${className}`}
+      style={{ height: currentSize.height }}
     >
-      Imo
-      <span style={{ color: "hsl(var(--primary))" }}>Zen</span>
+      <svg width="0" height="0" style={{ position: 'absolute' }}>
+        <defs>
+          <linearGradient id="logoGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+            <stop offset="0%" style={{ stopColor: 'hsl(var(--primary))' }} />
+            <stop offset="100%" style={{ stopColor: 'hsl(var(--accent))' }} />
+          </linearGradient>
+        </defs>
+      </svg>
+      <div 
+        style={{ 
+          fontSize: currentSize.fontSize,
+          fontWeight: 700,
+          letterSpacing: '-0.02em',
+          color: currentColors.text,
+          fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
+          lineHeight: 1,
+          display: 'flex',
+          alignItems: 'center'
+        }}
+      >
+        Imo<span style={{ color: currentColors.primary }}>Zen</span>
+      </div>
+      <svg
+        width={currentSize.iconSize}
+        height={currentSize.iconSize}
+        viewBox="0 0 64 64"
+        fill="none"
+        xmlns="http://www.w3.org/2000/svg"
+      >
+        <rect
+          x="2"
+          y="2"
+          width="60"
+          height="60"
+          rx="8"
+          fill={currentColors.iconBg}
+        />
+        <path
+          d="M20 16C20 13.7909 21.7909 12 24 12H40C42.2091 12 44 13.7909 44 16V48H20V16Z"
+          fill={currentColors.iconFg}
+          opacity="0.95"
+        />
+        <rect x="16" y="52" width="32" height="4" rx="2" fill={currentColors.iconFg} opacity="0.95" />
+        <circle
+          cx="36"
+          cy="32"
+          r="2.5"
+          fill={currentColors.iconBg}
+        />
+        <rect
+          x="22"
+          y="14"
+          width="20"
+          height="32"
+          rx="2"
+          stroke={currentColors.iconBg}
+          strokeWidth="1.5"
+          fill="none"
+          opacity="0.3"
+        />
+        <circle
+          cx="32"
+          cy="22"
+          r="4"
+          stroke={currentColors.iconBg}
+          strokeWidth="1.5"
+          fill="none"
+          opacity="0.4"
+        />
+      </svg>
     </div>
-
-    <svg
-      width={64}
-      height={64}
-      viewBox="0 0 64 64"
-      fill="none"
-      xmlns="http://www.w3.org/2000/svg"
-    >
-      <rect
-        x="2"
-        y="2"
-        width="60"
-        height="60"
-        rx="14"
-        fill="hsl(var(--primary))"
-      />
-
-      <path
-        d="M20 16C20 13.7909 21.7909 12 24 12H40C42.2091 12 44 13.7909 44 16V52H20V16Z"
-        fill="hsl(var(--primary-foreground))"
-        opacity="0.95"
-      />
-
-      <circle cx="36" cy="32" r="2.5" fill="hsl(var(--primary))" />
-
-      <rect
-        x="22"
-        y="14"
-        width="20"
-        height="36"
-        rx="2"
-        stroke="hsl(var(--primary))"
-        strokeWidth="1.5"
-        fill="none"
-        opacity="0.3"
-      />
-
-      <circle
-        cx="32"
-        cy="22"
-        r="4"
-        stroke="hsl(var(--primary))"
-        strokeWidth="1.5"
-        fill="none"
-        opacity="0.4"
-      />
-    </svg>
-  </div>
-);
+  );
+};
 
 
 export function LoginForm() {
