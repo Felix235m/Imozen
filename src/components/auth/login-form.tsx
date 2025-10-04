@@ -31,51 +31,92 @@ const formSchema = z.object({
 });
 
 const ImoZenLogo = () => (
-  <svg
-    width="80"
-    height="80"
-    viewBox="0 0 125 40"
-    fill="none"
-    xmlns="http://www.w3.org/2000/svg"
-  >
-    <text
-      x="5"
-      y="30"
-      fontFamily="sans-serif"
-      fontSize="24"
-      fill="hsl(var(--foreground))"
-      stroke="hsl(var(--foreground))"
-      strokeWidth="0.5"
+  <div className="inline-flex items-center gap-2" style={{ height: 64 }}>
+    <svg width="0" height="0">
+      <defs>
+        <linearGradient id="logoGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+          <stop
+            offset="0%"
+            style={{
+              stopColor: "hsl(var(--primary))",
+              stopOpacity: 1,
+            }}
+          />
+          <stop
+            offset="100%"
+            style={{
+              stopColor: "hsl(var(--accent))",
+              stopOpacity: 1,
+            }}
+          />
+        </linearGradient>
+      </defs>
+    </svg>
+
+    <div
+      style={{
+        fontSize: "3rem",
+        fontWeight: 700,
+        letterSpacing: "-0.02em",
+        color: "hsl(var(--foreground))",
+        fontFamily:
+          '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
+        lineHeight: 1,
+        display: "flex",
+        alignItems: "center",
+      }}
     >
-      ImoZen
-    </text>
-    <path
-      d="M95 35V15C95 12.2386 97.2386 10 100 10H110C112.761 10 115 12.2386 115 15V35"
-      stroke="hsl(var(--primary))"
-      strokeWidth="2"
-    />
-    <rect x="95" y="10" width="20" height="25" fill="hsl(var(--primary))" />
-    <circle cx="110" cy="28" r="1.5" fill="hsl(var(--background))" />
-    <style>
-      {`
-      @import url('https://fonts.googleapis.com/css2?family=PT+Sans:wght@700&display=swap');
-      text {
-        font-family: 'PT Sans', sans-serif;
-        font-weight: 700;
-        letter-spacing: -1px;
-        paint-order: stroke;
-        stroke-linejoin: round;
-        stroke-linecap: round;
-      }
-      @media (prefers-color-scheme: dark) {
-        text {
-          fill: hsl(var(--foreground));
-          stroke: hsl(var(--foreground));
-        }
-      }
-      `}
-    </style>
-  </svg>
+      Imo
+      <span style={{ color: "hsl(var(--primary))" }}>Zen</span>
+    </div>
+
+    <svg
+      width={64}
+      height={64}
+      viewBox="0 0 64 64"
+      fill="none"
+      xmlns="http://www.w3.org/2000/svg"
+    >
+      <rect
+        x="2"
+        y="2"
+        width="60"
+        height="60"
+        rx="14"
+        fill="hsl(var(--primary))"
+      />
+
+      <path
+        d="M20 16C20 13.7909 21.7909 12 24 12H40C42.2091 12 44 13.7909 44 16V52H20V16Z"
+        fill="hsl(var(--primary-foreground))"
+        opacity="0.95"
+      />
+
+      <circle cx="36" cy="32" r="2.5" fill="hsl(var(--primary))" />
+
+      <rect
+        x="22"
+        y="14"
+        width="20"
+        height="36"
+        rx="2"
+        stroke="hsl(var(--primary))"
+        strokeWidth="1.5"
+        fill="none"
+        opacity="0.3"
+      />
+
+      <circle
+        cx="32"
+        cy="22"
+        r="4"
+        stroke="hsl(var(--primary))"
+        strokeWidth="1.5"
+        fill="none"
+        opacity="0.4"
+      />
+    </svg>
+  </div>
 );
 
 
@@ -118,7 +159,7 @@ export function LoginForm() {
   return (
     <Card className="w-full max-w-sm shadow-xl">
       <CardHeader className="items-center text-center">
-        <div className="mb-4 flex h-20 w-20 items-center justify-center rounded-full bg-primary/10">
+        <div className="mb-4">
           <ImoZenLogo />
         </div>
         <CardTitle className="font-headline text-3xl">ImoZen</CardTitle>
