@@ -53,14 +53,15 @@ export default function AgentDetailPage({ params }: { params: { id: string } }) 
         });
         setIsEditing(false);
       } else {
-        throw new Error('Failed to save agent data.');
+        const errorData = await response.text();
+        throw new Error(errorData || 'Failed to save agent data.');
       }
-    } catch (error) {
+    } catch (error: any) {
       console.error(error);
       toast({
         variant: "destructive",
         title: "Error",
-        description: "Could not save agent details.",
+        description: error.message || "Could not save agent details.",
       });
     } finally {
       setIsSaving(false);
