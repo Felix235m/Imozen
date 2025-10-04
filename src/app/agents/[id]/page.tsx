@@ -1,7 +1,7 @@
 "use client";
 
-import { useState } from 'react';
-import { ArrowLeft, ExternalLink, Save, Edit } from 'lucide-react';
+import { useState, useRef } from 'react';
+import { ArrowLeft, ExternalLink, Save, Edit, Upload } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
@@ -29,10 +29,25 @@ export default function AgentDetailPage({ params }: { params: { id: string } }) 
   const [isSaving, setIsSaving] = useState(false);
   const [agent, setAgent] = useState(initialAgentData);
   const { toast } = useToast();
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const [avatarPreview, setAvatarPreview] = useState<string | null>(agent.avatar);
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
     setAgent(prev => ({ ...prev, [name]: value }));
+  };
+  
+  const handleAvatarChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        const result = reader.result as string;
+        setAvatarPreview(result);
+        setAgent(prev => ({ ...prev, avatar: result }));
+      };
+      reader.readAsDataURL(file);
+    }
   };
 
   const handleSave = async () => {
@@ -70,6 +85,7 @@ export default function AgentDetailPage({ params }: { params: { id: string } }) 
 
   const handleCancel = () => {
     setAgent(initialAgentData);
+    setAvatarPreview(initialAgentData.avatar);
     setIsEditing(false);
   }
 
@@ -100,10 +116,31 @@ export default function AgentDetailPage({ params }: { params: { id: string } }) 
 
       <main className="flex-1 overflow-y-auto p-4">
         <div className="flex flex-col items-center py-6 text-center">
-          <Avatar className="mb-4 h-24 w-24">
-            <AvatarImage src={agent.avatar} alt={agent.name} />
-            <AvatarFallback>{agent.name.charAt(0)}</AvatarFallback>
-          </Avatar>
+          <div className="relative">
+            <Avatar className="mb-4 h-24 w-24">
+              <AvatarImage src={avatarPreview || undefined} alt={agent.name} />
+              <AvatarFallback>{agent.name.charAt(0)}</AvatarFallback>
+            </Avatar>
+            {isEditing && (
+              <>
+                <Button 
+                  variant="outline" 
+                  size="icon" 
+                  className="absolute bottom-2 right-2 h-8 w-8 rounded-full bg-white"
+                  onClick={() => fileInputRef.current?.click()}
+                >
+                  <Upload className="h-4 w-4" />
+                </Button>
+                <Input 
+                  type="file" 
+                  ref={fileInputRef} 
+                  className="hidden" 
+                  accept="image/*" 
+                  onChange={handleAvatarChange}
+                />
+              </>
+            )}
+          </div>
           {isEditing ? (
             <Input name="name" value={agent.name} onChange={handleInputChange} className="max-w-xs text-center text-2xl font-bold" />
           ) : (
@@ -145,14 +182,7 @@ export default function AgentDetailPage({ params }: { params: { id: string } }) 
               <div className="space-y-4">
                 <EditableDetailRow label="Username" name="username" value={agent.username} isEditing={isEditing} onChange={handleInputChange} />
                 <DetailRow label="Password Hash" value="••••••••" />
-                <DetailRow
-                  label="Sheet URL"
-                  value={
-                    <a href={agent.sheetUrl} target="_blank" rel="noopener noreferrer" className="flex items-center text-primary hover:underline">
-                      docs.google.com/... <ExternalLink className="ml-1 h-4 w-4" />
-                    </a>
-                  }
-                />
+                <EditableDetailRow label="Sheet URL" name="sheetUrl" value={agent.sheetUrl} isEditing={isEditing} onChange={handleInputChange} isLink={agent.sheetUrl} />
               </div>
             </CardContent>
           </Card>
@@ -181,8 +211,9 @@ export default function AgentDetailPage({ params }: { params: { id: string } }) 
 
 function DetailRow({ label, value, isLink }: { label: string; value: React.ReactNode, isLink?: string }) {
   const content = isLink && typeof value === 'string' ? (
-    <a href={isLink} className="text-primary hover:underline">
-      {value}
+    <a href={isLink} target="_blank" rel="noopener noreferrer" className="flex items-center text-primary hover:underline">
+      {isLink.includes('docs.google.com') ? 'docs.google.com/...' : value}
+      {isLink.includes('docs.google.com') && <ExternalLink className="ml-1 h-4 w-4" />}
     </a>
   ) : (
     value

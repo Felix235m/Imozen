@@ -1,8 +1,8 @@
 "use client";
 
-import { useState } from 'react';
+import { useState, useRef } from 'react';
 import { useRouter } from 'next/navigation';
-import { ArrowLeft, Save, Loader2 } from 'lucide-react';
+import { ArrowLeft, Save, Loader2, Upload } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -10,6 +10,7 @@ import { Label } from '@/components/ui/label';
 import { useToast } from '@/hooks/use-toast';
 import Link from 'next/link';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 
 export default function NewAgentPage() {
   const router = useRouter();
@@ -21,7 +22,11 @@ export default function NewAgentPage() {
     phone: '',
     username: '',
     language: 'English',
+    sheetUrl: '',
   });
+  const [avatarPreview, setAvatarPreview] = useState<string | null>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
@@ -32,17 +37,27 @@ export default function NewAgentPage() {
     setAgentData(prev => ({ ...prev, language: value }));
   };
 
+  const handleAvatarChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setAvatarPreview(reader.result as string);
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
   const handleSave = async () => {
     setIsSaving(true);
-    // A new agent ID can be generated on the client or server. 
-    // Here's a simple client-side generation.
+    // In a real app, you would handle the file upload to a storage service
+    // and get a URL. For now, we'll continue using pravatar for simplicity.
     const newAgent = {
       ...agentData,
       id: `agent-${Date.now()}`,
       status: 'Active',
       createdAt: new Date().toISOString().split('T')[0],
-      avatar: `https://i.pravatar.cc/150?u=${agentData.email}`,
-      sheetUrl: 'https://docs.google.com/spreadsheets/d/12345',
+      avatar: avatarPreview || `https://i.pravatar.cc/150?u=${agentData.email}`,
     }
 
     try {
@@ -59,8 +74,6 @@ export default function NewAgentPage() {
           title: "Success",
           description: "New agent created successfully.",
         });
-        // You might want to add the new agent to the list on the previous page
-        // or simply navigate back.
         router.push('/agents');
       } else {
         const errorData = await response.text();
@@ -103,6 +116,25 @@ export default function NewAgentPage() {
             <CardTitle>Agent Information</CardTitle>
           </CardHeader>
           <CardContent className="space-y-6">
+            <div className="flex flex-col items-center gap-4">
+               <Avatar className="h-24 w-24">
+                <AvatarImage src={avatarPreview || undefined} />
+                <AvatarFallback>
+                  <Upload className="h-8 w-8 text-gray-400" />
+                </AvatarFallback>
+              </Avatar>
+               <Button variant="outline" onClick={() => fileInputRef.current?.click()}>
+                <Upload className="mr-2 h-4 w-4" />
+                Upload Photo
+              </Button>
+              <Input 
+                type="file" 
+                ref={fileInputRef} 
+                className="hidden" 
+                accept="image/*" 
+                onChange={handleAvatarChange}
+              />
+            </div>
             <div className="space-y-2">
               <Label htmlFor="name">Full Name</Label>
               <Input id="name" name="name" value={agentData.name} onChange={handleInputChange} placeholder="e.g., John Doe" />
@@ -131,6 +163,10 @@ export default function NewAgentPage() {
                   <SelectItem value="French">French</SelectItem>
                 </SelectContent>
               </Select>
+            </div>
+             <div className="space-y-2">
+              <Label htmlFor="sheetUrl">Sheet URL</Label>
+              <Input id="sheetUrl" name="sheetUrl" value={agentData.sheetUrl} onChange={handleInputChange} placeholder="e.g., https://docs.google.com/spreadsheets/d/..." />
             </div>
           </CardContent>
         </Card>
