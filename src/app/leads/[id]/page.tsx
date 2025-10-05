@@ -1,8 +1,9 @@
 
 "use client";
 
-import { useState, useRef } from 'react';
-import { ArrowLeft, MoreVertical, Upload, History, FileText, Send, Edit, UserX, UserCheck, Save, X, Mic, Copy } from 'lucide-react';
+import * as React from 'react';
+import { useState, useRef, useEffect } from 'react';
+import { ArrowLeft, MoreVertical, Upload, History, FileText, Send, Edit, UserX, UserCheck, Save, X, Mic, Copy, RefreshCw, MessageSquare } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
@@ -68,6 +69,7 @@ export default function LeadDetailPage({ params }: { params: { id: string } }) {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const { toast } = useToast();
   const [isNotesOpen, setIsNotesOpen] = useState(false);
+  const [isFollowUpOpen, setIsFollowUpOpen] = useState(false);
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
@@ -267,9 +269,9 @@ export default function LeadDetailPage({ params }: { params: { id: string } }) {
       </main>
 
       {!isEditing && (
-        <div className="fixed bottom-24 right-4 z-20 flex flex-col items-end gap-4">
+        <div className="fixed bottom-20 right-4 z-20 flex flex-col items-end gap-4">
             <ActionButton icon={FileText} label="Notes" onClick={() => setIsNotesOpen(true)} />
-            <ActionButton icon={Send} label="Follow-up" />
+            <ActionButton icon={Send} label="Follow-up" onClick={() => setIsFollowUpOpen(true)} />
             <ActionButton icon={History} label="History" />
         </div>
       )}
@@ -289,6 +291,11 @@ export default function LeadDetailPage({ params }: { params: { id: string } }) {
         lead={lead}
         notes={initialNotes}
         currentNote={initialCurrentNote}
+      />
+      <LeadFollowUpSheet
+        open={isFollowUpOpen}
+        onOpenChange={setIsFollowUpOpen}
+        lead={lead}
       />
     </div>
   );
@@ -399,7 +406,7 @@ function LeadNotesSheet({ open, onOpenChange, lead, notes: initialNotesProp, cur
             date: new Date().toISOString(),
         };
         setCurrentNote(newCurrentNote);
-
+        
         toast({
             title: 'Note updated',
             description: 'The previous note has been moved to history.',
@@ -414,32 +421,40 @@ function LeadNotesSheet({ open, onOpenChange, lead, notes: initialNotesProp, cur
             default: return 'bg-gray-100 text-gray-700';
         }
     };
+    
+    const textareaRef = useRef<HTMLTextAreaElement>(null);
+
+    useEffect(() => {
+        if (textareaRef.current) {
+            textareaRef.current.style.height = 'auto';
+            textareaRef.current.style.height = `${textareaRef.current.scrollHeight}px`;
+        }
+    }, [newNoteContent, open]);
 
     return (
         <Sheet open={open} onOpenChange={onOpenChange}>
             <SheetContent side="bottom" className="h-[90vh] flex flex-col p-0">
                 <SheetHeader className="flex flex-row items-center justify-between border-b px-4 py-3 shrink-0">
-                    <div className="flex items-center">
-                        <Button variant="ghost" size="icon" onClick={() => onOpenChange(false)}>
-                            <ArrowLeft className="h-6 w-6" />
-                        </Button>
-                        <SheetTitle>
-                           <h2 className="ml-4 text-xl font-semibold">Lead Note</h2>
-                        </SheetTitle>
-                    </div>
-                     <SheetDescription className="sr-only">
-                      Manage notes for the lead. You can add a new note, view the history of notes, and copy existing notes.
+                     <div className='flex items-center'>
+                         <Button variant="ghost" size="icon" onClick={() => onOpenChange(false)} className="mr-2">
+                           <X className="h-6 w-6" />
+                         </Button>
+                        <SheetTitle>Lead Notes</SheetTitle>
+                     </div>
+                    <SheetDescription className="sr-only">
+                      Manage notes for {lead.firstName} {lead.lastName}. You can add a new note, view the history of notes, and copy existing notes.
                     </SheetDescription>
                 </SheetHeader>
-                <div className="flex-1 overflow-y-auto p-4">
-                    <div className="flex items-center gap-4 mb-6">
-                        <Avatar className="h-16 w-16">
+
+                <div className="flex-1 overflow-y-auto p-4 space-y-6">
+                    <div className="flex items-start gap-4">
+                        <Avatar className="h-12 w-12">
                             <AvatarImage src={lead.avatar} />
                             <AvatarFallback>{lead.firstName.charAt(0)}{lead.lastName.charAt(0)}</AvatarFallback>
                         </Avatar>
                         <div>
                             <div className="flex items-center gap-2">
-                                <h3 className="text-xl font-bold">{lead.firstName} {lead.lastName}</h3>
+                                <h3 className="text-lg font-bold">{lead.firstName} {lead.lastName}</h3>
                                 <Badge variant="outline" className={cn("text-sm", getStatusBadgeClass(lead.status))}>{lead.status}</Badge>
                             </div>
                             <p className="text-sm text-gray-500">{lead.phone}</p>
@@ -448,25 +463,25 @@ function LeadNotesSheet({ open, onOpenChange, lead, notes: initialNotesProp, cur
                         </div>
                     </div>
 
-                    <Card className="mb-6">
+                    <Card>
                         <CardContent className="p-4">
                             <Textarea
+                                ref={textareaRef}
                                 placeholder="Start typing your note..."
-                                className="border-0 focus-visible:ring-0 min-h-[120px]"
+                                className="border-0 focus-visible:ring-0 min-h-[100px] p-0 resize-none overflow-hidden"
                                 value={newNoteContent}
                                 onChange={(e) => setNewNoteContent(e.target.value)}
                             />
+                             <div className="flex gap-2 justify-end mt-2">
+                                <Button variant="ghost" size="icon">
+                                    <Mic className="h-5 w-5 text-gray-500" />
+                                </Button>
+                                <Button onClick={handleUpdateNote}>
+                                    Update Note
+                                </Button>
+                            </div>
                         </CardContent>
                     </Card>
-
-                    <div className="flex gap-4 mb-6">
-                        <Button className="flex-1 h-12 bg-gradient-to-r from-blue-500 to-cyan-500 text-white" onClick={handleUpdateNote}>
-                            Update Note
-                        </Button>
-                        <Button variant="outline" size="icon" className="h-12 w-12 bg-blue-100 border-primary text-primary hover:bg-blue-200 hover:text-primary">
-                            <Mic className="h-6 w-6" />
-                        </Button>
-                    </div>
 
                     <div>
                         <h4 className="text-lg font-semibold mb-4">Note History</h4>
@@ -474,7 +489,7 @@ function LeadNotesSheet({ open, onOpenChange, lead, notes: initialNotesProp, cur
                             {notes.map(note => (
                                 <Card key={note.id} className="bg-gray-50">
                                     <CardContent className="p-4 relative">
-                                        <p className="text-sm text-gray-700 mb-2">{note.content}</p>
+                                        <p className="text-sm text-gray-700 mb-2 whitespace-pre-wrap">{note.content}</p>
                                         <p className="text-xs text-gray-400">{format(new Date(note.date), "MMMM d, yyyy - h:mm a")}</p>
                                         <Button 
                                             variant="ghost" 
@@ -494,5 +509,95 @@ function LeadNotesSheet({ open, onOpenChange, lead, notes: initialNotesProp, cur
         </Sheet>
     );
 }
+
+type LeadFollowUpSheetProps = {
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+  lead: typeof initialLeadData;
+};
+
+function LeadFollowUpSheet({ open, onOpenChange, lead }: LeadFollowUpSheetProps) {
+    
+    const getStatusBadgeClass = (status: 'Hot' | 'Warm' | 'Cold') => {
+        switch (status) {
+            case 'Hot': return 'bg-red-100 text-red-700 border-red-200';
+            case 'Warm': return 'bg-yellow-100 text-yellow-700 border-yellow-200';
+            case 'Cold': return 'bg-blue-100 text-blue-700 border-blue-200';
+            default: return 'bg-gray-100 text-gray-700';
+        }
+    };
+    
+    const aiMessage = `Hi ${lead.firstName}, thanks for your interest in the downtown condo. I'd love to schedule a quick call to discuss your requirements and see how I can help you find your perfect home. Are you available for a brief chat sometime this week?`;
+
+    return (
+        <Sheet open={open} onOpenChange={onOpenChange}>
+            <SheetContent side="bottom" className="h-[90vh] flex flex-col p-0">
+                <SheetHeader className="flex flex-row items-center justify-between border-b px-4 py-3 shrink-0">
+                     <div className='flex items-center'>
+                         <Button variant="ghost" size="icon" onClick={() => onOpenChange(false)} className="mr-2">
+                           <ArrowLeft className="h-6 w-6" />
+                         </Button>
+                        <SheetTitle>Send to WhatsApp</SheetTitle>
+                     </div>
+                      <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                        <Button variant="ghost" size="icon">
+                            <MoreVertical className="h-6 w-6" />
+                        </Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="end">
+                        <DropdownMenuItem>
+                            Something
+                        </DropdownMenuItem>
+                        </DropdownMenuContent>
+                    </DropdownMenu>
+                    <SheetDescription className="sr-only">
+                      Send an AI-generated follow-up message to {lead.firstName} {lead.lastName}.
+                    </SheetDescription>
+                </SheetHeader>
+
+                <div className="flex-1 overflow-y-auto p-4 space-y-6">
+                    <div className="flex items-start gap-4">
+                        <Avatar className="h-12 w-12">
+                            <AvatarImage src={lead.avatar} />
+                            <AvatarFallback>{lead.firstName.charAt(0)}{lead.lastName.charAt(0)}</AvatarFallback>
+                        </Avatar>
+                        <div>
+                            <div className="flex items-center gap-2">
+                                <h3 className="text-lg font-bold">{lead.firstName} {lead.lastName}</h3>
+                                <Badge variant="outline" className={cn("text-sm", getStatusBadgeClass(lead.status))}>{lead.status}</Badge>
+                            </div>
+                            <p className="text-sm text-gray-500">{lead.phone}</p>
+                            <p className="text-sm text-gray-500">{lead.email}</p>
+                            <p className="text-xs text-gray-400 mt-1">Source: {lead.source} | Created: {lead.createdAt}</p>
+                        </div>
+                    </div>
+
+                    <div>
+                        <h4 className="text-lg font-semibold mb-2">AI-Generated Follow-up Message</h4>
+                         <Card className="bg-blue-50 border-blue-200">
+                            <CardContent className="p-4">
+                                <p className="text-blue-900">{aiMessage}</p>
+                            </CardContent>
+                        </Card>
+                    </div>
+
+                    <div className="space-y-3">
+                         <Button variant="outline" className="w-full h-12">
+                            <RefreshCw className="mr-2 h-5 w-5" />
+                            Regenerate Message
+                        </Button>
+                         <Button className="w-full h-12 bg-green-500 hover:bg-green-600 text-white">
+                            <MessageSquare className="mr-2 h-5 w-5" />
+                            Send to WhatsApp
+                        </Button>
+                    </div>
+                </div>
+            </SheetContent>
+        </Sheet>
+    );
+}
+
+    
 
     
