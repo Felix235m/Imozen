@@ -25,22 +25,128 @@ import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription } from '
 import { Textarea } from '@/components/ui/textarea';
 import { format } from 'date-fns';
 
-// Mock data - in a real app this would be fetched based on the `id` param
-const initialLeadData = {
-  id: 'd2c5e5f3-a2f2-4f9c-9b0d-7d5b4a3a3c21',
-  firstName: 'Sophia',
-  lastName: 'Carter',
-  email: 'sophia.carter@example.com',
-  phone: '123-456-7890',
-  avatar: 'https://i.pravatar.cc/150?u=sophia',
-  status: 'Hot' as 'Hot' | 'Warm' | 'Cold',
-  activeStatus: 'Active' as 'Active' | 'Inactive',
-  createdAt: '2024-01-15',
-  propertyType: 'Condo',
-  budget: 550000,
-  bedrooms: 2,
-  source: 'Website',
-};
+const allLeadsData = [
+  {
+    id: 'd2c5e5f3-a2f2-4f9c-9b0d-7d5b4a3a3c21',
+    firstName: 'Sophia',
+    lastName: 'Carter',
+    email: 'sophia.carter@example.com',
+    phone: '123-456-7890',
+    avatar: 'https://i.pravatar.cc/150?u=sophia',
+    status: 'Hot' as 'Hot' | 'Warm' | 'Cold',
+    activeStatus: 'Active' as 'Active' | 'Inactive',
+    createdAt: '2024-01-15',
+    propertyType: 'Condo',
+    budget: 550000,
+    bedrooms: 2,
+    source: 'Website',
+  },
+  {
+    id: 'olivia-bennett-2',
+    firstName: 'Olivia',
+    lastName: 'Bennett',
+    email: 'olivia.bennett@example.com',
+    phone: '234-567-8901',
+    avatar: 'https://i.pravatar.cc/150?u=olivia',
+    status: 'Warm' as 'Hot' | 'Warm' | 'Cold',
+    activeStatus: 'Active' as 'Active' | 'Inactive',
+    createdAt: '2024-02-10',
+    propertyType: 'House',
+    budget: 750000,
+    bedrooms: 4,
+    source: 'Referral',
+  },
+  {
+    id: 'noah-thompson-3',
+    firstName: 'Noah',
+    lastName: 'Thompson',
+    email: 'noah.thompson@example.com',
+    phone: '345-678-9012',
+    avatar: 'https://i.pravatar.cc/150?u=noah',
+    status: 'Cold' as 'Hot' | 'Warm' | 'Cold',
+    activeStatus: 'Active' as 'Active' | 'Inactive',
+    createdAt: '2024-03-05',
+    propertyType: 'Apartment',
+    budget: 300000,
+    bedrooms: 1,
+    source: 'Zillow',
+  },
+   {
+    id: 'ava-rodriguez-4',
+    firstName: 'Ava',
+    lastName: 'Rodriguez',
+    email: 'ava.rodriguez@example.com',
+    phone: '456-789-0123',
+    avatar: 'https://i.pravatar.cc/150?u=ava',
+    status: 'Hot' as 'Hot' | 'Warm' | 'Cold',
+    activeStatus: 'Inactive' as 'Active' | 'Inactive',
+    createdAt: '2024-03-20',
+    propertyType: 'Commercial',
+    budget: 1200000,
+    bedrooms: 0,
+    source: 'Website',
+  },
+  {
+    id: 'liam-harper-5',
+    firstName: 'Liam',
+    lastName: 'Harper',
+    email: 'liam.harper@example.com',
+    phone: '567-890-1234',
+    avatar: 'https://i.pravatar.cc/150?u=liam',
+    status: 'Warm' as 'Hot' | 'Warm' | 'Cold',
+    activeStatus: 'Active' as 'Active' | 'Inactive',
+    createdAt: '2024-04-01',
+    propertyType: 'Land',
+    budget: 250000,
+    bedrooms: 0,
+    source: 'Referral',
+  },
+   {
+    id: 'isabella-hayes-6',
+    firstName: 'Isabella',
+    lastName: 'Hayes',
+    email: 'isabella.hayes@example.com',
+    phone: '678-901-2345',
+    avatar: 'https://i.pravatar.cc/150?u=isabella',
+    status: 'Cold' as 'Hot' | 'Warm' | 'Cold',
+    activeStatus: 'Active' as 'Active' | 'Inactive',
+    createdAt: '2024-05-15',
+    propertyType: 'Condo',
+    budget: 450000,
+    bedrooms: 2,
+    source: 'Zillow',
+  },
+  {
+    id: 'lucas-foster-7',
+    firstName: 'Lucas',
+    lastName: 'Foster',
+    email: 'lucas.foster@example.com',
+    phone: '789-012-3456',
+    avatar: 'https://i.pravatar.cc/150?u=lucas',
+    status: 'Hot' as 'Hot' | 'Warm' | 'Cold',
+    activeStatus: 'Active' as 'Active' | 'Inactive',
+    createdAt: '2024-06-01',
+    propertyType: 'House',
+    budget: 950000,
+    bedrooms: 5,
+    source: 'Website',
+  },
+  {
+    id: 'mia-coleman-8',
+    firstName: 'Mia',
+    lastName: 'Coleman',
+    email: 'mia.coleman@example.com',
+    phone: '890-123-4567',
+    avatar: 'https://i.pravatar.cc/150?u=mia',
+    status: 'Warm' as 'Hot' | 'Warm' | 'Cold',
+    activeStatus: 'Inactive' as 'Active' | 'Inactive',
+    createdAt: '2024-06-12',
+    propertyType: 'Apartment',
+    budget: 320000,
+    bedrooms: 1,
+    source: 'Referral',
+  },
+];
 
 const initialNotes = [
     {
@@ -98,6 +204,9 @@ const communicationHistory = [
 export default function LeadDetailPage({ params }: { params: { id: string } }) {
   const [isEditing, setIsEditing] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
+
+  const initialLeadData = allLeadsData.find(l => l.id === params.id) || allLeadsData[0];
+  
   const [lead, setLead] = useState(initialLeadData);
   const [avatarPreview, setAvatarPreview] = useState<string | null>(lead.avatar);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -105,6 +214,13 @@ export default function LeadDetailPage({ params }: { params: { id: string } }) {
   const [isNotesOpen, setIsNotesOpen] = useState(false);
   const [isFollowUpOpen, setIsFollowUpOpen] = useState(false);
   const [isHistoryOpen, setIsHistoryOpen] = useState(false);
+
+  useEffect(() => {
+    const currentLeadData = allLeadsData.find(l => l.id === params.id) || allLeadsData[0];
+    setLead(currentLeadData);
+    setAvatarPreview(currentLeadData.avatar);
+  }, [params.id]);
+
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
@@ -140,15 +256,19 @@ export default function LeadDetailPage({ params }: { params: { id: string } }) {
       description: "Lead details saved successfully.",
     });
     // This is just to update the mock data. In a real app, you'd refetch.
-    Object.assign(initialLeadData, lead, { avatar: avatarPreview || initialLeadData.avatar });
+    const leadIndex = allLeadsData.findIndex(l => l.id === lead.id);
+    if(leadIndex !== -1) {
+        allLeadsData[leadIndex] = { ...lead, avatar: avatarPreview || lead.avatar };
+    }
 
     setIsEditing(false);
     setIsSaving(false);
   };
 
   const handleCancel = () => {
-    setLead(initialLeadData);
-    setAvatarPreview(initialLeadData.avatar);
+    const currentLeadData = allLeadsData.find(l => l.id === params.id) || allLeadsData[0];
+    setLead(currentLeadData);
+    setAvatarPreview(currentLeadData.avatar);
     setIsEditing(false);
   };
 
@@ -438,7 +558,7 @@ type Note = {
 type LeadNotesSheetProps = {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  lead: typeof initialLeadData;
+  lead: typeof allLeadsData[0];
   notes: Note[];
   currentNote: Note;
 };
@@ -593,7 +713,7 @@ function LeadNotesSheet({ open, onOpenChange, lead, notes: initialNotesProp, cur
 type LeadFollowUpSheetProps = {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  lead: typeof initialLeadData;
+  lead: typeof allLeadsData[0];
 };
 
 function LeadFollowUpSheet({ open, onOpenChange, lead }: LeadFollowUpSheetProps) {
@@ -680,7 +800,7 @@ type HistoryItem = {
 type LeadHistorySheetProps = {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  lead: typeof initialLeadData;
+  lead: typeof allLeadsData[0];
   history: HistoryItem[];
 };
 

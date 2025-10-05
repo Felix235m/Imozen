@@ -19,19 +19,19 @@ type LeadActiveStatus = 'Active' | 'Inactive';
 
 const allLeads = [
   { id: 'd2c5e5f3-a2f2-4f9c-9b0d-7d5b4a3a3c21', name: 'Sophia Carter', status: 'Hot' as LeadStatus, nextFollowUp: 'Overdue', activeStatus: 'Active' as LeadActiveStatus },
-  { id: 2, name: 'Olivia Bennett', status: 'Warm' as LeadStatus, nextFollowUp: 'Today', activeStatus: 'Active' as LeadActiveStatus },
-  { id: 3, name: 'Noah Thompson', status: 'Cold' as LeadStatus, nextFollowUp: 'This week', activeStatus: 'Active' as LeadActiveStatus },
-  { id: 4, name: 'Ava Rodriguez', status: 'Hot' as LeadStatus, nextFollowUp: 'Overdue', activeStatus: 'Inactive' as LeadActiveStatus },
-  { id: 5, name: 'Liam Harper', status: 'Warm' as LeadStatus, nextFollowUp: 'Next week', activeStatus: 'Active' as LeadActiveStatus },
-  { id: 6, name: 'Isabella Hayes', status: 'Cold' as LeadStatus, nextFollowUp: '15 Jul 2024', activeStatus: 'Active' as LeadActiveStatus },
-  { id: 7, name: 'Lucas Foster', status: 'Hot' as LeadStatus, nextFollowUp: 'Overdue', activeStatus: 'Active' as LeadActiveStatus },
-  { id: 8, name: 'Mia Coleman', status: 'Warm' as LeadStatus, nextFollowUp: '20 Jul 2024', activeStatus: 'Inactive' as LeadActiveStatus },
+  { id: 'olivia-bennett-2', name: 'Olivia Bennett', status: 'Warm' as LeadStatus, nextFollowUp: 'Today', activeStatus: 'Active' as LeadActiveStatus },
+  { id: 'noah-thompson-3', name: 'Noah Thompson', status: 'Cold' as LeadStatus, nextFollowUp: 'This week', activeStatus: 'Active' as LeadActiveStatus },
+  { id: 'ava-rodriguez-4', name: 'Ava Rodriguez', status: 'Hot' as LeadStatus, nextFollowUp: 'Overdue', activeStatus: 'Inactive' as LeadActiveStatus },
+  { id: 'liam-harper-5', name: 'Liam Harper', status: 'Warm' as LeadStatus, nextFollowUp: 'Next week', activeStatus: 'Active' as LeadActiveStatus },
+  { id: 'isabella-hayes-6', name: 'Isabella Hayes', status: 'Cold' as LeadStatus, nextFollowUp: '15 Jul 2024', activeStatus: 'Active' as LeadActiveStatus },
+  { id: 'lucas-foster-7', name: 'Lucas Foster', status: 'Hot' as LeadStatus, nextFollowUp: 'Overdue', activeStatus: 'Active' as LeadActiveStatus },
+  { id: 'mia-coleman-8', name: 'Mia Coleman', status: 'Warm' as LeadStatus, nextFollowUp: '20 Jul 2024', activeStatus: 'Inactive' as LeadActiveStatus },
 ];
 
 export default function LeadsPage() {
   const [searchTerm, setSearchTerm] = useState('');
   const [activeTab, setActiveTab] = useState('All Leads');
-  const [leads, setLeads] = useState(allLeads.map(l => ({...l, id: String(l.id)})));
+  const [leads, setLeads] = useState(allLeads);
   const [selectedLeads, setSelectedLeads] = useState<string[]>([]);
   const { toast } = useToast();
 
@@ -122,7 +122,7 @@ export default function LeadsPage() {
 
   const isBulkEditing = selectedLeads.length > 0;
   
-  const LeadCard = ({lead}: {lead: (typeof allLeads)[0] & {id: string}}) => (
+  const LeadCard = ({lead}: {lead: (typeof allLeads)[0]}) => (
     <Card className={cn("shadow-sm", selectedLeads.includes(lead.id) && "bg-blue-50 border-primary")}>
       <CardContent className="flex items-center justify-between p-4" >
         <div className="flex items-center gap-4" onClick={() => isBulkEditing && handleSelectLead(lead.id)}>
@@ -215,25 +215,27 @@ export default function LeadsPage() {
 
       <div className="flex-1 overflow-y-auto space-y-3 pb-16">
         {filteredLeads.map((lead) => (
-           <div key={lead.id} className="relative">
+           <div key={lead.id} className="relative group">
              <Link href={`/leads/${lead.id}`} className="block">
                 <LeadCard lead={lead} />
             </Link>
             {!isBulkEditing && (
-                <div className="absolute right-2 top-1/2 -translate-y-1/2">
-                    <DropdownMenu>
-                      <DropdownMenuTrigger asChild>
-                          <Button variant="ghost" size="icon" onClick={(e) => e.preventDefault()}>
-                              <MoreVertical className="h-5 w-5 text-gray-500" />
-                          </Button>
-                      </DropdownMenuTrigger>
-                      <DropdownMenuContent align="end" onClick={(e) => e.stopPropagation()}>
-                        <DropdownMenuItem onClick={() => handleLeadAction(lead.id, 'delete')} className="text-red-500">Delete</DropdownMenuItem>
-                        <DropdownMenuItem onClick={() => handleLeadAction(lead.id, 'setActive')}>Mark as Active</DropdownMenuItem>
-                        <DropdownMenuItem onClick={() => handleLeadAction(lead.id, 'setInactive')}>Mark as Inactive</DropdownMenuItem>
-                      </DropdownMenuContent>
-                    </DropdownMenu>
-                </div>
+              <div className="absolute right-2 top-1/2 -translate-y-1/2">
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button variant="ghost" size="icon" onClick={(e) => e.preventDefault()}>
+                      <MoreVertical className="h-5 w-5 text-gray-500" />
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="end">
+                    <DropdownMenuItem onClick={() => handleLeadAction(lead.id, 'delete')} className="text-red-500">
+                      Delete
+                    </DropdownMenuItem>
+                    <DropdownMenuItem onClick={() => handleLeadAction(lead.id, 'setActive')}>Mark as Active</DropdownMenuItem>
+                    <DropdownMenuItem onClick={() => handleLeadAction(lead.id, 'setInactive')}>Mark as Inactive</DropdownMenuItem>
+                  </DropdownMenuContent>
+                </DropdownMenu>
+              </div>
             )}
            </div>
         ))}
