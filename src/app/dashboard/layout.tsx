@@ -6,6 +6,7 @@ import {
   User,
   Bell,
   LogOut,
+  CheckSquare,
 } from 'lucide-react';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
@@ -26,6 +27,7 @@ import { cn } from '@/lib/utils';
 const navItems = [
     { href: '/dashboard', icon: LayoutGrid, label: 'Dashboard' },
     { href: '/leads', icon: ClipboardList, label: 'Leads' },
+    { href: '/tasks', icon: CheckSquare, label: 'Tasks' },
     { href: '/profile', icon: User, label: 'Profile' },
 ];
 
@@ -76,7 +78,7 @@ export default function DashboardLayout({
       <nav className="fixed bottom-0 left-0 right-0 border-t bg-white shadow-t-md">
         <div className="mx-auto flex h-16 max-w-md items-center justify-around">
           {navItems.map((item) => {
-             const isActive = pathname.startsWith(item.href);
+             const isActive = pathname === item.href || (item.href !== '/dashboard' && pathname.startsWith(item.href));
              return (
                 <Link
                 key={item.href}
