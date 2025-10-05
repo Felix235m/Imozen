@@ -33,6 +33,7 @@ function getPageTitle(pathname: string) {
     if (pathname.startsWith('/leads')) return 'Leads';
     if (pathname.startsWith('/profile')) return 'Profile';
     if (pathname.startsWith('/dashboard')) return 'Dashboard';
+    if (pathname.startsWith('/notifications')) return 'Notifications';
     return '';
 }
 
@@ -61,9 +62,11 @@ export default function DashboardLayout({
             {pageTitle && <h1 className="text-2xl font-bold">{pageTitle}</h1>}
         </div>
         <div className="flex items-center justify-end gap-4">
-          <Button variant="ghost" size="icon">
-            <Bell className="h-6 w-6" />
-          </Button>
+          <Link href="/notifications">
+            <Button variant="ghost" size="icon">
+              <Bell className="h-6 w-6" />
+            </Button>
+          </Link>
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <Avatar className="h-8 w-8 cursor-pointer">

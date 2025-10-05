@@ -31,9 +31,11 @@ export default function AgentsLayout({
       <header className="flex items-center justify-between border-b bg-white px-4 py-3 sticky top-0 z-10">
         <ImoZenLogo size="sm" />
         <div className="flex items-center gap-4">
-          <Button variant="ghost" size="icon">
-            <Bell className="h-6 w-6" />
-          </Button>
+          <Link href="/notifications">
+            <Button variant="ghost" size="icon">
+              <Bell className="h-6 w-6" />
+            </Button>
+          </Link>
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <Avatar className="h-8 w-8 cursor-pointer">
