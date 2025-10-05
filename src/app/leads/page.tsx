@@ -127,13 +127,11 @@ export default function LeadsPage() {
             </div>
           </div>
           {!isBulkEditing && (
-              <Link href={`/leads/${lead.id}`} passHref legacyBehavior>
-                <Button variant="ghost" size="icon" asChild onClick={(e) => e.stopPropagation()}>
-                  <a>
-                    <MoreVertical className="h-5 w-5 text-gray-500" />
-                  </a>
-                </Button>
-              </Link>
+            <Link href={`/leads/${lead.id}`}>
+              <Button variant="ghost" size="icon" onClick={(e) => e.stopPropagation()}>
+                <MoreVertical className="h-5 w-5 text-gray-500" />
+              </Button>
+            </Link>
           )}
         </CardContent>
       </Card>
