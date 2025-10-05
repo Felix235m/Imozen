@@ -19,22 +19,13 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogDescription,
-  DialogFooter,
-} from '@/components/ui/dialog';
-import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
-import { Label } from '@/components/ui/label';
 import { useToast } from '@/hooks/use-toast';
 import { Loader2 } from 'lucide-react';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription } from '@/components/ui/sheet';
 import { Textarea } from '@/components/ui/textarea';
 import { format } from 'date-fns';
+import { LeadStatusDialog } from '@/components/leads/lead-status-dialog';
 
 const allLeadsData = [
   {
@@ -331,7 +322,9 @@ export default function LeadDetailPage() {
       )
   }
 
-  const handleStatusSave = (newStatus: 'Hot' | 'Warm' | 'Cold', note: string) => {
+  const handleStatusSave = (leadId: string, newStatus: 'Hot' | 'Warm' | 'Cold', note: string) => {
+    if (!lead || lead.id !== leadId) return;
+
     handleStatusChange(newStatus);
 
     if (currentNote.content.trim()) {
@@ -525,7 +518,7 @@ export default function LeadDetailPage() {
       <LeadStatusDialog 
         open={isStatusDialogOpen} 
         onOpenChange={setIsStatusDialogOpen}
-        currentStatus={lead.status}
+        lead={{id: lead.id, name: `${lead.firstName} ${lead.lastName}`, status: lead.status}}
         onSave={handleStatusSave}
       />
     </div>
@@ -946,93 +939,3 @@ function LeadHistorySheet({ open, onOpenChange, lead, history }: LeadHistoryShee
         </Sheet>
     );
 }
-
-type LeadStatusDialogProps = {
-  open: boolean;
-  onOpenChange: (open: boolean) => void;
-  currentStatus: 'Hot' | 'Warm' | 'Cold';
-  onSave: (newStatus: 'Hot' | 'Warm' | 'Cold', note: string) => void;
-};
-
-function LeadStatusDialog({ open, onOpenChange, currentStatus, onSave }: LeadStatusDialogProps) {
-  const [newStatus, setNewStatus] = useState<'Hot' | 'Warm' | 'Cold'>(currentStatus);
-  const [note, setNote] = useState('');
-  const [isSaving, setIsSaving] = useState(false);
-
-  const handleSaveClick = () => {
-    if (note.trim() === '') {
-      // You can add better validation feedback here
-      alert('Note is required to change status.');
-      return;
-    }
-    setIsSaving(true);
-    // Simulate async operation
-    setTimeout(() => {
-      onSave(newStatus, note);
-      setIsSaving(false);
-      setNote('');
-    }, 500);
-  };
-  
-  useEffect(() => {
-    if (open) {
-        setNewStatus(currentStatus);
-        setNote('');
-    }
-  }, [open, currentStatus])
-
-  return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent>
-        <DialogHeader>
-          <DialogTitle>Change Lead Status</DialogTitle>
-          <DialogDescription>
-            Select a new status for this lead and provide a reason for the change. This will be added as a new note.
-          </DialogDescription>
-        </DialogHeader>
-        <div className="grid gap-4 py-4">
-          <div className="grid gap-2">
-            <Label>New Status</Label>
-            <RadioGroup
-              defaultValue={currentStatus}
-              onValueChange={(value: 'Hot' | 'Warm' | 'Cold') => setNewStatus(value)}
-              className="flex gap-4"
-            >
-              <div className="flex items-center space-x-2">
-                <RadioGroupItem value="Hot" id="s-hot" />
-                <Label htmlFor="s-hot">Hot</Label>
-              </div>
-              <div className="flex items-center space-x-2">
-                <RadioGroupItem value="Warm" id="s-warm" />
-                <Label htmlFor="s-warm">Warm</Label>
-              </div>
-              <div className="flex items-center space-x-2">
-                <RadioGroupItem value="Cold" id="s-cold" />
-                <Label htmlFor="s-cold">Cold</Label>              </div>
-            </RadioGroup>
-          </div>
-          <div className="grid gap-2">
-            <Label htmlFor="status-note">Note (Required)</Label>
-            <Textarea
-              id="status-note"
-              placeholder="e.g., Client is ready to make an offer."
-              value={note}
-              onChange={(e) => setNote(e.target.value)}
-            />
-          </div>
-        </div>
-        <DialogFooter>
-          <Button variant="outline" onClick={() => onOpenChange(false)}>Cancel</Button>
-          <Button onClick={handleSaveClick} disabled={isSaving || !note.trim()}>
-            {isSaving && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-            Save Status
-          </Button>
-        </DialogFooter>
-      </DialogContent>
-    </Dialog>
-  )
-}
-
-    
-
-    

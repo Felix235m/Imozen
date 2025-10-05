@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState, useMemo } from 'react';
-import { Search, Plus, MoreVertical, X } from 'lucide-react';
+import { Search, Plus, MoreVertical, X, Edit, Zap, UserCheck, UserX, Trash2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent } from '@/components/ui/card';
@@ -13,12 +13,21 @@ import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { useToast } from '@/hooks/use-toast';
 import { useRouter } from 'next/navigation';
+import { LeadStatusDialog } from '@/components/leads/lead-status-dialog';
 
 
 type LeadStatus = 'Hot' | 'Warm' | 'Cold';
 type LeadActiveStatus = 'Active' | 'Inactive';
 
-const allLeads = [
+type Lead = {
+  id: string;
+  name: string;
+  status: LeadStatus;
+  nextFollowUp: string;
+  activeStatus: LeadActiveStatus;
+};
+
+const allLeads: Lead[] = [
   { id: 'd2c5e5f3-a2f2-4f9c-9b0d-7d5b4a3a3c21', name: 'Sophia Carter', status: 'Hot' as LeadStatus, nextFollowUp: 'Overdue', activeStatus: 'Active' as LeadActiveStatus },
   { id: 'olivia-bennett-2', name: 'Olivia Bennett', status: 'Warm' as LeadStatus, nextFollowUp: 'Today', activeStatus: 'Active' as LeadActiveStatus },
   { id: 'noah-thompson-3', name: 'Noah Thompson', status: 'Cold' as LeadStatus, nextFollowUp: 'This week', activeStatus: 'Active' as LeadActiveStatus },
@@ -36,6 +45,9 @@ export default function LeadsPage() {
   const [selectedLeads, setSelectedLeads] = useState<string[]>([]);
   const { toast } = useToast();
   const router = useRouter();
+
+  const [isStatusDialogOpen, setIsStatusDialogOpen] = useState(false);
+  const [selectedLeadForStatus, setSelectedLeadForStatus] = useState<Lead | null>(null);
 
   const filteredLeads = useMemo(() => {
     return leads.filter(lead => {
@@ -113,6 +125,26 @@ export default function LeadsPage() {
     });
   };
 
+  const openStatusDialog = (lead: Lead) => {
+    setSelectedLeadForStatus(lead);
+    setIsStatusDialogOpen(true);
+  };
+
+  const handleStatusSave = (leadId: string, newStatus: LeadStatus, note: string) => {
+    setLeads(prevLeads =>
+      prevLeads.map(lead =>
+        lead.id === leadId ? { ...lead, status: newStatus } : lead
+      )
+    );
+    // In a real app, you would also save the note.
+    toast({
+      title: 'Status Updated',
+      description: `Lead status changed to ${newStatus} and note was added.`,
+    });
+    setIsStatusDialogOpen(false);
+  };
+
+
   const getStatusBadgeClass = (status: LeadStatus) => {
     switch (status) {
       case 'Hot': return 'bg-red-100 text-red-700 border-red-200';
@@ -124,18 +156,23 @@ export default function LeadsPage() {
 
   const isBulkEditing = selectedLeads.length > 0;
   
-  const LeadCard = ({lead}: {lead: (typeof allLeads)[0]}) => (
+  const LeadCard = ({lead}: {lead: Lead }) => (
     <Card className={cn("shadow-sm", selectedLeads.includes(lead.id) && "bg-blue-50 border-primary")}>
       <CardContent className="flex items-center justify-between p-4" >
-        <div className="flex items-center gap-4" onClick={() => isBulkEditing && handleSelectLead(lead.id)}>
+        <div className="flex items-center gap-4" onClick={(e) => {
+            if (isBulkEditing) {
+                e.preventDefault();
+                handleSelectLead(lead.id)
+            }
+        }}>
           <Checkbox 
               id={`lead-${lead.id}`} 
               checked={selectedLeads.includes(lead.id)}
               onCheckedChange={() => handleSelectLead(lead.id)}
               onClick={(e) => e.stopPropagation()}
           />
-          <div className="grid gap-0.5">
-            <label htmlFor={`lead-${lead.id}`} className={cn("font-semibold", isBulkEditing && 'cursor-pointer')}>{lead.name}</label>
+          <Link href={`/leads/${lead.id}`} className="grid gap-0.5">
+            <span className={cn("font-semibold", isBulkEditing && 'cursor-pointer')}>{lead.name}</span>
             <div className="flex items-center gap-2 flex-wrap">
               <Badge variant="outline" className={cn("text-xs", getStatusBadgeClass(lead.status))}>{lead.status}</Badge>
               {lead.activeStatus === 'Inactive' && (
@@ -148,7 +185,7 @@ export default function LeadsPage() {
                 </span>
               </p>
             </div>
-          </div>
+          </Link>
         </div>
       </CardContent>
     </Card>
@@ -218,9 +255,7 @@ export default function LeadsPage() {
       <div className="flex-1 overflow-y-auto space-y-3 pb-16">
         {filteredLeads.map((lead) => (
            <div key={lead.id} className="relative group">
-             <Link href={`/leads/${lead.id}`} className="block">
-                <LeadCard lead={lead} />
-            </Link>
+             <LeadCard lead={lead} />
             {!isBulkEditing && (
               <div className="absolute right-2 top-1/2 -translate-y-1/2">
                 <DropdownMenu>
@@ -229,18 +264,26 @@ export default function LeadsPage() {
                       <MoreVertical className="h-5 w-5 text-gray-500" />
                     </Button>
                   </DropdownMenuTrigger>
-                  <DropdownMenuContent align="end">
+                  <DropdownMenuContent align="end" onClick={(e) => e.stopPropagation()}>
                     <DropdownMenuItem onSelect={() => router.push(`/leads/${lead.id}`)}>
-                      Edit
+                        <Edit className="mr-2 h-4 w-4" />
+                        <span>Edit</span>
                     </DropdownMenuItem>
-                    <DropdownMenuItem onSelect={() => router.push(`/leads/${lead.id}`)}>
-                      Change Status
+                    <DropdownMenuItem onSelect={() => openStatusDialog(lead)}>
+                        <Zap className="mr-2 h-4 w-4" />
+                        <span>Change Status</span>
                     </DropdownMenuItem>
                     <DropdownMenuItem onSelect={() => handleLeadAction(lead.id, lead.activeStatus === 'Active' ? 'setInactive' : 'setActive')}>
-                      Mark as {lead.activeStatus === 'Active' ? 'Inactive' : 'Active'}
+                      {lead.activeStatus === 'Active' ? (
+                        <UserX className="mr-2 h-4 w-4" />
+                      ) : (
+                        <UserCheck className="mr-2 h-4 w-4" />
+                      )}
+                      <span>Mark as {lead.activeStatus === 'Active' ? 'Inactive' : 'Active'}</span>
                     </DropdownMenuItem>
                     <DropdownMenuItem onSelect={() => handleLeadAction(lead.id, 'delete')} className="text-red-500">
-                      Delete Lead
+                        <Trash2 className="mr-2 h-4 w-4" />
+                        <span>Delete Lead</span>
                     </DropdownMenuItem>
                   </DropdownMenuContent>
                 </DropdownMenu>
@@ -249,6 +292,15 @@ export default function LeadsPage() {
            </div>
         ))}
       </div>
+      {selectedLeadForStatus && (
+        <LeadStatusDialog
+          key={selectedLeadForStatus.id}
+          open={isStatusDialogOpen}
+          onOpenChange={setIsStatusDialogOpen}
+          lead={selectedLeadForStatus}
+          onSave={handleStatusSave}
+        />
+      )}
     </div>
   );
 }
