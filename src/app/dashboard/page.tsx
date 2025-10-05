@@ -101,7 +101,7 @@ export default function AgentDashboardPage() {
   return (
     <div className="p-4 pb-20">
       <section className="py-4">
-        <h1 className="text-2xl font-bold text-gray-800">Welcome back, {agentName}!</h1>
+        <h2 className="text-2xl font-bold text-gray-800">Welcome back, {agentName}!</h2>
       </section>
 
       <section className="grid grid-cols-2 gap-4 mb-6">
@@ -126,11 +126,11 @@ export default function AgentDashboardPage() {
       </section>
 
       <section>
-        <h2 className="text-xl font-semibold mb-4">Upcoming Follow-up Tasks</h2>
+        <h3 className="text-xl font-semibold mb-4">Upcoming Follow-up Tasks</h3>
         <div className="space-y-6">
           {tasks.map((group) => (
             <div key={group.date}>
-              <h3 className="font-semibold text-gray-600 mb-2">{group.date}</h3>
+              <h4 className="font-semibold text-gray-600 mb-2">{group.date}</h4>
               <div className="space-y-3">
                 {group.items.map((task) => (
                   <Card key={task.name} className="shadow-sm hover:shadow-md transition-shadow">

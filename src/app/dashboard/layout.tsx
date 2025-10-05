@@ -29,6 +29,13 @@ const navItems = [
     { href: '/profile', icon: User, label: 'Profile' },
 ];
 
+function getPageTitle(pathname: string) {
+    if (pathname.startsWith('/leads')) return 'Leads';
+    if (pathname.startsWith('/profile')) return 'Profile';
+    if (pathname.startsWith('/dashboard')) return 'Dashboard';
+    return '';
+}
+
 export default function DashboardLayout({
   children,
 }: {
@@ -42,10 +49,15 @@ export default function DashboardLayout({
     router.push('/');
   };
 
+  const pageTitle = getPageTitle(pathname);
+
   return (
     <div className="flex h-screen flex-col bg-gray-50">
        <header className="flex items-center justify-between border-b bg-white px-4 py-3 sticky top-0 z-10">
-        <ImoZenLogo size="sm" />
+        <div className='flex items-center gap-4'>
+            <ImoZenLogo size="sm" />
+            {pageTitle && <h1 className="text-xl font-bold">{pageTitle}</h1>}
+        </div>
         <div className="flex items-center gap-4">
           <Button variant="ghost" size="icon">
             <Bell className="h-6 w-6" />

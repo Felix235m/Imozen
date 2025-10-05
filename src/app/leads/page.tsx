@@ -51,11 +51,7 @@ export default function LeadsPage() {
 
   return (
     <div className="flex h-full flex-col bg-gray-50 pb-16 p-4">
-       <header className="flex items-center justify-between py-4">
-        <h1 className="text-2xl font-bold">Leads</h1>
-      </header>
-      
-      <div className="flex gap-2 mb-4">
+      <div className="flex gap-2 mb-4 pt-4">
         <div className="relative flex-grow">
             <Search className="absolute left-3 top-1/2 h-5 w-5 -translate-y-1/2 text-gray-400" />
             <Input 
