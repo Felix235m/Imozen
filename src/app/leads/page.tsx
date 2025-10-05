@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState, useMemo } from 'react';
-import { Search, Plus, MoreVertical, Menu } from 'lucide-react';
+import { Search, Plus, MoreVertical } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent } from '@/components/ui/card';
@@ -52,9 +52,6 @@ export default function LeadsPage() {
   return (
     <div className="flex h-full flex-col bg-gray-50 pb-16">
        <header className="flex items-center justify-between bg-white px-4 py-3 sticky top-0 z-10 border-b">
-        <Button variant="ghost" size="icon">
-          <Menu className="h-6 w-6" />
-        </Button>
         <h1 className="text-xl font-bold">Leads</h1>
         <Link href="/leads/new">
           <Button size="icon" className="rounded-full bg-primary h-10 w-10">
