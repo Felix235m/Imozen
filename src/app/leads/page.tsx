@@ -66,6 +66,28 @@ export default function LeadsPage() {
       setSelectedLeads([]);
   }
 
+  const handleLeadAction = (leadId: string, action: 'delete' | 'setActive' | 'setInactive') => {
+    let newLeads = [...leads];
+    let message = '';
+    
+    if (action === 'delete') {
+      newLeads = leads.filter(lead => lead.id !== leadId);
+      message = `Lead deleted.`;
+    } else {
+      const newStatus = action === 'setActive' ? 'Active' : 'Inactive';
+      newLeads = leads.map(lead => 
+        lead.id === leadId ? { ...lead, activeStatus: newStatus } : lead
+      );
+      message = `Lead marked as ${newStatus.toLowerCase()}.`;
+    }
+    
+    setLeads(newLeads);
+    toast({
+      title: "Success",
+      description: message,
+    });
+  };
+
   const handleBulkAction = (action: 'delete' | 'setActive' | 'setInactive') => {
     let newLeads = [...leads];
     let message = '';
@@ -199,11 +221,18 @@ export default function LeadsPage() {
             </Link>
             {!isBulkEditing && (
                 <div className="absolute right-2 top-1/2 -translate-y-1/2">
-                    <Link href={`/leads/${lead.id}`} onClick={(e) => e.stopPropagation()}>
-                        <Button variant="ghost" size="icon">
-                            <MoreVertical className="h-5 w-5 text-gray-500" />
-                        </Button>
-                    </Link>
+                    <DropdownMenu>
+                      <DropdownMenuTrigger asChild>
+                          <Button variant="ghost" size="icon" onClick={(e) => e.preventDefault()}>
+                              <MoreVertical className="h-5 w-5 text-gray-500" />
+                          </Button>
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent align="end" onClick={(e) => e.stopPropagation()}>
+                        <DropdownMenuItem onClick={() => handleLeadAction(lead.id, 'delete')} className="text-red-500">Delete</DropdownMenuItem>
+                        <DropdownMenuItem onClick={() => handleLeadAction(lead.id, 'setActive')}>Mark as Active</DropdownMenuItem>
+                        <DropdownMenuItem onClick={() => handleLeadAction(lead.id, 'setInactive')}>Mark as Inactive</DropdownMenuItem>
+                      </DropdownMenuContent>
+                    </DropdownMenu>
                 </div>
             )}
            </div>
