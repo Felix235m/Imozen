@@ -228,11 +228,6 @@ export default function LeadsPage() {
                     </Button>
                   </DropdownMenuTrigger>
                   <DropdownMenuContent align="end">
-                    <DropdownMenuItem onClick={() => handleLeadAction(lead.id, 'delete')} className="text-red-500">
-                      Delete
-                    </DropdownMenuItem>
-                    <DropdownMenuItem onClick={() => handleLeadAction(lead.id, 'setActive')}>Mark as Active</DropdownMenuItem>
-                    <DropdownMenuItem onClick={() => handleLeadAction(lead.id, 'setInactive')}>Mark as Inactive</DropdownMenuItem>
                   </DropdownMenuContent>
                 </DropdownMenu>
               </div>
