@@ -21,6 +21,7 @@ import { Loader2 } from 'lucide-react';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Sheet, SheetContent } from '@/components/ui/sheet';
 import { Textarea } from '@/components/ui/textarea';
+import { format } from 'date-fns';
 
 // Mock data - in a real app this would be fetched based on the `id` param
 const initialLeadData = {
@@ -43,17 +44,17 @@ const initialNotes = [
     {
         id: 'note3',
         content: 'Client is very interested in properties with a backyard for their dog. Prefers modern architecture and has a flexible budget for the right place. They mentioned a strong preference for a quiet neighborhood. Called on June 8th to reschedule a viewing due to a personal commitment, seemed a bit hesitant about the price point of the downtown condo.',
-        date: 'June 10, 2024 - 2:30 PM'
+        date: '2024-06-10T14:30:00Z'
     },
     {
         id: 'note2',
         content: 'Initial contact. Expressed interest in 2-bedroom condos downtown. Budget around $650k. Wants to see properties with good natural light.',
-        date: 'May 28, 2024 - 11:15 AM'
+        date: '2024-05-28T11:15:00Z'
     },
     {
         id: 'note1',
         content: 'Lead created from website inquiry form.',
-        date: 'January 15, 2024 - 9:00 AM'
+        date: '2024-01-15T09:00:00Z'
     }
 ]
 
@@ -339,15 +340,23 @@ function ActionButton({ icon: Icon, label, onClick }: { icon: React.ElementType;
   );
 }
 
+type Note = {
+    id: string;
+    content: string;
+    date: string;
+};
+
 type LeadNotesSheetProps = {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   lead: typeof initialLeadData;
-  notes: typeof initialNotes;
+  notes: Note[];
 };
 
-function LeadNotesSheet({ open, onOpenChange, lead, notes }: LeadNotesSheetProps) {
+function LeadNotesSheet({ open, onOpenChange, lead, notes: initialNotesProp }: LeadNotesSheetProps) {
     const { toast } = useToast();
+    const [notes, setNotes] = useState(initialNotesProp);
+    const [newNoteContent, setNewNoteContent] = useState('');
 
     const handleCopy = (text: string) => {
         navigator.clipboard.writeText(text);
@@ -355,6 +364,30 @@ function LeadNotesSheet({ open, onOpenChange, lead, notes }: LeadNotesSheetProps
             title: "Copied to clipboard",
         });
     }
+
+    const handleUpdateNote = () => {
+        if (!newNoteContent.trim()) {
+            toast({
+                variant: 'destructive',
+                title: 'Note is empty',
+                description: 'Please write a note before updating.',
+            });
+            return;
+        }
+
+        const newNote: Note = {
+            id: `note-${Date.now()}`,
+            content: newNoteContent,
+            date: new Date().toISOString(),
+        };
+
+        setNotes(prevNotes => [newNote, ...prevNotes]);
+        setNewNoteContent('');
+        toast({
+            title: 'Note updated',
+            description: 'The new note has been added to the history.',
+        });
+    };
 
     const getStatusBadgeClass = (status: 'Hot' | 'Warm' | 'Cold') => {
         switch (status) {
@@ -398,12 +431,14 @@ function LeadNotesSheet({ open, onOpenChange, lead, notes }: LeadNotesSheetProps
                             <Textarea
                                 placeholder="Sophia is now looking for a 3-bedroom house with a large garden. Budget increased to $800k..."
                                 className="border-0 focus-visible:ring-0 min-h-[120px]"
+                                value={newNoteContent}
+                                onChange={(e) => setNewNoteContent(e.target.value)}
                             />
                         </CardContent>
                     </Card>
 
                     <div className="flex gap-4 mb-6">
-                        <Button className="flex-1 h-12 bg-gradient-to-r from-blue-500 to-cyan-500 text-white">
+                        <Button className="flex-1 h-12 bg-gradient-to-r from-blue-500 to-cyan-500 text-white" onClick={handleUpdateNote}>
                             Update Note
                         </Button>
                         <Button variant="outline" size="icon" className="h-12 w-12 bg-blue-100 border-primary text-primary hover:bg-blue-200 hover:text-primary">
@@ -418,7 +453,7 @@ function LeadNotesSheet({ open, onOpenChange, lead, notes }: LeadNotesSheetProps
                                 <Card key={note.id} className="bg-gray-50">
                                     <CardContent className="p-4 relative">
                                         <p className="text-sm text-gray-700 mb-2">{note.content}</p>
-                                        <p className="text-xs text-gray-400">{note.date}</p>
+                                        <p className="text-xs text-gray-400">{format(new Date(note.date), "MMMM d, yyyy - h:mm a")}</p>
                                         <Button 
                                             variant="ghost" 
                                             size="icon" 
@@ -437,3 +472,5 @@ function LeadNotesSheet({ open, onOpenChange, lead, notes }: LeadNotesSheetProps
         </Sheet>
     );
 }
+
+    
