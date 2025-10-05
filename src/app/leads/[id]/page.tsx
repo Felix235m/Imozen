@@ -1,3 +1,4 @@
+
 "use client";
 
 import { useState, useRef } from 'react';
@@ -248,9 +249,9 @@ export default function LeadDetailPage({ params }: { params: { id: string } }) {
 
       {!isEditing && (
         <div className="fixed bottom-24 right-4 z-20 flex flex-col items-end gap-4">
-          <ActionButton icon={History} label="History" />
           <ActionButton icon={FileText} label="Notes" />
           <ActionButton icon={Send} label="Follow-up" />
+          <ActionButton icon={History} label="History" />
         </div>
       )}
 
@@ -313,3 +314,5 @@ function ActionButton({ icon: Icon, label }: { icon: React.ElementType; label: s
     </div>
   );
 }
+
+    
