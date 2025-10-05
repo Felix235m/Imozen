@@ -19,7 +19,7 @@ import {
 import { useToast } from '@/hooks/use-toast';
 import { Loader2 } from 'lucide-react';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Sheet, SheetContent } from '@/components/ui/sheet';
+import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle } from '@/components/ui/sheet';
 import { Textarea } from '@/components/ui/textarea';
 import { format } from 'date-fns';
 
@@ -401,14 +401,19 @@ function LeadNotesSheet({ open, onOpenChange, lead, notes: initialNotesProp }: L
     return (
         <Sheet open={open} onOpenChange={onOpenChange}>
             <SheetContent side="bottom" className="h-[90vh] flex flex-col p-0">
-                <header className="flex items-center justify-between border-b px-4 py-3 shrink-0">
+                <SheetHeader className="flex flex-row items-center justify-between border-b px-4 py-3 shrink-0">
                     <div className="flex items-center">
                         <Button variant="ghost" size="icon" onClick={() => onOpenChange(false)}>
                             <ArrowLeft className="h-6 w-6" />
                         </Button>
-                        <h2 className="ml-4 text-xl font-semibold">Lead Note</h2>
+                        <SheetTitle>
+                           <h2 className="ml-4 text-xl font-semibold">Lead Note</h2>
+                        </SheetTitle>
                     </div>
-                </header>
+                     <SheetDescription className="sr-only">
+                      Manage notes for the lead. You can add a new note, view the history of notes, and copy existing notes.
+                    </SheetDescription>
+                </SheetHeader>
                 <div className="flex-1 overflow-y-auto p-4">
                     <div className="flex items-center gap-4 mb-6">
                         <Avatar className="h-16 w-16">
@@ -472,5 +477,3 @@ function LeadNotesSheet({ open, onOpenChange, lead, notes: initialNotesProp }: L
         </Sheet>
     );
 }
-
-    
