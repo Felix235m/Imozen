@@ -18,7 +18,7 @@ type LeadStatus = 'Hot' | 'Warm' | 'Cold';
 type LeadActiveStatus = 'Active' | 'Inactive';
 
 const allLeads = [
-  { id: 1, name: 'Ethan Carter', status: 'Hot' as LeadStatus, nextFollowUp: 'Overdue', activeStatus: 'Active' as LeadActiveStatus },
+  { id: 'd2c5e5f3-a2f2-4f9c-9b0d-7d5b4a3a3c21', name: 'Sophia Carter', status: 'Hot' as LeadStatus, nextFollowUp: 'Overdue', activeStatus: 'Active' as LeadActiveStatus },
   { id: 2, name: 'Olivia Bennett', status: 'Warm' as LeadStatus, nextFollowUp: 'Today', activeStatus: 'Active' as LeadActiveStatus },
   { id: 3, name: 'Noah Thompson', status: 'Cold' as LeadStatus, nextFollowUp: 'This week', activeStatus: 'Active' as LeadActiveStatus },
   { id: 4, name: 'Ava Rodriguez', status: 'Hot' as LeadStatus, nextFollowUp: 'Overdue', activeStatus: 'Inactive' as LeadActiveStatus },
@@ -31,8 +31,8 @@ const allLeads = [
 export default function LeadsPage() {
   const [searchTerm, setSearchTerm] = useState('');
   const [activeTab, setActiveTab] = useState('All Leads');
-  const [leads, setLeads] = useState(allLeads);
-  const [selectedLeads, setSelectedLeads] = useState<number[]>([]);
+  const [leads, setLeads] = useState(allLeads.map(l => ({...l, id: String(l.id)})));
+  const [selectedLeads, setSelectedLeads] = useState<string[]>([]);
   const { toast } = useToast();
 
   const filteredLeads = useMemo(() => {
@@ -46,7 +46,7 @@ export default function LeadsPage() {
     });
   }, [searchTerm, activeTab, leads]);
 
-  const handleSelectLead = (leadId: number) => {
+  const handleSelectLead = (leadId: string) => {
     setSelectedLeads(prevSelected =>
       prevSelected.includes(leadId)
         ? prevSelected.filter(id => id !== leadId)
@@ -100,10 +100,10 @@ export default function LeadsPage() {
 
   const isBulkEditing = selectedLeads.length > 0;
   
-  const LeadCard = ({lead}: {lead: (typeof allLeads)[0]}) => (
+  const LeadCard = ({lead}: {lead: (typeof allLeads)[0] & {id: string}}) => (
     <Card className={cn("shadow-sm", selectedLeads.includes(lead.id) && "bg-blue-50 border-primary")}>
         <CardContent className="flex items-center justify-between p-4" >
-          <div className="flex items-center gap-4" onClick={() => handleSelectLead(lead.id)}>
+          <div className="flex items-center gap-4" onClick={() => isBulkEditing && handleSelectLead(lead.id)}>
             <Checkbox 
                 id={`lead-${lead.id}`} 
                 checked={selectedLeads.includes(lead.id)}
@@ -111,7 +111,7 @@ export default function LeadsPage() {
                 onClick={(e) => e.stopPropagation()}
             />
             <div className="grid gap-0.5">
-              <label htmlFor={`lead-${lead.id}`} className="font-semibold cursor-pointer">{lead.name}</label>
+              <label htmlFor={`lead-${lead.id}`} className={cn("font-semibold", isBulkEditing && 'cursor-pointer')}>{lead.name}</label>
               <div className="flex items-center gap-2 flex-wrap">
                 <Badge variant="outline" className={cn("text-xs", getStatusBadgeClass(lead.status))}>{lead.status}</Badge>
                 {lead.activeStatus === 'Inactive' && (
@@ -127,11 +127,13 @@ export default function LeadsPage() {
             </div>
           </div>
           {!isBulkEditing && (
-              <Button variant="ghost" size="icon" asChild onClick={(e) => e.stopPropagation()}>
-                <Link href={`/leads/${lead.id}`}>
+              <Link href={`/leads/${lead.id}`} passHref legacyBehavior>
+                <Button variant="ghost" size="icon" asChild onClick={(e) => e.stopPropagation()}>
+                  <a>
                     <MoreVertical className="h-5 w-5 text-gray-500" />
-                </Link>
-              </Button>
+                  </a>
+                </Button>
+              </Link>
           )}
         </CardContent>
       </Card>
@@ -203,7 +205,7 @@ export default function LeadsPage() {
            isBulkEditing ? (
              <LeadCard key={lead.id} lead={lead} />
            ) : (
-            <Link href={`/leads/${lead.id}`} key={lead.id}>
+            <Link href={`/leads/${lead.id}`} key={lead.id} className="block">
                 <LeadCard lead={lead} />
             </Link>
            )
