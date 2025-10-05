@@ -68,7 +68,7 @@ export default function LeadDetailPage({ params }: { params: { id: string } }) {
         </Button>
       </header>
 
-      <main className="flex-1 overflow-y-auto p-4 pb-20">
+      <main className="flex-1 overflow-y-auto p-4 pb-40">
         <section className="flex flex-col items-center py-6 text-center">
           <div className="relative mb-4">
             <Avatar className="h-24 w-24">
@@ -132,7 +132,7 @@ export default function LeadDetailPage({ params }: { params: { id: string } }) {
         </div>
       </main>
 
-      <div className="fixed bottom-24 right-4 z-20 flex flex-col gap-3">
+      <div className="fixed bottom-24 right-4 z-20 flex flex-col items-end gap-4">
         <ActionButton icon={History} label="History" />
         <ActionButton icon={FileText} label="Notes" />
         <ActionButton icon={Send} label="Follow-up" />
@@ -150,15 +150,20 @@ function InfoItem({ label, value, className }: { label: string; value: React.Rea
   );
 }
 
-function ActionButton({ icon: Icon, label }: { icon: React.ElementType, label: string }) {
+function ActionButton({ icon: Icon, label }: { icon: React.ElementType; label: string }) {
   return (
-    <Button
-      variant="default"
-      size="icon"
-      className="h-14 w-14 rounded-full bg-primary shadow-lg hover:bg-primary/90"
-      aria-label={label}
-    >
-      <Icon className="h-6 w-6" />
-    </Button>
-  )
+    <div className="flex items-center gap-3">
+        <div className="bg-card shadow-md rounded-lg px-3 py-2">
+            <span className="font-semibold text-card-foreground">{label}</span>
+        </div>
+        <Button
+            variant="default"
+            size="icon"
+            className="h-12 w-12 rounded-full bg-primary shadow-lg hover:bg-primary/90"
+            aria-label={label}
+        >
+            <Icon className="h-6 w-6" />
+        </Button>
+    </div>
+  );
 }
