@@ -568,7 +568,8 @@ function LeadNotesSheet({ open, onOpenChange, lead, notes: initialNotesProp, cur
     const { toast } = useToast();
     const [notes, setNotes] = useState(initialNotesProp);
     const [currentNote, setCurrentNote] = useState(initialCurrentNote);
-    const [newNoteContent, setNewNoteContent] = useState(initialCurrentNote.content);
+    const [noteContent, setNoteContent] = useState(initialCurrentNote.content);
+    const [isCreatingNew, setIsCreatingNew] = useState(false);
 
     const handleCopy = (text: string) => {
         navigator.clipboard.writeText(text);
@@ -577,42 +578,42 @@ function LeadNotesSheet({ open, onOpenChange, lead, notes: initialNotesProp, cur
         });
     }
 
-    const handleUpdateNote = () => {
-        const trimmedContent = newNoteContent.trim();
+    const handleSaveNote = () => {
+        const trimmedContent = noteContent.trim();
         if (!trimmedContent) {
             toast({
                 variant: 'destructive',
                 title: 'Note is empty',
-                description: 'Please write a note before updating.',
+                description: 'Please write a note before saving.',
             });
             return;
         }
 
-        // If content is unchanged, do nothing.
-        if(trimmedContent === currentNote.content) {
-            toast({
-                title: 'No changes detected',
-                description: 'The note content is the same.',
-            });
-            return;
-        }
-
-        // The old "current" note is added to history
-        setNotes(prevNotes => [currentNote, ...prevNotes]);
-
-        // The new content becomes the new "current" note
         const newCurrentNote: Note = {
             id: `note-${Date.now()}`,
-            content: newNoteContent,
+            content: trimmedContent,
             date: new Date().toISOString(),
         };
         setCurrentNote(newCurrentNote);
+        setIsCreatingNew(false);
+        setNoteContent(newCurrentNote.content)
         
         toast({
-            title: 'Note updated',
-            description: 'The previous note has been moved to history.',
+            title: 'Note saved',
+            description: 'The new note has been saved.',
         });
     };
+
+    const handleNewNoteClick = () => {
+        if (currentNote.content.trim()) {
+            setNotes(prevNotes => [currentNote, ...prevNotes]);
+        }
+        setNoteContent("");
+        setIsCreatingNew(true);
+        if (textareaRef.current) {
+            textareaRef.current.focus();
+        }
+    }
 
     const getStatusBadgeClass = (status: 'Hot' | 'Warm' | 'Cold') => {
         switch (status) {
@@ -630,7 +631,14 @@ function LeadNotesSheet({ open, onOpenChange, lead, notes: initialNotesProp, cur
             textareaRef.current.style.height = 'auto';
             textareaRef.current.style.height = `${textareaRef.current.scrollHeight}px`;
         }
-    }, [newNoteContent, open]);
+    }, [noteContent, open]);
+
+     useEffect(() => {
+        if (open) {
+            setNoteContent(currentNote.content);
+            setIsCreatingNew(false);
+        }
+    }, [open, currentNote]);
 
     return (
         <Sheet open={open} onOpenChange={onOpenChange}>
@@ -670,16 +678,18 @@ function LeadNotesSheet({ open, onOpenChange, lead, notes: initialNotesProp, cur
                                 ref={textareaRef}
                                 placeholder="Start typing your note..."
                                 className="border-0 focus-visible:ring-0 min-h-[100px] p-0 resize-none overflow-hidden"
-                                value={newNoteContent}
-                                onChange={(e) => setNewNoteContent(e.target.value)}
+                                value={noteContent}
+                                onChange={(e) => setNoteContent(e.target.value)}
                             />
                              <div className="flex gap-2 justify-end mt-2">
                                 <Button variant="ghost" size="icon">
                                     <Mic className="h-5 w-5 text-gray-500" />
                                 </Button>
-                                <Button onClick={handleUpdateNote}>
-                                    Update Note
-                                </Button>
+                                {isCreatingNew ? (
+                                    <Button onClick={handleSaveNote}>Save Note</Button>
+                                ) : (
+                                    <Button onClick={handleNewNoteClick}>New Note</Button>
+                                )}
                             </div>
                         </CardContent>
                     </Card>
