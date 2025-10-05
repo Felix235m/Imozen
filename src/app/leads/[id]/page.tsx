@@ -42,11 +42,6 @@ const initialLeadData = {
 
 const initialNotes = [
     {
-        id: 'note3',
-        content: 'Client is very interested in properties with a backyard for their dog. Prefers modern architecture and has a flexible budget for the right place. They mentioned a strong preference for a quiet neighborhood. Called on June 8th to reschedule a viewing due to a personal commitment, seemed a bit hesitant about the price point of the downtown condo.',
-        date: '2024-06-10T14:30:00Z'
-    },
-    {
         id: 'note2',
         content: 'Initial contact. Expressed interest in 2-bedroom condos downtown. Budget around $650k. Wants to see properties with good natural light.',
         date: '2024-05-28T11:15:00Z'
@@ -56,7 +51,13 @@ const initialNotes = [
         content: 'Lead created from website inquiry form.',
         date: '2024-01-15T09:00:00Z'
     }
-]
+];
+
+const initialCurrentNote = {
+    id: 'note3',
+    content: 'Client is very interested in properties with a backyard for their dog. Prefers modern architecture and has a flexible budget for the right place. They mentioned a strong preference for a quiet neighborhood. Called on June 8th to reschedule a viewing due to a personal commitment, seemed a bit hesitant about the price point of the downtown condo.',
+    date: '2024-06-10T14:30:00Z'
+};
 
 
 export default function LeadDetailPage({ params }: { params: { id: string } }) {
@@ -287,6 +288,7 @@ export default function LeadDetailPage({ params }: { params: { id: string } }) {
         onOpenChange={setIsNotesOpen}
         lead={lead}
         notes={initialNotes}
+        currentNote={initialCurrentNote}
       />
     </div>
   );
@@ -351,12 +353,14 @@ type LeadNotesSheetProps = {
   onOpenChange: (open: boolean) => void;
   lead: typeof initialLeadData;
   notes: Note[];
+  currentNote: Note;
 };
 
-function LeadNotesSheet({ open, onOpenChange, lead, notes: initialNotesProp }: LeadNotesSheetProps) {
+function LeadNotesSheet({ open, onOpenChange, lead, notes: initialNotesProp, currentNote: initialCurrentNote }: LeadNotesSheetProps) {
     const { toast } = useToast();
     const [notes, setNotes] = useState(initialNotesProp);
-    const [newNoteContent, setNewNoteContent] = useState('');
+    const [currentNote, setCurrentNote] = useState(initialCurrentNote);
+    const [newNoteContent, setNewNoteContent] = useState(initialCurrentNote.content);
 
     const handleCopy = (text: string) => {
         navigator.clipboard.writeText(text);
@@ -366,7 +370,8 @@ function LeadNotesSheet({ open, onOpenChange, lead, notes: initialNotesProp }: L
     }
 
     const handleUpdateNote = () => {
-        if (!newNoteContent.trim()) {
+        const trimmedContent = newNoteContent.trim();
+        if (!trimmedContent) {
             toast({
                 variant: 'destructive',
                 title: 'Note is empty',
@@ -375,17 +380,29 @@ function LeadNotesSheet({ open, onOpenChange, lead, notes: initialNotesProp }: L
             return;
         }
 
-        const newNote: Note = {
+        // If content is unchanged, do nothing.
+        if(trimmedContent === currentNote.content) {
+            toast({
+                title: 'No changes detected',
+                description: 'The note content is the same.',
+            });
+            return;
+        }
+
+        // The old "current" note is added to history
+        setNotes(prevNotes => [currentNote, ...prevNotes]);
+
+        // The new content becomes the new "current" note
+        const newCurrentNote: Note = {
             id: `note-${Date.now()}`,
             content: newNoteContent,
             date: new Date().toISOString(),
         };
+        setCurrentNote(newCurrentNote);
 
-        setNotes(prevNotes => [newNote, ...prevNotes]);
-        setNewNoteContent('');
         toast({
             title: 'Note updated',
-            description: 'The new note has been added to the history.',
+            description: 'The previous note has been moved to history.',
         });
     };
 
@@ -434,7 +451,7 @@ function LeadNotesSheet({ open, onOpenChange, lead, notes: initialNotesProp }: L
                     <Card className="mb-6">
                         <CardContent className="p-4">
                             <Textarea
-                                placeholder="Sophia is now looking for a 3-bedroom house with a large garden. Budget increased to $800k..."
+                                placeholder="Start typing your note..."
                                 className="border-0 focus-visible:ring-0 min-h-[120px]"
                                 value={newNoteContent}
                                 onChange={(e) => setNewNoteContent(e.target.value)}
@@ -477,3 +494,5 @@ function LeadNotesSheet({ open, onOpenChange, lead, notes: initialNotesProp }: L
         </Sheet>
     );
 }
+
+    
