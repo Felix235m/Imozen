@@ -205,9 +205,7 @@ export default function LeadDetailPage({ params }: { params: { id: string } }) {
   const [isEditing, setIsEditing] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
 
-  const initialLeadData = allLeadsData.find(l => l.id === params.id) || allLeadsData[0];
-  
-  const [lead, setLead] = useState(initialLeadData);
+  const [lead, setLead] = useState(allLeadsData[0]);
   const [avatarPreview, setAvatarPreview] = useState<string | null>(lead.avatar);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const { toast } = useToast();
