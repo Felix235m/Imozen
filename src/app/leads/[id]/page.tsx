@@ -724,7 +724,7 @@ function LeadNotesSheet({ open, onOpenChange, lead, notes, currentNote, setNotes
         }
     }, [open, currentNote]);
 
-    const showSaveButton = isCreatingNew || isModified;
+    const showSaveButton = isCreatingNew || (isModified && !isCreatingNew);
 
     return (
         <Sheet open={open} onOpenChange={onOpenChange}>
