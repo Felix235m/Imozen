@@ -186,15 +186,8 @@ export default function LeadDetailPage({ params }: { params: { id: string } }) {
             )}
           </div>
           <div className='flex items-center gap-2'>
+            <h2 className="text-2xl font-bold">{`${lead.firstName} ${lead.lastName}`}</h2>
             {isEditing ? (
-              <div className='flex gap-2'>
-                <Input name="firstName" value={lead.firstName} onChange={handleInputChange} placeholder="First Name" className="text-center" />
-                <Input name="lastName" value={lead.lastName} onChange={handleInputChange} placeholder="Last Name" className="text-center"/>
-              </div>
-            ) : (
-              <h2 className="text-2xl font-bold">{`${lead.firstName} ${lead.lastName}`}</h2>
-            )}
-             {isEditing ? (
               <Select value={lead.status} onValueChange={handleStatusChange}>
                 <SelectTrigger className={cn("text-sm w-28", getStatusBadgeClass(lead.status))}>
                   <SelectValue />
@@ -613,3 +606,4 @@ function LeadFollowUpSheet({ open, onOpenChange, lead }: LeadFollowUpSheetProps)
     
 
     
+
