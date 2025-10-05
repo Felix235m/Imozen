@@ -3,7 +3,7 @@
 
 import * as React from 'react';
 import { useState, useRef, useEffect } from 'react';
-import { ArrowLeft, MoreVertical, Upload, History, FileText, Send, Edit, UserX, UserCheck, Save, X, Mic, Copy, RefreshCw, MessageSquare } from 'lucide-react';
+import { ArrowLeft, MoreVertical, Upload, History, FileText, Send, Edit, UserX, UserCheck, Save, X, Mic, Copy, RefreshCw, MessageSquare, Phone, Mail } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
@@ -60,6 +60,39 @@ const initialCurrentNote = {
     date: '2024-06-10T14:30:00Z'
 };
 
+const communicationHistory = [
+    {
+      id: 'hist3',
+      type: 'SMS',
+      title: 'SMS Follow-up',
+      date: '2024-01-18T11:00:00Z',
+      description: 'Sent a text to schedule viewings for the favorited properties. Awaiting response.',
+      icon: MessageSquare,
+      iconColor: 'text-purple-600',
+      bgColor: 'bg-purple-100',
+    },
+    {
+      id: 'hist2',
+      type: 'Email',
+      title: 'Sent Property Listings',
+      date: '2024-01-16T14:00:00Z',
+      description: 'Emailed a list of 5 condos that match her criteria. She favorited two of them.',
+      icon: Mail,
+      iconColor: 'text-green-600',
+      bgColor: 'bg-green-100',
+    },
+    {
+      id: 'hist1',
+      type: 'Call',
+      title: 'Initial Call',
+      date: '2024-01-15T10:30:00Z',
+      description: 'Discussed property requirements and budget. Client is looking for a 2-bedroom condo downtown.',
+      icon: Phone,
+      iconColor: 'text-blue-600',
+      bgColor: 'bg-blue-100',
+    },
+];
+
 
 export default function LeadDetailPage({ params }: { params: { id: string } }) {
   const [isEditing, setIsEditing] = useState(false);
@@ -70,6 +103,7 @@ export default function LeadDetailPage({ params }: { params: { id: string } }) {
   const { toast } = useToast();
   const [isNotesOpen, setIsNotesOpen] = useState(false);
   const [isFollowUpOpen, setIsFollowUpOpen] = useState(false);
+  const [isHistoryOpen, setIsHistoryOpen] = useState(false);
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
@@ -246,7 +280,7 @@ export default function LeadDetailPage({ params }: { params: { id: string } }) {
         <div className="fixed bottom-20 right-4 z-20 flex flex-col items-end gap-4">
             <ActionButton icon={FileText} label="Notes" onClick={() => setIsNotesOpen(true)} />
             <ActionButton icon={Send} label="Follow-up" onClick={() => setIsFollowUpOpen(true)} />
-            <ActionButton icon={History} label="History" />
+            <ActionButton icon={History} label="History" onClick={() => setIsHistoryOpen(true)} />
         </div>
       )}
 
@@ -270,6 +304,12 @@ export default function LeadDetailPage({ params }: { params: { id: string } }) {
         open={isFollowUpOpen}
         onOpenChange={setIsFollowUpOpen}
         lead={lead}
+      />
+      <LeadHistorySheet
+        open={isHistoryOpen}
+        onOpenChange={setIsHistoryOpen}
+        lead={lead}
+        history={communicationHistory}
       />
     </div>
   );
@@ -601,9 +641,74 @@ function LeadFollowUpSheet({ open, onOpenChange, lead }: LeadFollowUpSheetProps)
     );
 }
 
-    
+type HistoryItem = {
+    id: string;
+    type: string;
+    title: string;
+    date: string;
+    description: string;
+    icon: React.ElementType;
+    iconColor: string;
+    bgColor: string;
+};
+
+type LeadHistorySheetProps = {
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+  lead: typeof initialLeadData;
+  history: HistoryItem[];
+};
+
+function LeadHistorySheet({ open, onOpenChange, lead, history }: LeadHistorySheetProps) {
+    return (
+        <Sheet open={open} onOpenChange={onOpenChange}>
+            <SheetContent side="bottom" className="h-[90vh] flex flex-col p-0">
+                <SheetHeader className="flex flex-row items-center justify-between border-b px-4 py-3 shrink-0">
+                     <div className='flex items-center'>
+                         <Button variant="ghost" size="icon" onClick={() => onOpenChange(false)} className="mr-2">
+                           <X className="h-6 w-6" />
+                         </Button>
+                        <SheetTitle>Communication History</SheetTitle>
+                     </div>
+                    <SheetDescription className="sr-only">
+                      View the communication history for {lead.firstName} {lead.lastName}.
+                    </SheetDescription>
+                </SheetHeader>
+
+                <div className="flex-1 overflow-y-auto p-4 space-y-6">
+                     <Card>
+                        <CardContent className="p-6">
+                            <div className="relative">
+                                {history.map((item, index) => (
+                                    <div key={item.id} className="flex gap-4">
+                                        <div className="flex flex-col items-center">
+                                            <div className={cn("rounded-full h-10 w-10 flex items-center justify-center", item.bgColor)}>
+                                                <item.icon className={cn("h-5 w-5", item.iconColor)} />
+                                            </div>
+                                            {index < history.length - 1 && (
+                                                <div className="w-px flex-1 bg-gray-200 my-2"></div>
+                                            )}
+                                        </div>
+                                        <div className="pb-8">
+                                            <p className="font-semibold">{item.title}</p>
+                                            <p className="text-sm text-gray-500 mb-1">{format(new Date(item.date), "MMM d, yyyy - h:mm a")}</p>
+                                            <p className="text-sm text-gray-600">{item.description}</p>
+                                        </div>
+                                    </div>
+                                ))}
+                            </div>
+                        </CardContent>
+                    </Card>
+                </div>
+            </SheetContent>
+        </Sheet>
+    );
+}
 
     
 
     
+
+    
+
 
