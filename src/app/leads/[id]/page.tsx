@@ -148,32 +148,9 @@ export default function LeadDetailPage({ params }: { params: { id: string } }) {
             Save
           </Button>
         ) : (
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button variant="ghost" size="icon">
-                <MoreVertical className="h-6 w-6" />
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end">
-              <DropdownMenuItem onClick={() => setIsEditing(true)}>
-                <Edit className="mr-2 h-4 w-4" />
-                <span>Edit Details</span>
-              </DropdownMenuItem>
-              <DropdownMenuItem onClick={toggleActiveStatus}>
-                {lead.activeStatus === 'Active' ? (
-                  <>
-                    <UserX className="mr-2 h-4 w-4" />
-                    <span>Mark as Inactive</span>
-                  </>
-                ) : (
-                  <>
-                    <UserCheck className="mr-2 h-4 w-4" />
-                    <span>Mark as Active</span>
-                  </>
-                )}
-              </DropdownMenuItem>
-            </DropdownMenuContent>
-          </DropdownMenu>
+          <Button variant="ghost" size="icon" onClick={() => setIsEditing(true)}>
+            <Edit className="h-5 w-5" />
+          </Button>
         )}
       </header>
 
