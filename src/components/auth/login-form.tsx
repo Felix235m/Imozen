@@ -95,55 +95,8 @@ const ImoZenLogo = ({ size = "lg", variant = "gradient", className = "" }: { siz
           alignItems: 'center'
         }}
       >
-        Imo<span style={{ color: currentColors.primary }}>Zen</span>
+        Imo<span style={{ fill: currentColors.primary, color: currentColors.primary }}>Zen</span>
       </div>
-      <svg
-        width={currentSize.iconSize}
-        height={currentSize.iconSize}
-        viewBox="0 0 64 64"
-        fill="none"
-        xmlns="http://www.w3.org/2000/svg"
-      >
-        <rect
-          x="2"
-          y="2"
-          width="60"
-          height="60"
-          rx="14"
-          fill={currentColors.iconBg}
-        />
-        <path
-          d="M20 16C20 13.7909 21.7909 12 24 12H40C42.2091 12 44 13.7909 44 16V52H20V16Z"
-          fill={currentColors.iconFg}
-          opacity="0.95"
-        />
-        <circle
-          cx="36"
-          cy="32"
-          r="2.5"
-          fill={currentColors.iconBg}
-        />
-        <rect
-          x="22"
-          y="14"
-          width="20"
-          height="36"
-          rx="2"
-          stroke={currentColors.iconBg}
-          strokeWidth="1.5"
-          fill="none"
-          opacity="0.3"
-        />
-        <circle
-          cx="32"
-          cy="22"
-          r="4"
-          stroke={currentColors.iconBg}
-          strokeWidth="1.5"
-          fill="none"
-          opacity="0.4"
-        />
-      </svg>
     </div>
   );
 };
@@ -169,39 +122,37 @@ export function LoginForm({
 
   function onSubmit(values: z.infer<typeof formSchema>) {
     setIsLoading(true);
-    // Simulate network delay for a better user experience
-    setTimeout(() => {
-      const isAdminLogin = loginType === 'admin';
-      const isAdminCredentials = values.username === "ImoZen@2250" && values.password === "9500339370@2250";
-      // Dummy check for agent, you can replace this
-      const isAgentCredentials = values.username === "agent" && values.password === "password";
+    
+    // Simulate a quick process, but no artifical delay
+    const isAdminLogin = loginType === 'admin';
+    const isAdminCredentials = values.username === "ImoZen@2250" && values.password === "9500339370@2250";
+    // Dummy check for agent, you can replace this
+    const isAgentCredentials = values.username === "agent" && values.password === "password";
 
-      let success = false;
-      if (isAdminLogin && isAdminCredentials) {
-        success = true;
-      } else if (!isAdminLogin && isAgentCredentials) {
-        success = true;
+    let success = false;
+    if (isAdminLogin && isAdminCredentials) {
+      success = true;
+    } else if (!isAdminLogin && isAgentCredentials) {
+      success = true;
+    }
+
+    if (success) {
+      toast({
+        title: "Login Successful",
+        description: "Welcome! You are now logged in.",
+      });
+      if (onLoginSuccess) {
+        onLoginSuccess();
       }
-
-
-      if (success) {
-        toast({
-          title: "Login Successful",
-          description: "Welcome! You are now logged in.",
-        });
-        if (onLoginSuccess) {
-          onLoginSuccess();
-        }
-      } else {
-        toast({
-          variant: "destructive",
-          title: "Authentication Failed",
-          description: "Please check your username and password.",
-        });
-        form.setValue("password", "");
-      }
-      setIsLoading(false);
-    }, 1000);
+    } else {
+      toast({
+        variant: "destructive",
+        title: "Authentication Failed",
+        description: "Please check your username and password.",
+      });
+      form.setValue("password", "");
+    }
+    setIsLoading(false);
   }
 
   return (
