@@ -76,6 +76,10 @@ export default function LeadDetailPage({ params }: { params: { id: string } }) {
     setLead(prev => ({ ...prev, [name]: name === 'budget' || name === 'bedrooms' ? Number(value) : value }));
   };
 
+  const handleSelectChange = (name: string, value: string) => {
+    setLead(prev => ({ ...prev, [name]: value }));
+  };
+
   const handleStatusChange = (value: 'Hot' | 'Warm' | 'Cold') => {
     setLead(prev => ({ ...prev, status: value }));
   };
@@ -236,7 +240,7 @@ export default function LeadDetailPage({ params }: { params: { id: string } }) {
             </CardHeader>
             <CardContent>
               <div className="grid grid-cols-2 gap-y-4 gap-x-8 text-sm">
-                <EditableInfoItem label="Property Type" name="propertyType" value={lead.propertyType} isEditing={isEditing} onChange={handleInputChange} />
+                <EditableInfoItem label="Property Type" name="propertyType" value={lead.propertyType} isEditing={isEditing} onSelectChange={handleSelectChange} />
                 <EditableInfoItem label="Budget" name="budget" value={`$${lead.budget.toLocaleString('en-US')}`} isEditing={isEditing} onChange={handleInputChange} type="number" displayValue={lead.budget.toString()} />
                 <EditableInfoItem label="Bedrooms" name="bedrooms" value={lead.bedrooms} isEditing={isEditing} onChange={handleInputChange} type="number" />
               </div>
@@ -287,21 +291,62 @@ function InfoItem({ label, value, className }: { label: string; value: React.Rea
   );
 }
 
-function EditableInfoItem({ label, name, value, isEditing, onChange, className, type = 'text', displayValue }: { label: string; name?: string; value: string | number; isEditing: boolean; onChange?: (e: React.ChangeEvent<HTMLInputElement>) => void; className?: string, type?: string, displayValue?: string }) {
-  if (isEditing && name && onChange) {
-    return (
-      <div className={cn("grid gap-1", className)}>
-        <p className="text-gray-500">{label}</p>
-        <Input 
-          name={name} 
-          type={type}
-          value={displayValue ?? value} 
-          onChange={onChange} 
-          className="h-8 text-sm" 
-          placeholder={label}
-        />
-      </div>
-    )
+function EditableInfoItem({ 
+  label, 
+  name, 
+  value, 
+  isEditing, 
+  onChange, 
+  onSelectChange, 
+  className, 
+  type = 'text', 
+  displayValue 
+}: { 
+  label: string; 
+  name?: string; 
+  value: string | number; 
+  isEditing: boolean; 
+  onChange?: (e: React.ChangeEvent<HTMLInputElement>) => void; 
+  onSelectChange?: (name: string, value: string) => void;
+  className?: string, 
+  type?: string, 
+  displayValue?: string 
+}) {
+  if (isEditing && name) {
+    if (name === 'propertyType' && onSelectChange) {
+      return (
+        <div className={cn("grid gap-1", className)}>
+          <p className="text-gray-500">{label}</p>
+          <Select value={String(value)} onValueChange={(val) => onSelectChange(name, val)}>
+            <SelectTrigger className="h-8 text-sm">
+              <SelectValue placeholder={label} />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="Apartment">Apartment</SelectItem>
+              <SelectItem value="House">House</SelectItem>
+              <SelectItem value="Commercial">Commercial</SelectItem>
+              <SelectItem value="Land">Land</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
+      )
+    }
+    
+    if (onChange) {
+      return (
+        <div className={cn("grid gap-1", className)}>
+          <p className="text-gray-500">{label}</p>
+          <Input 
+            name={name} 
+            type={type}
+            value={displayValue ?? value} 
+            onChange={onChange} 
+            className="h-8 text-sm" 
+            placeholder={label}
+          />
+        </div>
+      )
+    }
   }
   return <InfoItem label={label} value={value} className={className} />
 }
