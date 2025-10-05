@@ -12,6 +12,7 @@ import Link from 'next/link';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { useToast } from '@/hooks/use-toast';
+import { useRouter } from 'next/navigation';
 
 
 type LeadStatus = 'Hot' | 'Warm' | 'Cold';
@@ -34,6 +35,7 @@ export default function LeadsPage() {
   const [leads, setLeads] = useState(allLeads);
   const [selectedLeads, setSelectedLeads] = useState<string[]>([]);
   const { toast } = useToast();
+  const router = useRouter();
 
   const filteredLeads = useMemo(() => {
     return leads.filter(lead => {
@@ -228,6 +230,18 @@ export default function LeadsPage() {
                     </Button>
                   </DropdownMenuTrigger>
                   <DropdownMenuContent align="end">
+                    <DropdownMenuItem onSelect={() => router.push(`/leads/${lead.id}`)}>
+                      Edit
+                    </DropdownMenuItem>
+                    <DropdownMenuItem onSelect={() => router.push(`/leads/${lead.id}`)}>
+                      Change Status
+                    </DropdownMenuItem>
+                    <DropdownMenuItem onSelect={() => handleLeadAction(lead.id, lead.activeStatus === 'Active' ? 'setInactive' : 'setActive')}>
+                      Mark as {lead.activeStatus === 'Active' ? 'Inactive' : 'Active'}
+                    </DropdownMenuItem>
+                    <DropdownMenuItem onSelect={() => handleLeadAction(lead.id, 'delete')} className="text-red-500">
+                      Delete Lead
+                    </DropdownMenuItem>
                   </DropdownMenuContent>
                 </DropdownMenu>
               </div>
