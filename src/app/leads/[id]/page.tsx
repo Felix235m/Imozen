@@ -3,6 +3,7 @@
 
 import * as React from 'react';
 import { useState, useRef, useEffect } from 'react';
+import { useParams } from 'next/navigation';
 import { ArrowLeft, MoreVertical, Upload, History, FileText, Send, Edit, UserX, UserCheck, Save, X, Mic, Copy, RefreshCw, MessageSquare, Phone, Mail, Trash2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -201,7 +202,9 @@ const communicationHistory = [
 ];
 
 
-export default function LeadDetailPage({ params: { id } }: { params: { id: string } }) {
+export default function LeadDetailPage() {
+  const params = useParams();
+  const id = params.id as string;
   const [isEditing, setIsEditing] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
 
@@ -860,4 +863,5 @@ function LeadHistorySheet({ open, onOpenChange, lead, history }: LeadHistoryShee
 
     
 
+    
     

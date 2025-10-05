@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useRef } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { ArrowLeft, ExternalLink, Save, Edit, Upload } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -10,6 +10,7 @@ import Link from 'next/link';
 import { Input } from '@/components/ui/input';
 import { useToast } from '@/hooks/use-toast';
 import { Loader2 } from 'lucide-react';
+import { useParams } from 'next/navigation';
 
 const initialAgentData = {
   name: 'Sophia Carter',
@@ -24,13 +25,24 @@ const initialAgentData = {
   sheetUrl: 'https://docs.google.com/spreadsheets/d/12345',
 };
 
-export default function AgentDetailPage({ params }: { params: { id: string } }) {
+export default function AgentDetailPage() {
+  const params = useParams();
+  const id = params.id as string;
   const [isEditing, setIsEditing] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [agent, setAgent] = useState(initialAgentData);
   const { toast } = useToast();
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [avatarPreview, setAvatarPreview] = useState<string | null>(agent.avatar);
+
+  useEffect(() => {
+    // In a real app, you would fetch agent data based on the id.
+    // For this example, we'll just use the initial data if the id matches.
+    if (id === initialAgentData.id) {
+      setAgent(initialAgentData);
+      setAvatarPreview(initialAgentData.avatar);
+    }
+  }, [id]);
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
@@ -238,3 +250,4 @@ function EditableDetailRow({ label, name, value, isEditing, onChange, isLink }: 
   }
   return <DetailRow label={label} value={value} isLink={isLink} />
 }
+    
