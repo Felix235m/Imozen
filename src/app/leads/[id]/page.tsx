@@ -201,7 +201,7 @@ const communicationHistory = [
 ];
 
 
-export default function LeadDetailPage({ params }: { params: { id: string } }) {
+export default function LeadDetailPage({ params: { id } }: { params: { id: string } }) {
   const [isEditing, setIsEditing] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
 
@@ -214,10 +214,10 @@ export default function LeadDetailPage({ params }: { params: { id: string } }) {
   const [isHistoryOpen, setIsHistoryOpen] = useState(false);
 
   useEffect(() => {
-    const currentLeadData = allLeadsData.find(l => l.id === params.id) || allLeadsData[0];
+    const currentLeadData = allLeadsData.find(l => l.id === id) || allLeadsData[0];
     setLead(currentLeadData);
     setAvatarPreview(currentLeadData.avatar);
-  }, [params.id]);
+  }, [id]);
 
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -264,7 +264,7 @@ export default function LeadDetailPage({ params }: { params: { id: string } }) {
   };
 
   const handleCancel = () => {
-    const currentLeadData = allLeadsData.find(l => l.id === params.id) || allLeadsData[0];
+    const currentLeadData = allLeadsData.find(l => l.id === id) || allLeadsData[0];
     setLead(currentLeadData);
     setAvatarPreview(currentLeadData.avatar);
     setIsEditing(false);
@@ -857,5 +857,7 @@ function LeadHistorySheet({ open, onOpenChange, lead, history }: LeadHistoryShee
 
 
 
+
+    
 
     
