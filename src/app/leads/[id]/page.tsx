@@ -3,7 +3,7 @@
 
 import * as React from 'react';
 import { useState, useRef, useEffect } from 'react';
-import { ArrowLeft, MoreVertical, Upload, History, FileText, Send, Edit, UserX, UserCheck, Save, X, Mic, Copy, RefreshCw, MessageSquare, Phone, Mail } from 'lucide-react';
+import { ArrowLeft, MoreVertical, Upload, History, FileText, Send, Edit, UserX, UserCheck, Save, X, Mic, Copy, RefreshCw, MessageSquare, Phone, Mail, Trash2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
@@ -16,6 +16,7 @@ import {
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
+  DropdownMenuSeparator,
 } from '@/components/ui/dropdown-menu';
 import { useToast } from '@/hooks/use-toast';
 import { Loader2 } from 'lucide-react';
@@ -186,9 +187,32 @@ export default function LeadDetailPage({ params }: { params: { id: string } }) {
             Save
           </Button>
         ) : (
-          <Button variant="ghost" size="icon" onClick={() => setIsEditing(true)}>
-            <Edit className="h-5 w-5" />
-          </Button>
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="ghost" size="icon">
+                <MoreVertical className="h-5 w-5" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end">
+              <DropdownMenuItem onSelect={() => setIsEditing(true)}>
+                <Edit className="mr-2 h-4 w-4" />
+                <span>Edit</span>
+              </DropdownMenuItem>
+              <DropdownMenuItem onSelect={toggleActiveStatus}>
+                {lead.activeStatus === 'Active' ? (
+                  <UserX className="mr-2 h-4 w-4" />
+                ) : (
+                  <UserCheck className="mr-2 h-4 w-4" />
+                )}
+                <span>Mark as {lead.activeStatus === 'Active' ? 'Inactive' : 'Active'}</span>
+              </DropdownMenuItem>
+              <DropdownMenuSeparator />
+              <DropdownMenuItem onSelect={() => alert('Delete action')} className="text-red-600">
+                <Trash2 className="mr-2 h-4 w-4" />
+                <span>Delete Lead</span>
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
         )}
       </header>
 
@@ -355,6 +379,7 @@ function EditableInfoItem({
               <SelectValue placeholder={label} />
             </SelectTrigger>
             <SelectContent>
+              <SelectItem value="Condo">Condo</SelectItem>
               <SelectItem value="Apartment">Apartment</SelectItem>
               <SelectItem value="House">House</SelectItem>
               <SelectItem value="Commercial">Commercial</SelectItem>
@@ -496,8 +521,8 @@ function LeadNotesSheet({ open, onOpenChange, lead, notes: initialNotesProp, cur
                          </Button>
                         <SheetTitle>Lead Notes</SheetTitle>
                      </div>
-                    <SheetDescription className="sr-only">
-                      Manage notes for {lead.firstName} {lead.lastName}. You can add a new note, view the history of notes, and copy existing notes.
+                     <SheetDescription className="sr-only">
+                       Manage notes for {lead.firstName} {lead.lastName}. You can add a new note, view the history of notes, and copy existing notes.
                     </SheetDescription>
                 </SheetHeader>
 
@@ -594,8 +619,8 @@ function LeadFollowUpSheet({ open, onOpenChange, lead }: LeadFollowUpSheetProps)
                          </Button>
                         <SheetTitle>Send to WhatsApp</SheetTitle>
                      </div>
-                    <SheetDescription className="sr-only">
-                      Send an AI-generated follow-up message to {lead.firstName} {lead.lastName}.
+                     <SheetDescription className="sr-only">
+                       Send an AI-generated follow-up message to {lead.firstName} {lead.lastName}.
                     </SheetDescription>
                 </SheetHeader>
 
@@ -670,8 +695,8 @@ function LeadHistorySheet({ open, onOpenChange, lead, history }: LeadHistoryShee
                          </Button>
                         <SheetTitle>Communication History</SheetTitle>
                      </div>
-                    <SheetDescription className="sr-only">
-                      View the communication history for {lead.firstName} {lead.lastName}.
+                     <SheetDescription className="sr-only">
+                       View the communication history for {lead.firstName} {lead.lastName}.
                     </SheetDescription>
                 </SheetHeader>
 
@@ -710,5 +735,6 @@ function LeadHistorySheet({ open, onOpenChange, lead, history }: LeadHistoryShee
     
 
     
+
 
 
