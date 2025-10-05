@@ -53,12 +53,14 @@ export default function DashboardLayout({
 
   return (
     <div className="flex h-screen flex-col bg-gray-50">
-       <header className="flex items-center justify-between border-b bg-white px-4 py-3 sticky top-0 z-10">
-        <div className='flex items-center gap-4'>
+       <header className="grid grid-cols-3 items-center border-b bg-white px-4 py-3 sticky top-0 z-10">
+        <div className='flex items-center justify-start'>
             <ImoZenLogo size="sm" />
-            {pageTitle && <h1 className="text-xl font-bold">{pageTitle}</h1>}
         </div>
-        <div className="flex items-center gap-4">
+        <div className="flex items-center justify-center">
+            {pageTitle && <h1 className="text-2xl font-bold">{pageTitle}</h1>}
+        </div>
+        <div className="flex items-center justify-end gap-4">
           <Button variant="ghost" size="icon">
             <Bell className="h-6 w-6" />
           </Button>
