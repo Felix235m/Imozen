@@ -403,11 +403,11 @@ function LeadNotesSheet({ open, onOpenChange, lead, notes }: LeadNotesSheetProps
                     </Card>
 
                     <div className="flex gap-4 mb-6">
-                        <Button variant="outline" size="icon" className="h-12 w-12 bg-blue-100 border-primary text-primary hover:bg-blue-200 hover:text-primary">
-                            <Mic className="h-6 w-6" />
-                        </Button>
                         <Button className="flex-1 h-12 bg-gradient-to-r from-blue-500 to-cyan-500 text-white">
                             Update Note
+                        </Button>
+                        <Button variant="outline" size="icon" className="h-12 w-12 bg-blue-100 border-primary text-primary hover:bg-blue-200 hover:text-primary">
+                            <Mic className="h-6 w-6" />
                         </Button>
                     </div>
 
