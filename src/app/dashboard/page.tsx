@@ -10,7 +10,9 @@ import {
   ClipboardList,
   Flame,
   TrendingUp,
-  Users
+  Users,
+  MessageSquare,
+  Briefcase
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
@@ -50,6 +52,11 @@ const tasks = [
         description: 'Schedule meeting to discuss offer.',
         icon: Calendar,
       },
+       {
+        name: 'James Brown',
+        description: 'Send WhatsApp message with new listings.',
+        icon: MessageSquare,
+      },
     ],
   },
   {
@@ -59,6 +66,31 @@ const tasks = [
         name: 'Noah Williams',
         description: 'Prepare for property visit at 456 Oak Ave.',
         icon: Home,
+      },
+    ],
+  },
+  {
+    date: 'Monday - July 24, 2023',
+    items: [
+      {
+        name: 'Emma Garcia',
+        description: 'Follow up on contract paperwork.',
+        icon: Briefcase,
+      },
+      {
+        name: 'Benjamin Martinez',
+        description: 'Call to discuss feedback from showing.',
+        icon: Phone,
+      },
+    ],
+  },
+    {
+    date: 'Tuesday - July 25, 2023',
+    items: [
+      {
+        name: 'Mia Rodriguez',
+        description: 'Send updated market analysis.',
+        icon: Mail,
       },
     ],
   },
