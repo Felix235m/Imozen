@@ -149,7 +149,13 @@ const ImoZenLogo = ({ size = "lg", variant = "gradient", className = "" }: { siz
 };
 
 
-export function LoginForm() {
+export function LoginForm({
+  loginType = 'admin',
+  onLoginSuccess,
+}: {
+  loginType: 'admin' | 'agent';
+  onLoginSuccess: () => void;
+}) {
   const [isLoading, setIsLoading] = React.useState(false);
   const { toast } = useToast();
 
@@ -165,14 +171,27 @@ export function LoginForm() {
     setIsLoading(true);
     // Simulate network delay for a better user experience
     setTimeout(() => {
-      if (
-        values.username === "ImoZen@2250" &&
-        values.password === "9500339370@2250"
-      ) {
+      const isAdminLogin = loginType === 'admin';
+      const isAdminCredentials = values.username === "ImoZen@2250" && values.password === "9500339370@2250";
+      // Dummy check for agent, you can replace this
+      const isAgentCredentials = values.username === "agent" && values.password === "password";
+
+      let success = false;
+      if (isAdminLogin && isAdminCredentials) {
+        success = true;
+      } else if (!isAdminLogin && isAgentCredentials) {
+        success = true;
+      }
+
+
+      if (success) {
         toast({
           title: "Login Successful",
           description: "Welcome! You are now logged in.",
         });
+        if (onLoginSuccess) {
+          onLoginSuccess();
+        }
       } else {
         toast({
           variant: "destructive",
@@ -189,7 +208,8 @@ export function LoginForm() {
     <Card className="w-full max-w-sm shadow-xl">
       <CardHeader className="items-center text-center space-y-4">
         <ImoZenLogo size="md" />
-        <CardDescription>Enter your credentials to access the admin panel</CardDescription>
+        <CardTitle>{loginType === 'admin' ? 'Admin Login' : 'Agent Login'}</CardTitle>
+        <CardDescription>Enter your credentials to access the panel</CardDescription>
       </CardHeader>
       <CardContent>
         <Form {...form}>
