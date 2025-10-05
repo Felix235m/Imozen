@@ -570,6 +570,9 @@ function LeadNotesSheet({ open, onOpenChange, lead, notes: initialNotesProp, cur
     const [currentNote, setCurrentNote] = useState(initialCurrentNote);
     const [noteContent, setNoteContent] = useState(initialCurrentNote.content);
     const [isCreatingNew, setIsCreatingNew] = useState(false);
+    
+    // Check if the current note content in the textarea is different from the saved currentNote
+    const isModified = noteContent !== currentNote.content;
 
     const handleCopy = (text: string) => {
         navigator.clipboard.writeText(text);
@@ -589,25 +592,41 @@ function LeadNotesSheet({ open, onOpenChange, lead, notes: initialNotesProp, cur
             return;
         }
 
-        const newCurrentNote: Note = {
-            id: `note-${Date.now()}`,
-            content: trimmedContent,
-            date: new Date().toISOString(),
-        };
-        setCurrentNote(newCurrentNote);
-        setIsCreatingNew(false);
-        setNoteContent(newCurrentNote.content)
-        
-        toast({
-            title: 'Note saved',
-            description: 'The new note has been saved.',
-        });
+        if (isCreatingNew) {
+            // Saving a brand new note
+            const newCurrentNote: Note = {
+                id: `note-${Date.now()}`,
+                content: trimmedContent,
+                date: new Date().toISOString(),
+            };
+            setCurrentNote(newCurrentNote);
+            setNoteContent(newCurrentNote.content);
+            setIsCreatingNew(false);
+            toast({
+                title: 'Note saved',
+                description: 'The new note has been saved.',
+            });
+        } else {
+            // Updating the existing current note
+            const updatedNote = {
+                ...currentNote,
+                content: trimmedContent,
+                date: new Date().toISOString(), // Update timestamp on edit
+            };
+            setCurrentNote(updatedNote);
+            setNoteContent(updatedNote.content);
+            toast({
+                title: 'Note updated',
+                description: 'Your changes have been saved.',
+            });
+        }
     };
 
     const handleNewNoteClick = () => {
         if (currentNote.content.trim()) {
             setNotes(prevNotes => [currentNote, ...prevNotes]);
         }
+        setCurrentNote({ id: '', content: '', date: '' });
         setNoteContent("");
         setIsCreatingNew(true);
         if (textareaRef.current) {
@@ -639,6 +658,8 @@ function LeadNotesSheet({ open, onOpenChange, lead, notes: initialNotesProp, cur
             setIsCreatingNew(false);
         }
     }, [open, currentNote]);
+
+    const showSaveButton = isCreatingNew || isModified;
 
     return (
         <Sheet open={open} onOpenChange={onOpenChange}>
@@ -685,7 +706,7 @@ function LeadNotesSheet({ open, onOpenChange, lead, notes: initialNotesProp, cur
                                 <Button variant="ghost" size="icon">
                                     <Mic className="h-5 w-5 text-gray-500" />
                                 </Button>
-                                {isCreatingNew ? (
+                                {showSaveButton ? (
                                     <Button onClick={handleSaveNote}>Save Note</Button>
                                 ) : (
                                     <Button onClick={handleNewNoteClick}>New Note</Button>
@@ -860,18 +881,3 @@ function LeadHistorySheet({ open, onOpenChange, lead, history }: LeadHistoryShee
         </Sheet>
     );
 }
-
-    
-
-    
-
-    
-
-
-
-
-
-    
-
-    
-    
