@@ -51,13 +51,16 @@ export default function LeadsPage() {
 
   return (
     <div className="flex h-full flex-col bg-gray-50 pb-16">
-       <header className="flex items-center justify-between bg-white px-4 py-3 sticky top-0 z-10 border-b">
-        <h1 className="text-xl font-bold">Leads</h1>
-        <Link href="/leads/new">
-          <Button size="icon" className="rounded-full bg-primary h-10 w-10">
-            <Plus className="h-6 w-6" />
-          </Button>
-        </Link>
+       <header className="grid grid-cols-3 items-center bg-white px-4 py-3 sticky top-0 z-10 border-b">
+        <div className="w-10"></div>
+        <h1 className="text-xl font-bold text-center">Leads</h1>
+        <div className="flex justify-end">
+            <Link href="/leads/new">
+            <Button size="icon" className="rounded-full bg-primary h-10 w-10">
+                <Plus className="h-6 w-6" />
+            </Button>
+            </Link>
+        </div>
       </header>
 
       <div className="p-4">
