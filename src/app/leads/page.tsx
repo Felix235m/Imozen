@@ -102,39 +102,32 @@ export default function LeadsPage() {
   
   const LeadCard = ({lead}: {lead: (typeof allLeads)[0] & {id: string}}) => (
     <Card className={cn("shadow-sm", selectedLeads.includes(lead.id) && "bg-blue-50 border-primary")}>
-        <CardContent className="flex items-center justify-between p-4" >
-          <div className="flex items-center gap-4" onClick={() => isBulkEditing && handleSelectLead(lead.id)}>
-            <Checkbox 
-                id={`lead-${lead.id}`} 
-                checked={selectedLeads.includes(lead.id)}
-                onCheckedChange={() => handleSelectLead(lead.id)}
-                onClick={(e) => e.stopPropagation()}
-            />
-            <div className="grid gap-0.5">
-              <label htmlFor={`lead-${lead.id}`} className={cn("font-semibold", isBulkEditing && 'cursor-pointer')}>{lead.name}</label>
-              <div className="flex items-center gap-2 flex-wrap">
-                <Badge variant="outline" className={cn("text-xs", getStatusBadgeClass(lead.status))}>{lead.status}</Badge>
-                {lead.activeStatus === 'Inactive' && (
-                    <Badge variant="secondary">Inactive</Badge>
-                )}
-                <p className="text-sm text-gray-500">
-                  Next follow-up:
-                  <span className={cn(lead.nextFollowUp === 'Overdue' && "text-red-500 font-medium ml-1")}>
-                    {lead.nextFollowUp}
-                  </span>
-                </p>
-              </div>
+      <CardContent className="flex items-center justify-between p-4" >
+        <div className="flex items-center gap-4" onClick={() => isBulkEditing && handleSelectLead(lead.id)}>
+          <Checkbox 
+              id={`lead-${lead.id}`} 
+              checked={selectedLeads.includes(lead.id)}
+              onCheckedChange={() => handleSelectLead(lead.id)}
+              onClick={(e) => e.stopPropagation()}
+          />
+          <div className="grid gap-0.5">
+            <label htmlFor={`lead-${lead.id}`} className={cn("font-semibold", isBulkEditing && 'cursor-pointer')}>{lead.name}</label>
+            <div className="flex items-center gap-2 flex-wrap">
+              <Badge variant="outline" className={cn("text-xs", getStatusBadgeClass(lead.status))}>{lead.status}</Badge>
+              {lead.activeStatus === 'Inactive' && (
+                  <Badge variant="secondary">Inactive</Badge>
+              )}
+              <p className="text-sm text-gray-500">
+                Next follow-up:
+                <span className={cn(lead.nextFollowUp === 'Overdue' && "text-red-500 font-medium ml-1")}>
+                  {lead.nextFollowUp}
+                </span>
+              </p>
             </div>
           </div>
-          {!isBulkEditing && (
-            <Link href={`/leads/${lead.id}`} onClick={(e) => e.stopPropagation()}>
-              <Button variant="ghost" size="icon">
-                <MoreVertical className="h-5 w-5 text-gray-500" />
-              </Button>
-            </Link>
-          )}
-        </CardContent>
-      </Card>
+        </div>
+      </CardContent>
+    </Card>
   )
 
   return (
@@ -198,12 +191,21 @@ export default function LeadsPage() {
         </Tabs>
       )}
 
-      <div className="flex-1 overflow-y-auto space-y-3">
+      <div className="flex-1 overflow-y-auto space-y-3 pb-16">
         {filteredLeads.map((lead) => (
-           <div key={lead.id} onClick={() => !isBulkEditing && document.getElementById(`link-${lead.id}`)?.click()}>
-            <Link href={`/leads/${lead.id}`} id={`link-${lead.id}`} className="block">
+           <div key={lead.id} className="relative">
+             <Link href={`/leads/${lead.id}`} className="block">
                 <LeadCard lead={lead} />
             </Link>
+            {!isBulkEditing && (
+                <div className="absolute right-2 top-1/2 -translate-y-1/2">
+                    <Link href={`/leads/${lead.id}`} onClick={(e) => e.stopPropagation()}>
+                        <Button variant="ghost" size="icon">
+                            <MoreVertical className="h-5 w-5 text-gray-500" />
+                        </Button>
+                    </Link>
+                </div>
+            )}
            </div>
         ))}
       </div>
