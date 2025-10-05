@@ -124,7 +124,7 @@ export default function LeadDetailPage({ params }: { params: { id: string } }) {
             <CardContent>
               <div className="grid grid-cols-2 gap-y-4 gap-x-8 text-sm">
                 <InfoItem label="Property Type" value={lead.propertyType} />
-                <InfoItem label="Budget" value={`$${lead.budget.toLocaleString()}`} />
+                <InfoItem label="Budget" value={`$${lead.budget.toLocaleString('en-US')}`} />
                 <InfoItem label="Bedrooms" value={lead.bedrooms} />
               </div>
             </CardContent>
