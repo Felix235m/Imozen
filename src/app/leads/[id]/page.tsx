@@ -516,18 +516,6 @@ function LeadFollowUpSheet({ open, onOpenChange, lead }: LeadFollowUpSheetProps)
                          </Button>
                         <SheetTitle>Send to WhatsApp</SheetTitle>
                      </div>
-                      <DropdownMenu>
-                        <DropdownMenuTrigger asChild>
-                        <Button variant="ghost" size="icon">
-                            <MoreVertical className="h-6 w-6" />
-                        </Button>
-                        </DropdownMenuTrigger>
-                        <DropdownMenuContent align="end">
-                        <DropdownMenuItem>
-                            Something
-                        </DropdownMenuItem>
-                        </DropdownMenuContent>
-                    </DropdownMenu>
                     <SheetDescription className="sr-only">
                       Send an AI-generated follow-up message to {lead.firstName} {lead.lastName}.
                     </SheetDescription>
@@ -574,6 +562,8 @@ function LeadFollowUpSheet({ open, onOpenChange, lead }: LeadFollowUpSheetProps)
         </Sheet>
     );
 }
+
+    
 
     
 
