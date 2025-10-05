@@ -53,21 +53,23 @@ export default function LeadsPage() {
     <div className="flex h-full flex-col bg-gray-50 pb-16 p-4">
        <header className="flex items-center justify-between py-4">
         <h1 className="text-2xl font-bold">Leads</h1>
+      </header>
+      
+      <div className="flex gap-2 mb-4">
+        <div className="relative flex-grow">
+            <Search className="absolute left-3 top-1/2 h-5 w-5 -translate-y-1/2 text-gray-400" />
+            <Input 
+            placeholder="Search leads" 
+            className="pl-10 bg-white"
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            />
+        </div>
         <Link href="/leads/new">
-          <Button size="icon" className="rounded-full bg-primary h-10 w-10">
+          <Button size="icon" className="rounded-full bg-primary h-10 w-10 shrink-0">
             <Plus className="h-6 w-6" />
           </Button>
         </Link>
-      </header>
-      
-      <div className="relative mb-4">
-        <Search className="absolute left-3 top-1/2 h-5 w-5 -translate-y-1/2 text-gray-400" />
-        <Input 
-          placeholder="Search leads" 
-          className="pl-10 bg-white"
-          value={searchTerm}
-          onChange={(e) => setSearchTerm(e.target.value)}
-        />
       </div>
 
       <Tabs value={activeTab} onValueChange={setActiveTab} className="mb-4">
