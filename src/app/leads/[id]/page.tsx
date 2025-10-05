@@ -2,7 +2,7 @@
 "use client";
 
 import { useState, useRef } from 'react';
-import { ArrowLeft, MoreVertical, Upload, History, FileText, Send, Edit, UserX, UserCheck, Save, X } from 'lucide-react';
+import { ArrowLeft, MoreVertical, Upload, History, FileText, Send, Edit, UserX, UserCheck, Save, X, Mic, Copy } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
@@ -19,6 +19,8 @@ import {
 import { useToast } from '@/hooks/use-toast';
 import { Loader2 } from 'lucide-react';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Sheet, SheetContent } from '@/components/ui/sheet';
+import { Textarea } from '@/components/ui/textarea';
 
 // Mock data - in a real app this would be fetched based on the `id` param
 const initialLeadData = {
@@ -34,7 +36,27 @@ const initialLeadData = {
   propertyType: 'Condo',
   budget: 550000,
   bedrooms: 2,
+  source: 'Website',
 };
+
+const initialNotes = [
+    {
+        id: 'note3',
+        content: 'Client is very interested in properties with a backyard for their dog. Prefers modern architecture and has a flexible budget for the right place. They mentioned a strong preference for a quiet neighborhood. Called on June 8th to reschedule a viewing due to a personal commitment, seemed a bit hesitant about the price point of the downtown condo.',
+        date: 'June 10, 2024 - 2:30 PM'
+    },
+    {
+        id: 'note2',
+        content: 'Initial contact. Expressed interest in 2-bedroom condos downtown. Budget around $650k. Wants to see properties with good natural light.',
+        date: 'May 28, 2024 - 11:15 AM'
+    },
+    {
+        id: 'note1',
+        content: 'Lead created from website inquiry form.',
+        date: 'January 15, 2024 - 9:00 AM'
+    }
+]
+
 
 export default function LeadDetailPage({ params }: { params: { id: string } }) {
   const [isEditing, setIsEditing] = useState(false);
@@ -43,6 +65,7 @@ export default function LeadDetailPage({ params }: { params: { id: string } }) {
   const [avatarPreview, setAvatarPreview] = useState<string | null>(lead.avatar);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const { toast } = useToast();
+  const [isNotesOpen, setIsNotesOpen] = useState(false);
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
@@ -73,14 +96,8 @@ export default function LeadDetailPage({ params }: { params: { id: string } }) {
       title: "Success",
       description: "Lead details saved successfully.",
     });
-    initialLeadData.firstName = lead.firstName;
-    initialLeadData.lastName = lead.lastName;
-    initialLeadData.email = lead.email;
-    initialLeadData.phone = lead.phone;
-    initialLeadData.status = lead.status;
-    initialLeadData.propertyType = lead.propertyType;
-    initialLeadData.budget = lead.budget;
-    initialLeadData.bedrooms = lead.bedrooms;
+    // This is just to update the mock data. In a real app, you'd refetch.
+    Object.assign(initialLeadData, lead, { avatar: avatarPreview || initialLeadData.avatar });
 
     setIsEditing(false);
     setIsSaving(false);
@@ -156,7 +173,7 @@ export default function LeadDetailPage({ params }: { params: { id: string } }) {
         )}
       </header>
 
-      <main className="flex-1 overflow-y-auto p-4 pb-28">
+      <main className="flex-1 overflow-y-auto p-4 pb-40">
         <section className="flex flex-col items-center py-6 text-center">
           <div className="relative mb-4">
             <Avatar className="h-24 w-24">
@@ -249,9 +266,9 @@ export default function LeadDetailPage({ params }: { params: { id: string } }) {
 
       {!isEditing && (
         <div className="fixed bottom-24 right-4 z-20 flex flex-col items-end gap-4">
-          <ActionButton icon={FileText} label="Notes" />
-          <ActionButton icon={Send} label="Follow-up" />
-          <ActionButton icon={History} label="History" />
+            <ActionButton icon={FileText} label="Notes" onClick={() => setIsNotesOpen(true)} />
+            <ActionButton icon={Send} label="Follow-up" />
+            <ActionButton icon={History} label="History" />
         </div>
       )}
 
@@ -264,6 +281,12 @@ export default function LeadDetailPage({ params }: { params: { id: string } }) {
             </Button>
         </footer>
       )}
+      <LeadNotesSheet 
+        open={isNotesOpen}
+        onOpenChange={setIsNotesOpen}
+        lead={lead}
+        notes={initialNotes}
+      />
     </div>
   );
 }
@@ -297,7 +320,7 @@ function EditableInfoItem({ label, name, value, isEditing, onChange, className, 
 }
 
 
-function ActionButton({ icon: Icon, label }: { icon: React.ElementType; label: string }) {
+function ActionButton({ icon: Icon, label, onClick }: { icon: React.ElementType; label: string, onClick?: () => void }) {
   return (
     <div className="flex items-center gap-3">
         <div className="bg-card shadow-md rounded-lg px-3 py-2">
@@ -308,6 +331,7 @@ function ActionButton({ icon: Icon, label }: { icon: React.ElementType; label: s
             size="icon"
             className="h-12 w-12 rounded-full bg-primary shadow-lg hover:bg-primary/90"
             aria-label={label}
+            onClick={onClick}
         >
             <Icon className="h-6 w-6" />
         </Button>
@@ -315,4 +339,101 @@ function ActionButton({ icon: Icon, label }: { icon: React.ElementType; label: s
   );
 }
 
-    
+type LeadNotesSheetProps = {
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+  lead: typeof initialLeadData;
+  notes: typeof initialNotes;
+};
+
+function LeadNotesSheet({ open, onOpenChange, lead, notes }: LeadNotesSheetProps) {
+    const { toast } = useToast();
+
+    const handleCopy = (text: string) => {
+        navigator.clipboard.writeText(text);
+        toast({
+            title: "Copied to clipboard",
+        });
+    }
+
+    const getStatusBadgeClass = (status: 'Hot' | 'Warm' | 'Cold') => {
+        switch (status) {
+            case 'Hot': return 'bg-red-100 text-red-700 border-red-200';
+            case 'Warm': return 'bg-yellow-100 text-yellow-700 border-yellow-200';
+            case 'Cold': return 'bg-blue-100 text-blue-700 border-blue-200';
+            default: return 'bg-gray-100 text-gray-700';
+        }
+    };
+
+    return (
+        <Sheet open={open} onOpenChange={onOpenChange}>
+            <SheetContent side="bottom" className="h-[90vh] flex flex-col p-0">
+                <header className="flex items-center justify-between border-b px-4 py-3 shrink-0">
+                    <div className="flex items-center">
+                        <Button variant="ghost" size="icon" onClick={() => onOpenChange(false)}>
+                            <ArrowLeft className="h-6 w-6" />
+                        </Button>
+                        <h2 className="ml-4 text-xl font-semibold">Lead Note</h2>
+                    </div>
+                </header>
+                <div className="flex-1 overflow-y-auto p-4">
+                    <div className="flex items-center gap-4 mb-6">
+                        <Avatar className="h-16 w-16">
+                            <AvatarImage src={lead.avatar} />
+                            <AvatarFallback>{lead.firstName.charAt(0)}{lead.lastName.charAt(0)}</AvatarFallback>
+                        </Avatar>
+                        <div>
+                            <div className="flex items-center gap-2">
+                                <h3 className="text-xl font-bold">{lead.firstName} {lead.lastName}</h3>
+                                <Badge variant="outline" className={cn("text-sm", getStatusBadgeClass(lead.status))}>{lead.status}</Badge>
+                            </div>
+                            <p className="text-sm text-gray-500">{lead.phone}</p>
+                            <p className="text-sm text-gray-500">{lead.email}</p>
+                            <p className="text-xs text-gray-400 mt-1">Source: {lead.source} | Created: {lead.createdAt}</p>
+                        </div>
+                    </div>
+
+                    <Card className="mb-6">
+                        <CardContent className="p-4">
+                            <Textarea
+                                placeholder="Sophia is now looking for a 3-bedroom house with a large garden. Budget increased to $800k..."
+                                className="border-0 focus-visible:ring-0 min-h-[120px]"
+                            />
+                        </CardContent>
+                    </Card>
+
+                    <div className="flex gap-4 mb-6">
+                        <Button variant="outline" size="icon" className="h-12 w-12 bg-blue-100 border-primary text-primary hover:bg-blue-200 hover:text-primary">
+                            <Mic className="h-6 w-6" />
+                        </Button>
+                        <Button className="flex-1 h-12 bg-gradient-to-r from-blue-500 to-cyan-500 text-white">
+                            Update Note
+                        </Button>
+                    </div>
+
+                    <div>
+                        <h4 className="text-lg font-semibold mb-4">Note History</h4>
+                        <div className="space-y-4">
+                            {notes.map(note => (
+                                <Card key={note.id} className="bg-gray-50">
+                                    <CardContent className="p-4 relative">
+                                        <p className="text-sm text-gray-700 mb-2">{note.content}</p>
+                                        <p className="text-xs text-gray-400">{note.date}</p>
+                                        <Button 
+                                            variant="ghost" 
+                                            size="icon" 
+                                            className="absolute bottom-2 right-2 h-8 w-8"
+                                            onClick={() => handleCopy(note.content)}
+                                        >
+                                            <Copy className="h-4 w-4 text-gray-500" />
+                                        </Button>
+                                    </CardContent>
+                                </Card>
+                            ))}
+                        </div>
+                    </div>
+                </div>
+            </SheetContent>
+        </Sheet>
+    );
+}
