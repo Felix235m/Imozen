@@ -99,6 +99,43 @@ export default function LeadsPage() {
   };
 
   const isBulkEditing = selectedLeads.length > 0;
+  
+  const LeadCard = ({lead}: {lead: (typeof allLeads)[0]}) => (
+    <Card className={cn("shadow-sm", selectedLeads.includes(lead.id) && "bg-blue-50 border-primary")}>
+        <CardContent className="flex items-center justify-between p-4" >
+          <div className="flex items-center gap-4" onClick={() => handleSelectLead(lead.id)}>
+            <Checkbox 
+                id={`lead-${lead.id}`} 
+                checked={selectedLeads.includes(lead.id)}
+                onCheckedChange={() => handleSelectLead(lead.id)}
+                onClick={(e) => e.stopPropagation()}
+            />
+            <div className="grid gap-0.5">
+              <label htmlFor={`lead-${lead.id}`} className="font-semibold cursor-pointer">{lead.name}</label>
+              <div className="flex items-center gap-2 flex-wrap">
+                <Badge variant="outline" className={cn("text-xs", getStatusBadgeClass(lead.status))}>{lead.status}</Badge>
+                {lead.activeStatus === 'Inactive' && (
+                    <Badge variant="secondary">Inactive</Badge>
+                )}
+                <p className="text-sm text-gray-500">
+                  Next follow-up:
+                  <span className={cn(lead.nextFollowUp === 'Overdue' && "text-red-500 font-medium ml-1")}>
+                    {lead.nextFollowUp}
+                  </span>
+                </p>
+              </div>
+            </div>
+          </div>
+          {!isBulkEditing && (
+              <Button variant="ghost" size="icon" asChild onClick={(e) => e.stopPropagation()}>
+                <Link href={`/leads/${lead.id}`}>
+                    <MoreVertical className="h-5 w-5 text-gray-500" />
+                </Link>
+              </Button>
+          )}
+        </CardContent>
+      </Card>
+  )
 
   return (
     <div className="flex h-full flex-col bg-gray-50 pb-16 p-4">
@@ -163,40 +200,13 @@ export default function LeadsPage() {
 
       <div className="flex-1 overflow-y-auto space-y-3">
         {filteredLeads.map((lead) => (
-          <Card key={lead.id} className={cn("shadow-sm", selectedLeads.includes(lead.id) && "bg-blue-50 border-primary")}>
-            <CardContent className="flex items-center justify-between p-4" onClick={() => handleSelectLead(lead.id)}>
-              <div className="flex items-center gap-4">
-                <Checkbox 
-                    id={`lead-${lead.id}`} 
-                    checked={selectedLeads.includes(lead.id)}
-                    onCheckedChange={() => handleSelectLead(lead.id)}
-                    onClick={(e) => e.stopPropagation()}
-                />
-                <div className="grid gap-0.5">
-                  <label htmlFor={`lead-${lead.id}`} className="font-semibold cursor-pointer">{lead.name}</label>
-                  <div className="flex items-center gap-2 flex-wrap">
-                    <Badge variant="outline" className={cn("text-xs", getStatusBadgeClass(lead.status))}>{lead.status}</Badge>
-                    {lead.activeStatus === 'Inactive' && (
-                        <Badge variant="secondary">Inactive</Badge>
-                    )}
-                    <p className="text-sm text-gray-500">
-                      Next follow-up:
-                      <span className={cn(lead.nextFollowUp === 'Overdue' && "text-red-500 font-medium ml-1")}>
-                        {lead.nextFollowUp}
-                      </span>
-                    </p>
-                  </div>
-                </div>
-              </div>
-              {!isBulkEditing && (
-                  <Button variant="ghost" size="icon" asChild onClick={(e) => e.stopPropagation()}>
-                    <Link href="#">
-                        <MoreVertical className="h-5 w-5 text-gray-500" />
-                    </Link>
-                  </Button>
-              )}
-            </CardContent>
-          </Card>
+           isBulkEditing ? (
+             <LeadCard key={lead.id} lead={lead} />
+           ) : (
+            <Link href={`/leads/${lead.id}`} key={lead.id}>
+                <LeadCard lead={lead} />
+            </Link>
+           )
         ))}
       </div>
     </div>
