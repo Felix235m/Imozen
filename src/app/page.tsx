@@ -10,10 +10,11 @@ export default function LoginPage() {
   const router = useRouter();
 
   const handleLoginSuccess = () => {
-    if (loginType === 'admin') {
+    if (loginType === 'agent') {
+      router.push('/dashboard');
+    } else if (loginType === 'admin') {
       router.push('/agents');
     }
-    // Handle agent login success if needed in the future
   };
 
   return (
