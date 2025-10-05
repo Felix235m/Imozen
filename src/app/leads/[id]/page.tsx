@@ -133,7 +133,7 @@ export default function LeadDetailPage({ params }: { params: { id: string } }) {
       </main>
 
        <div className="fixed bottom-16 left-0 right-0 border-t bg-white shadow-t-md">
-        <div className="mx-auto flex h-20 max-w-md items-center justify-around">
+        <div className="mx-auto flex h-16 max-w-md items-center justify-around">
           <ActionButton icon={History} label="History" />
           <ActionButton icon={FileText} label="Notes" />
           <ActionButton icon={Send} label="Follow-up" />
@@ -154,7 +154,7 @@ function InfoItem({ label, value, className }: { label: string; value: React.Rea
 
 function ActionButton({ icon: Icon, label }: { icon: React.ElementType, label: string }) {
   return (
-    <button className="flex flex-col items-center justify-center text-gray-600 hover:text-primary gap-1">
+    <button className="flex flex-col items-center justify-center text-primary hover:text-primary/90 gap-1">
       <Icon className="h-6 w-6" />
       <span className="text-xs font-medium">{label}</span>
     </button>
