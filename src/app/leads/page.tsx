@@ -127,8 +127,8 @@ export default function LeadsPage() {
             </div>
           </div>
           {!isBulkEditing && (
-            <Link href={`/leads/${lead.id}`}>
-              <Button variant="ghost" size="icon" onClick={(e) => e.stopPropagation()}>
+            <Link href={`/leads/${lead.id}`} onClick={(e) => e.stopPropagation()}>
+              <Button variant="ghost" size="icon">
                 <MoreVertical className="h-5 w-5 text-gray-500" />
               </Button>
             </Link>
@@ -138,7 +138,7 @@ export default function LeadsPage() {
   )
 
   return (
-    <div className="flex h-full flex-col bg-gray-50 pb-16 p-4">
+    <div className="flex h-full flex-col bg-gray-50 p-4 pb-20">
       <div className="flex gap-2 mb-4 pt-4 items-center">
         {isBulkEditing ? (
           <>
@@ -200,13 +200,11 @@ export default function LeadsPage() {
 
       <div className="flex-1 overflow-y-auto space-y-3">
         {filteredLeads.map((lead) => (
-           isBulkEditing ? (
-             <LeadCard key={lead.id} lead={lead} />
-           ) : (
-            <Link href={`/leads/${lead.id}`} key={lead.id} className="block">
+           <div key={lead.id} onClick={() => !isBulkEditing && document.getElementById(`link-${lead.id}`)?.click()}>
+            <Link href={`/leads/${lead.id}`} id={`link-${lead.id}`} className="block">
                 <LeadCard lead={lead} />
             </Link>
-           )
+           </div>
         ))}
       </div>
     </div>
