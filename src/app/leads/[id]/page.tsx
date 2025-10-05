@@ -154,7 +154,7 @@ function ActionButton({ icon: Icon, label }: { icon: React.ElementType; label: s
   return (
     <div className="flex items-center gap-3">
         <div className="bg-card shadow-md rounded-lg px-3 py-2">
-            <span className="font-semibold text-card-foreground">{label}</span>
+            <span className="font-semibold text-card-foreground text-sm">{label}</span>
         </div>
         <Button
             variant="default"
