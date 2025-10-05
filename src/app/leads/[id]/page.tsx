@@ -1007,8 +1007,7 @@ function LeadStatusDialog({ open, onOpenChange, currentStatus, onSave }: LeadSta
               </div>
               <div className="flex items-center space-x-2">
                 <RadioGroupItem value="Cold" id="s-cold" />
-                <Label htmlFor="s-cold">Cold</Label>
-              </div>
+                <Label htmlFor="s-cold">Cold</Label>              </div>
             </RadioGroup>
           </div>
           <div className="grid gap-2">
@@ -1032,5 +1031,3 @@ function LeadStatusDialog({ open, onOpenChange, currentStatus, onSave }: LeadSta
     </Dialog>
   )
 }
-
-    
