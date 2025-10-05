@@ -6,7 +6,6 @@ import {
   User,
   Bell,
   LogOut,
-  CheckSquare,
 } from 'lucide-react';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
@@ -27,7 +26,6 @@ import { cn } from '@/lib/utils';
 const navItems = [
     { href: '/dashboard', icon: LayoutGrid, label: 'Dashboard' },
     { href: '/leads', icon: ClipboardList, label: 'Leads' },
-    { href: '/tasks', icon: CheckSquare, label: 'Tasks' },
     { href: '/profile', icon: User, label: 'Profile' },
 ];
 
