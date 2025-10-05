@@ -50,41 +50,36 @@ export default function LeadsPage() {
   };
 
   return (
-    <div className="flex h-full flex-col bg-gray-50 pb-16">
-       <header className="grid grid-cols-3 items-center bg-white px-4 py-3 sticky top-0 z-10 border-b">
-        <div className="w-10"></div>
-        <h1 className="text-xl font-bold text-center">Leads</h1>
-        <div className="flex justify-end">
-            <Link href="/leads/new">
-            <Button size="icon" className="rounded-full bg-primary h-10 w-10">
-                <Plus className="h-6 w-6" />
-            </Button>
-            </Link>
-        </div>
+    <div className="flex h-full flex-col bg-gray-50 pb-16 p-4">
+       <header className="flex items-center justify-between py-4">
+        <h1 className="text-2xl font-bold">Leads</h1>
+        <Link href="/leads/new">
+          <Button size="icon" className="rounded-full bg-primary h-10 w-10">
+            <Plus className="h-6 w-6" />
+          </Button>
+        </Link>
       </header>
-
-      <div className="p-4">
-        <div className="relative mb-4">
-          <Search className="absolute left-3 top-1/2 h-5 w-5 -translate-y-1/2 text-gray-400" />
-          <Input 
-            placeholder="Search leads" 
-            className="pl-10 bg-white"
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-          />
-        </div>
-
-        <Tabs value={activeTab} onValueChange={setActiveTab} className="mb-4">
-          <TabsList className="grid w-full grid-cols-4 bg-gray-200">
-            <TabsTrigger value="All Leads">All</TabsTrigger>
-            <TabsTrigger value="Hot Leads">Hot</TabsTrigger>
-            <TabsTrigger value="Warm Leads">Warm</TabsTrigger>
-            <TabsTrigger value="Cold Leads">Cold</TabsTrigger>
-          </TabsList>
-        </Tabs>
+      
+      <div className="relative mb-4">
+        <Search className="absolute left-3 top-1/2 h-5 w-5 -translate-y-1/2 text-gray-400" />
+        <Input 
+          placeholder="Search leads" 
+          className="pl-10 bg-white"
+          value={searchTerm}
+          onChange={(e) => setSearchTerm(e.target.value)}
+        />
       </div>
 
-      <div className="flex-1 overflow-y-auto px-4 space-y-3">
+      <Tabs value={activeTab} onValueChange={setActiveTab} className="mb-4">
+        <TabsList className="grid w-full grid-cols-4 bg-gray-200">
+          <TabsTrigger value="All Leads">All</TabsTrigger>
+          <TabsTrigger value="Hot Leads">Hot</TabsTrigger>
+          <TabsTrigger value="Warm Leads">Warm</TabsTrigger>
+          <TabsTrigger value="Cold Leads">Cold</TabsTrigger>
+        </TabsList>
+      </Tabs>
+      
+      <div className="flex-1 overflow-y-auto space-y-3">
         {filteredLeads.map((lead) => (
           <Card key={lead.id} className="shadow-sm">
             <CardContent className="flex items-center justify-between p-4">
