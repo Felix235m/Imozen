@@ -379,7 +379,7 @@ export default function LeadDetailPage() {
                 <Edit className="mr-2 h-4 w-4" />
                 <span>Edit</span>
               </DropdownMenuItem>
-               <DropdownMenuItem onSelect={() => setIsStatusDialogOpen(true)}>
+              <DropdownMenuItem onSelect={() => setIsStatusDialogOpen(true)}>
                 <Zap className="mr-2 h-4 w-4" />
                 <span>Change Status</span>
               </DropdownMenuItem>
@@ -1032,5 +1032,7 @@ function LeadStatusDialog({ open, onOpenChange, currentStatus, onSave }: LeadSta
     </Dialog>
   )
 }
+
+    
 
     
