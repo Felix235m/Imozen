@@ -4,7 +4,7 @@
 import * as React from 'react';
 import { useState, useRef, useEffect } from 'react';
 import { useParams } from 'next/navigation';
-import { ArrowLeft, MoreVertical, Upload, History, FileText, Send, Edit, UserX, UserCheck, Save, X, Mic, Copy, RefreshCw, MessageSquare, Phone, Mail, Trash2 } from 'lucide-react';
+import { ArrowLeft, MoreVertical, Upload, History, FileText, Send, Edit, UserX, UserCheck, Save, X, Mic, Copy, RefreshCw, MessageSquare, Phone, Mail, Trash2, Zap } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
@@ -16,9 +16,18 @@ import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
-  DropdownMenuTrigger,
   DropdownMenuSeparator,
 } from '@/components/ui/dropdown-menu';
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+  DialogFooter,
+} from '@/components/ui/dialog';
+import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
+import { Label } from '@/components/ui/label';
 import { useToast } from '@/hooks/use-toast';
 import { Loader2 } from 'lucide-react';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -149,6 +158,12 @@ const allLeadsData = [
   },
 ];
 
+type Note = {
+    id: string;
+    content: string;
+    date: string;
+};
+
 const initialNotes = [
     {
         id: 'note2',
@@ -208,32 +223,44 @@ export default function LeadDetailPage() {
   const [isEditing, setIsEditing] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
 
-  const [lead, setLead] = useState(allLeadsData[0]);
-  const [avatarPreview, setAvatarPreview] = useState<string | null>(lead.avatar);
+  const [lead, setLead] = useState<(typeof allLeadsData)[0] | null>(null);
+  const [avatarPreview, setAvatarPreview] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const { toast } = useToast();
   const [isNotesOpen, setIsNotesOpen] = useState(false);
   const [isFollowUpOpen, setIsFollowUpOpen] = useState(false);
   const [isHistoryOpen, setIsHistoryOpen] = useState(false);
+  const [isStatusDialogOpen, setIsStatusDialogOpen] = useState(false);
+
+  const [notes, setNotes] = useState(initialNotes);
+  const [currentNote, setCurrentNote] = useState(initialCurrentNote);
 
   useEffect(() => {
-    const currentLeadData = allLeadsData.find(l => l.id === id) || allLeadsData[0];
-    setLead(currentLeadData);
-    setAvatarPreview(currentLeadData.avatar);
+    const currentLeadData = allLeadsData.find(l => l.id === id);
+    if (currentLeadData) {
+      setLead(currentLeadData);
+      setAvatarPreview(currentLeadData.avatar);
+    }
   }, [id]);
 
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
-    setLead(prev => ({ ...prev, [name]: name === 'budget' || name === 'bedrooms' ? Number(value) : value }));
+    if (lead) {
+      setLead(prev => prev ? ({ ...prev, [name]: name === 'budget' || name === 'bedrooms' ? Number(value) : value }) : null);
+    }
   };
 
   const handleSelectChange = (name: string, value: string) => {
-    setLead(prev => ({ ...prev, [name]: value }));
+     if (lead) {
+        setLead(prev => prev ? ({ ...prev, [name]: value }) : null);
+     }
   };
 
   const handleStatusChange = (value: 'Hot' | 'Warm' | 'Cold') => {
-    setLead(prev => ({ ...prev, status: value }));
+    if (lead) {
+        setLead(prev => prev ? ({ ...prev, status: value }) : null);
+    }
   };
 
   const handleAvatarChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -249,6 +276,7 @@ export default function LeadDetailPage() {
   };
 
   const handleSave = async () => {
+    if (!lead) return;
     setIsSaving(true);
     // Simulate API call
     await new Promise(resolve => setTimeout(resolve, 1000));
@@ -267,15 +295,18 @@ export default function LeadDetailPage() {
   };
 
   const handleCancel = () => {
-    const currentLeadData = allLeadsData.find(l => l.id === id) || allLeadsData[0];
-    setLead(currentLeadData);
-    setAvatarPreview(currentLeadData.avatar);
+    const currentLeadData = allLeadsData.find(l => l.id === id);
+    if (currentLeadData) {
+      setLead(currentLeadData);
+      setAvatarPreview(currentLeadData.avatar);
+    }
     setIsEditing(false);
   };
 
   const toggleActiveStatus = () => {
+    if (!lead) return;
     const newStatus = lead.activeStatus === 'Active' ? 'Inactive' : 'Active';
-    setLead(prev => ({ ...prev, activeStatus: newStatus }));
+    setLead(prev => prev ? ({ ...prev, activeStatus: newStatus }) : null);
     toast({
       title: "Status Updated",
       description: `Lead marked as ${newStatus.toLowerCase()}.`,
@@ -289,6 +320,34 @@ export default function LeadDetailPage() {
       case 'Cold': return 'bg-blue-100 text-blue-700 border-blue-200';
       default: return 'bg-gray-100 text-gray-700';
     }
+  };
+
+  if (!lead) {
+      return (
+          <div className="flex items-center justify-center h-screen">
+              <Loader2 className="h-8 w-8 animate-spin" />
+          </div>
+      )
+  }
+
+  const handleStatusSave = (newStatus: 'Hot' | 'Warm' | 'Cold', note: string) => {
+    handleStatusChange(newStatus);
+
+    if (currentNote.content.trim()) {
+        setNotes(prev => [currentNote, ...prev]);
+    }
+    const newCurrentNote: Note = {
+        id: `note-${Date.now()}`,
+        content: note,
+        date: new Date().toISOString(),
+    };
+    setCurrentNote(newCurrentNote);
+    
+    toast({
+        title: "Status updated",
+        description: `Lead status changed to ${newStatus} and note added.`,
+    });
+    setIsStatusDialogOpen(false);
   };
 
   return (
@@ -318,6 +377,10 @@ export default function LeadDetailPage() {
               <DropdownMenuItem onSelect={() => setIsEditing(true)}>
                 <Edit className="mr-2 h-4 w-4" />
                 <span>Edit</span>
+              </DropdownMenuItem>
+               <DropdownMenuItem onSelect={() => setIsStatusDialogOpen(true)}>
+                <Zap className="mr-2 h-4 w-4" />
+                <span>Change Status</span>
               </DropdownMenuItem>
               <DropdownMenuItem onSelect={toggleActiveStatus}>
                 {lead.activeStatus === 'Active' ? (
@@ -442,8 +505,10 @@ export default function LeadDetailPage() {
         open={isNotesOpen}
         onOpenChange={setIsNotesOpen}
         lead={lead}
-        notes={initialNotes}
-        currentNote={initialCurrentNote}
+        notes={notes}
+        currentNote={currentNote}
+        setNotes={setNotes}
+        setCurrentNote={setCurrentNote}
       />
       <LeadFollowUpSheet
         open={isFollowUpOpen}
@@ -455,6 +520,12 @@ export default function LeadDetailPage() {
         onOpenChange={setIsHistoryOpen}
         lead={lead}
         history={communicationHistory}
+      />
+      <LeadStatusDialog 
+        open={isStatusDialogOpen} 
+        onOpenChange={setIsStatusDialogOpen}
+        currentStatus={lead.status}
+        onSave={handleStatusSave}
       />
     </div>
   );
@@ -550,28 +621,21 @@ function ActionButton({ icon: Icon, label, onClick }: { icon: React.ElementType;
   );
 }
 
-type Note = {
-    id: string;
-    content: string;
-    date: string;
-};
-
 type LeadNotesSheetProps = {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   lead: typeof allLeadsData[0];
   notes: Note[];
   currentNote: Note;
+  setNotes: React.Dispatch<React.SetStateAction<Note[]>>;
+  setCurrentNote: React.Dispatch<React.SetStateAction<Note>>;
 };
 
-function LeadNotesSheet({ open, onOpenChange, lead, notes: initialNotesProp, currentNote: initialCurrentNote }: LeadNotesSheetProps) {
+function LeadNotesSheet({ open, onOpenChange, lead, notes, currentNote, setNotes, setCurrentNote }: LeadNotesSheetProps) {
     const { toast } = useToast();
-    const [notes, setNotes] = useState(initialNotesProp);
-    const [currentNote, setCurrentNote] = useState(initialCurrentNote);
-    const [noteContent, setNoteContent] = useState(initialCurrentNote.content);
+    const [noteContent, setNoteContent] = useState(currentNote.content);
     const [isCreatingNew, setIsCreatingNew] = useState(false);
     
-    // Check if the current note content in the textarea is different from the saved currentNote
     const isModified = noteContent !== currentNote.content;
 
     const handleCopy = (text: string) => {
@@ -881,3 +945,92 @@ function LeadHistorySheet({ open, onOpenChange, lead, history }: LeadHistoryShee
         </Sheet>
     );
 }
+
+type LeadStatusDialogProps = {
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+  currentStatus: 'Hot' | 'Warm' | 'Cold';
+  onSave: (newStatus: 'Hot' | 'Warm' | 'Cold', note: string) => void;
+};
+
+function LeadStatusDialog({ open, onOpenChange, currentStatus, onSave }: LeadStatusDialogProps) {
+  const [newStatus, setNewStatus] = useState<'Hot' | 'Warm' | 'Cold'>(currentStatus);
+  const [note, setNote] = useState('');
+  const [isSaving, setIsSaving] = useState(false);
+
+  const handleSaveClick = () => {
+    if (note.trim() === '') {
+      // You can add better validation feedback here
+      alert('Note is required to change status.');
+      return;
+    }
+    setIsSaving(true);
+    // Simulate async operation
+    setTimeout(() => {
+      onSave(newStatus, note);
+      setIsSaving(false);
+      setNote('');
+    }, 500);
+  };
+  
+  useEffect(() => {
+    if (open) {
+        setNewStatus(currentStatus);
+        setNote('');
+    }
+  }, [open, currentStatus])
+
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent>
+        <DialogHeader>
+          <DialogTitle>Change Lead Status</DialogTitle>
+          <DialogDescription>
+            Select a new status for this lead and provide a reason for the change. This will be added as a new note.
+          </DialogDescription>
+        </DialogHeader>
+        <div className="grid gap-4 py-4">
+          <div className="grid gap-2">
+            <Label>New Status</Label>
+            <RadioGroup
+              defaultValue={currentStatus}
+              onValueChange={(value: 'Hot' | 'Warm' | 'Cold') => setNewStatus(value)}
+              className="flex gap-4"
+            >
+              <div className="flex items-center space-x-2">
+                <RadioGroupItem value="Hot" id="s-hot" />
+                <Label htmlFor="s-hot">Hot</Label>
+              </div>
+              <div className="flex items-center space-x-2">
+                <RadioGroupItem value="Warm" id="s-warm" />
+                <Label htmlFor="s-warm">Warm</Label>
+              </div>
+              <div className="flex items-center space-x-2">
+                <RadioGroupItem value="Cold" id="s-cold" />
+                <Label htmlFor="s-cold">Cold</Label>
+              </div>
+            </RadioGroup>
+          </div>
+          <div className="grid gap-2">
+            <Label htmlFor="status-note">Note (Required)</Label>
+            <Textarea
+              id="status-note"
+              placeholder="e.g., Client is ready to make an offer."
+              value={note}
+              onChange={(e) => setNote(e.target.value)}
+            />
+          </div>
+        </div>
+        <DialogFooter>
+          <Button variant="outline" onClick={() => onOpenChange(false)}>Cancel</Button>
+          <Button onClick={handleSaveClick} disabled={isSaving || !note.trim()}>
+            {isSaving && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+            Save Status
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  )
+}
+
+    
