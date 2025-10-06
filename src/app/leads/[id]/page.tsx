@@ -36,6 +36,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog"
+import { Label } from '@/components/ui/label';
 
 const allLeadsData = [
   {
@@ -982,6 +983,8 @@ type LeadFollowUpSheetProps = {
 
 function LeadFollowUpSheet({ open, onOpenChange, lead }: LeadFollowUpSheetProps) {
     
+    const [language, setLanguage] = useState('English');
+    
     const getStatusBadgeClass = (status: 'Hot' | 'Warm' | 'Cold') => {
         switch (status) {
             case 'Hot': return 'bg-red-100 text-red-700 border-red-200';
@@ -1023,6 +1026,20 @@ function LeadFollowUpSheet({ open, onOpenChange, lead }: LeadFollowUpSheetProps)
                             <p className="text-sm text-gray-500">{lead.email}</p>
                             <p className="text-xs text-gray-400 mt-1">Source: {lead.source} | Created: {lead.createdAt}</p>
                         </div>
+                    </div>
+                    
+                    <div className="space-y-2">
+                        <Label htmlFor="language">Message Language</Label>
+                        <Select value={language} onValueChange={setLanguage}>
+                            <SelectTrigger id="language">
+                                <SelectValue placeholder="Select language" />
+                            </SelectTrigger>
+                            <SelectContent>
+                                <SelectItem value="English">English</SelectItem>
+                                <SelectItem value="Portuguese">Portuguese</SelectItem>
+                                <SelectItem value="French">French</SelectItem>
+                            </SelectContent>
+                        </Select>
                     </div>
 
                     <div>
