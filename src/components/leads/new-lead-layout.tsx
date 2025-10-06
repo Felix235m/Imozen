@@ -7,8 +7,10 @@ import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
 
 const steps = [
-  { path: "/leads/new/step-1", progress: 50 },
-  { path: "/leads/new/step-2", progress: 100 },
+  { path: "/leads/new/step-1", progress: 25 },
+  { path: "/leads/new/step-2", progress: 50 },
+  { path: "/leads/new/step-3", progress: 75 },
+  { path: "/leads/new/step-4", progress: 100 },
 ];
 
 export function NewLeadLayout({ children }: { children: React.ReactNode }) {
