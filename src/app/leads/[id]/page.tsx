@@ -2,7 +2,7 @@
 "use client";
 
 import * as React from 'react';
-import { useState, useRef, useEffect } from 'react';
+import { useState, useRef, useEffect, useMemo } from 'react';
 import { useParams, useSearchParams } from 'next/navigation';
 import { ArrowLeft, MoreVertical, Upload, History, FileText, Send, Edit, UserX, UserCheck, Save, X, Mic, Copy, RefreshCw, MessageSquare, Phone, Mail, Trash2, Zap } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -218,6 +218,12 @@ const communicationHistory = [
     },
 ];
 
+type LeadData = (typeof allLeadsData)[0];
+type ChangeSummary = {
+  field: string;
+  oldValue: any;
+  newValue: any;
+};
 
 export default function LeadDetailPage() {
   const params = useParams();
@@ -227,7 +233,8 @@ export default function LeadDetailPage() {
   const [isEditing, setIsEditing] = useState(isEditMode);
   const [isSaving, setIsSaving] = useState(false);
 
-  const [lead, setLead] = useState<(typeof allLeadsData)[0] | null>(null);
+  const [lead, setLead] = useState<LeadData | null>(null);
+  const [originalLead, setOriginalLead] = useState<LeadData | null>(null);
   const [avatarPreview, setAvatarPreview] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const { toast } = useToast();
@@ -236,6 +243,9 @@ export default function LeadDetailPage() {
   const [isHistoryOpen, setIsHistoryOpen] = useState(false);
   const [isStatusDialogOpen, setIsStatusDialogOpen] = useState(false);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
+  const [isConfirmSaveOpen, setIsConfirmSaveOpen] = useState(false);
+  const [changeSummary, setChangeSummary] = useState<ChangeSummary[]>([]);
+  const [suggestedStatus, setSuggestedStatus] = useState<LeadData['status'] | null>(null);
 
   const [notes, setNotes] = useState(initialNotes);
   const [currentNote, setCurrentNote] = useState(initialCurrentNote);
@@ -243,8 +253,10 @@ export default function LeadDetailPage() {
   useEffect(() => {
     const currentLeadData = allLeadsData.find(l => l.id === id);
     if (currentLeadData) {
-      setLead(currentLeadData);
-      setAvatarPreview(currentLeadData.avatar);
+      const leadCopy = { ...currentLeadData };
+      setLead(leadCopy);
+      setOriginalLead({ ...currentLeadData });
+      setAvatarPreview(leadCopy.avatar);
     }
     if (isEditMode) {
         setIsEditing(true);
@@ -283,30 +295,99 @@ export default function LeadDetailPage() {
     }
   };
 
+  const getQualificationScore = (leadData: LeadData) => {
+    let score = 0;
+    if (leadData.budget > 900000) score += 2;
+    else if (leadData.budget > 500000) score += 1;
+
+    if (leadData.bedrooms >= 4) score += 2;
+    else if (leadData.bedrooms >= 2) score += 1;
+    
+    return score;
+  }
+
+  const getStatusFromScore = (score: number): LeadData['status'] => {
+    if (score >= 3) return 'Hot';
+    if (score >= 1) return 'Warm';
+    return 'Cold';
+  }
+
   const handleSave = async () => {
+    if (!lead || !originalLead) return;
+
+    const changes: ChangeSummary[] = [];
+    (Object.keys(lead) as Array<keyof LeadData>).forEach(key => {
+      if (lead[key] !== originalLead[key]) {
+        changes.push({
+          field: key.replace(/([A-Z])/g, ' $1').replace(/^./, str => str.toUpperCase()),
+          oldValue: originalLead[key],
+          newValue: lead[key]
+        });
+      }
+    });
+
+    if (changes.length === 0 && avatarPreview === originalLead.avatar) {
+      setIsEditing(false);
+      return;
+    }
+    
+    setChangeSummary(changes);
+    
+    const propertyRequirementsChanged = changes.some(c => ['Property Type', 'Budget', 'Bedrooms'].includes(c.field));
+
+    if (propertyRequirementsChanged) {
+        const oldScore = getQualificationScore(originalLead);
+        const newScore = getQualificationScore(lead);
+        if (newScore !== oldScore) {
+            const newStatus = getStatusFromScore(newScore);
+            if(newStatus !== lead.status) {
+                setSuggestedStatus(newStatus);
+            } else {
+                setSuggestedStatus(null);
+            }
+        } else {
+          setSuggestedStatus(null);
+        }
+    } else {
+      setSuggestedStatus(null);
+    }
+    
+    setIsConfirmSaveOpen(true);
+  };
+
+  const confirmSave = async () => {
     if (!lead) return;
     setIsSaving(true);
+    
+    const finalLead = suggestedStatus ? { ...lead, status: suggestedStatus } : lead;
+
     // Simulate API call
     await new Promise(resolve => setTimeout(resolve, 1000));
     toast({
       title: "Success",
       description: "Lead details saved successfully.",
     });
-    // This is just to update the mock data. In a real app, you'd refetch.
-    const leadIndex = allLeadsData.findIndex(l => l.id === lead.id);
+
+    const leadIndex = allLeadsData.findIndex(l => l.id === finalLead.id);
     if(leadIndex !== -1) {
-        allLeadsData[leadIndex] = { ...lead, avatar: avatarPreview || lead.avatar };
+        allLeadsData[leadIndex] = { ...finalLead, avatar: avatarPreview || finalLead.avatar };
     }
+    
+    setLead({ ...allLeadsData[leadIndex] });
+    setOriginalLead({ ...allLeadsData[leadIndex] });
 
     setIsEditing(false);
     setIsSaving(false);
+    setIsConfirmSaveOpen(false);
+    setChangeSummary([]);
+    setSuggestedStatus(null);
   };
 
+
   const handleCancel = () => {
-    const currentLeadData = allLeadsData.find(l => l.id === id);
-    if (currentLeadData) {
-      setLead(currentLeadData);
-      setAvatarPreview(currentLeadData.avatar);
+    if (originalLead) {
+      setLead({ ...originalLead });
+      setAvatarPreview(originalLead.avatar);
     }
     setIsEditing(false);
   };
@@ -332,7 +413,8 @@ export default function LeadDetailPage() {
     window.location.href = '/leads';
   }
 
-  const getStatusBadgeClass = (status: 'Hot' | 'Warm' | 'Cold') => {
+  const getStatusBadgeClass = (status: 'Hot' | 'Warm' | 'Cold' | null | undefined) => {
+    if (!status) return 'bg-gray-100 text-gray-700';
     switch (status) {
       case 'Hot': return 'bg-red-100 text-red-700 border-red-200';
       case 'Warm': return 'bg-yellow-100 text-yellow-700 border-yellow-200';
@@ -370,6 +452,16 @@ export default function LeadDetailPage() {
     });
     setIsStatusDialogOpen(false);
   };
+  
+  const formatValue = (field: string, value: any) => {
+    if (field === 'Budget') {
+      return `$${Number(value).toLocaleString()}`;
+    }
+    if (typeof value === 'boolean') {
+        return value ? 'Yes' : 'No';
+    }
+    return String(value);
+  }
 
   return (
     <div className="flex h-screen flex-col bg-gray-50">
@@ -561,6 +653,42 @@ export default function LeadDetailPage() {
             <AlertDialogCancel>Cancel</AlertDialogCancel>
             <AlertDialogAction onClick={handleDeleteLead} className="bg-destructive hover:bg-destructive/90">
               Delete
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+      <AlertDialog open={isConfirmSaveOpen} onOpenChange={setIsConfirmSaveOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Confirm Changes</AlertDialogTitle>
+            <AlertDialogDescription>
+              Please review the changes before saving.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <div>
+            <h4 className="font-semibold mb-2">Changes:</h4>
+            <ul className="list-disc list-inside space-y-1 text-sm">
+                {changeSummary.map(change => (
+                    <li key={change.field}>
+                        <span className="font-medium">{change.field}:</span> {formatValue(change.field, change.oldValue)} &rarr; {formatValue(change.field, change.newValue)}
+                    </li>
+                ))}
+                {avatarPreview !== originalLead?.avatar && <li>Avatar updated</li>}
+            </ul>
+            {suggestedStatus && (
+                <div className="mt-4 p-3 bg-yellow-50 border border-yellow-200 rounded-md">
+                    <p className="text-sm text-yellow-800">Based on the updated property requirements, we suggest changing the lead status from 
+                    <Badge variant="outline" className={cn("mx-1", getStatusBadgeClass(lead.status))}>{lead.status}</Badge> 
+                    to 
+                    <Badge variant="outline" className={cn("mx-1", getStatusBadgeClass(suggestedStatus))}>{suggestedStatus}</Badge>.</p>
+                </div>
+            )}
+          </div>
+          <AlertDialogFooter>
+            <AlertDialogCancel onClick={() => setIsConfirmSaveOpen(false)}>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={confirmSave}>
+              {isSaving ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
+              Confirm & Save
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
@@ -985,4 +1113,6 @@ function LeadHistorySheet({ open, onOpenChange, lead, history }: LeadHistoryShee
 }
 
     
+    
+
     
