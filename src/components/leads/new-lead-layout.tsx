@@ -1,3 +1,4 @@
+
 "use client";
 
 import { usePathname, useRouter } from "next/navigation";
@@ -29,7 +30,7 @@ export function NewLeadLayout({ children }: { children: React.ReactNode }) {
 
   return (
     <div className="flex flex-col h-full bg-gray-50">
-      <div className="sticky top-16 z-10 bg-white p-4 border-b">
+      <div className="sticky z-10 bg-white p-4 border-b">
         <div className="flex items-center gap-4 max-w-md mx-auto">
           <Button variant="ghost" size="icon" onClick={handleBack}>
             <ArrowLeft className="h-6 w-6" />
