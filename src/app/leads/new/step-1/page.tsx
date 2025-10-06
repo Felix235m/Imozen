@@ -105,7 +105,7 @@ export default function NewLeadStep1Page() {
                           </FormControl>
                           <SelectContent>
                             {countries.map(country => (
-                              <SelectItem key={`${country.code}-${country.dial_code}`} value={country.dial_code}>
+                              <SelectItem key={country.code} value={country.dial_code}>
                                 {country.name} ({country.dial_code})
                               </SelectItem>
                             ))}
