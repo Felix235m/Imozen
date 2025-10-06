@@ -6,7 +6,7 @@ import { Button } from '@/components/ui/button';
 import { useRouter } from 'next/navigation';
 
 export default function LoginPage() {
-  const [loginType, setLoginType] = React.useState<'admin' | 'agent'>('admin');
+  const [loginType, setLoginType] = React.useState<'admin' | 'agent'>('agent');
   const router = useRouter();
 
   const handleLoginSuccess = () => {
