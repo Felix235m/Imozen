@@ -1,7 +1,13 @@
+ "use client";
+
+import { useRouter } from "next/navigation";
+import { useEffect } from "react";
+
 export default function NewLeadPage() {
-    return (
-        <div className="flex items-center justify-center h-full">
-            <h1 className="text-2xl font-bold">New Lead Page (Coming Soon)</h1>
-        </div>
-    )
+    const router = useRouter();
+    useEffect(() => {
+        router.replace('/leads/new/step-1');
+    }, [router]);
+
+    return null;
 }

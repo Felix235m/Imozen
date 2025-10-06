@@ -1,4 +1,3 @@
-
 "use client";
 
 import { useState } from 'react';
@@ -22,6 +21,7 @@ import Link from 'next/link';
 import { LeadFollowUpSheet } from '@/components/leads/lead-follow-up-sheet';
 import { allLeadsData, type LeadData } from '@/lib/leads-data';
 import { cn } from '@/lib/utils';
+import { useRouter } from 'next/navigation';
 
 const agentName = "Ethan";
 
@@ -111,6 +111,7 @@ const tasks = [
 export default function AgentDashboardPage() {
   const [isFollowUpOpen, setIsFollowUpOpen] = useState(false);
   const [selectedLead, setSelectedLead] = useState<LeadData | null>(null);
+  const router = useRouter();
 
   const handleTaskClick = (leadId: string, icon: React.ElementType) => {
     if (icon === MessageSquare) {
@@ -119,6 +120,8 @@ export default function AgentDashboardPage() {
         setSelectedLead(lead);
         setIsFollowUpOpen(true);
       }
+    } else {
+        router.push(`/leads/${leadId}`);
     }
   };
 
@@ -141,7 +144,7 @@ export default function AgentDashboardPage() {
       </section>
 
       <section className="mb-6">
-         <Link href="/leads/new" className='w-full'>
+         <Link href="/leads/new/step-1" className='w-full'>
             <Button className="w-full bg-primary" size="lg">
               <Plus className="mr-2 h-5 w-5" />
               Add New Lead
@@ -159,7 +162,7 @@ export default function AgentDashboardPage() {
                 {group.items.map((task) => (
                   <Card 
                     key={task.name} 
-                    className={cn("shadow-sm hover:shadow-md transition-shadow", task.icon === MessageSquare && "cursor-pointer")}
+                    className={cn("shadow-sm hover:shadow-md transition-shadow cursor-pointer")}
                     onClick={() => handleTaskClick(task.leadId, task.icon)}
                   >
                     <CardContent className="flex items-center gap-4 p-4">
