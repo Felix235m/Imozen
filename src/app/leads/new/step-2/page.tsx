@@ -58,9 +58,7 @@ export default function NewLeadStep2Page() {
 
   const onSubmit = (values: z.infer<typeof formSchema>) => {
     console.log("Step 2 data:", values);
-    // On "Next", you would proceed to the next step
-    // For now, it will just log the data.
-    // router.push("/leads/new/step-3");
+    router.push("/leads/new/step-3");
   };
 
   const handleSaveAsDraft = () => {
