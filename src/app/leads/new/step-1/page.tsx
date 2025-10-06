@@ -60,7 +60,7 @@ export default function NewLeadStep1() {
     mode: 'onChange'
   });
 
-  const onSubmit = (values: z.infer<typeof formSchema>>) => {
+  const onSubmit = (values: z.infer<typeof formSchema>) => {
     // Here you would save the data to a global state/context
     console.log(values);
     router.push("/leads/new/step-2"); // Navigate to the next step
