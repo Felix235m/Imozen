@@ -130,10 +130,13 @@ export default function NewLeadStep1Page() {
                         </SelectTrigger>
                       </FormControl>
                       <SelectContent>
-                        <SelectItem value="website">Website</SelectItem>
                         <SelectItem value="referral">Referral</SelectItem>
-                        <SelectItem value="zillow">Zillow</SelectItem>
-                        <SelectItem value="other">Other</SelectItem>
+                        <SelectItem value="website">Website</SelectItem>
+                        <SelectItem value="casayes">CasaYes</SelectItem>
+                        <SelectItem value="idealista">Idealista</SelectItem>
+                        <SelectItem value="century-21-pt">CENTURY 21 (PT)</SelectItem>
+                        <SelectItem value="imovirtual">Imovirtual</SelectItem>
+                        <SelectItem value="social-media-campaign">Social Media Campaign</SelectItem>
                       </SelectContent>
                     </Select>
                     <FormMessage />
