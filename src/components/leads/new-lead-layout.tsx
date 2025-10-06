@@ -40,7 +40,7 @@ export default function NewLeadLayout({
   }
 
   return (
-    <div className="flex h-screen flex-col bg-gray-50">
+    <div className="flex flex-col h-full bg-gray-50">
       <header className="flex items-center border-b bg-white px-4 py-3 sticky top-0 z-10">
         <Button variant="ghost" size="icon" onClick={handleBack}>
           <ArrowLeft className="h-6 w-6" />
@@ -51,7 +51,7 @@ export default function NewLeadLayout({
         <div className="w-9"></div>
       </header>
 
-      <main className="flex-1 overflow-y-auto p-4 md:p-6">
+      <main className="flex-1 overflow-y-auto p-4 md:p-6 pb-32">
           <div className="max-w-2xl mx-auto">
             <Card>
                 <CardHeader>
@@ -65,7 +65,7 @@ export default function NewLeadLayout({
           </div>
       </main>
 
-      <footer className="grid grid-cols-2 gap-4 border-t bg-white p-4 sticky bottom-0 z-10">
+      <footer className="fixed bottom-16 left-0 right-0 grid grid-cols-2 gap-4 border-t bg-white p-4 z-10">
         <Button variant="outline" size="lg" onClick={onCancel}>
           Cancel
         </Button>
