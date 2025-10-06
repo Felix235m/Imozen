@@ -60,7 +60,7 @@ export function Combobox({ options, value, onChange, placeholder, searchPlacehol
             <CommandGroup>
               {options.map((option) => (
                 <CommandItem
-                  key={option.value}
+                  key={`${option.value}-${option.label}`}
                   value={option.searchValue}
                   onSelect={() => {
                     onChange(option.value)
