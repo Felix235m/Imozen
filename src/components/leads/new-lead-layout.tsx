@@ -5,6 +5,7 @@ import { usePathname, useRouter } from "next/navigation";
 import { ArrowLeft } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
+import { useState, useEffect } from "react";
 
 const steps = [
   { path: "/leads/new/step-1", progress: 25 },
@@ -16,6 +17,12 @@ const steps = [
 export function NewLeadLayout({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const router = useRouter();
+  const [isMounted, setIsMounted] = useState(false);
+
+  useEffect(() => {
+    setIsMounted(true);
+  }, []);
+
   const currentStep = steps.find((step) => pathname.startsWith(step.path));
   const progressValue = currentStep ? currentStep.progress : 0;
 
@@ -37,7 +44,11 @@ export function NewLeadLayout({ children }: { children: React.ReactNode }) {
           <Button variant="ghost" size="icon" onClick={handleBack}>
             <ArrowLeft className="h-6 w-6" />
           </Button>
-          <Progress value={progressValue} className="w-full" />
+          {isMounted ? (
+            <Progress value={progressValue} className="w-full" />
+          ) : (
+            <div className="w-full h-4 bg-secondary rounded-full" />
+          )}
         </div>
       </div>
       <main className="flex-1 overflow-y-auto pb-32">{children}</main>
