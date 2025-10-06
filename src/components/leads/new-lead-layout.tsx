@@ -4,34 +4,25 @@
 import { usePathname, useRouter } from "next/navigation";
 import { ArrowLeft } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Progress } from "@/components/ui/progress";
-import { useState, useEffect } from "react";
+import { cn } from "@/lib/utils";
 
 const steps = [
-  { path: "/leads/new/step-1", progress: 25 },
-  { path: "/leads/new/step-2", progress: 50 },
-  { path: "/leads/new/step-3", progress: 75 },
-  { path: "/leads/new/step-4", progress: 100 },
+  { path: "/leads/new/step-1", step: 1 },
+  { path: "/leads/new/step-2", step: 2 },
+  { path: "/leads/new/step-3", step: 3 },
+  { path: "/leads/new/step-4", step: 4 },
 ];
 
 export function NewLeadLayout({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const router = useRouter();
-  const [isMounted, setIsMounted] = useState(false);
 
-  useEffect(() => {
-    setIsMounted(true);
-  }, []);
-
-  const currentStep = steps.find((step) => pathname.startsWith(step.path));
-  const progressValue = currentStep ? currentStep.progress : 0;
+  const currentStepIndex = steps.findIndex((step) => pathname.startsWith(step.path));
+  const currentStep = steps[currentStepIndex];
 
   const handleBack = () => {
-    const currentIndex = steps.findIndex((step) =>
-      pathname.startsWith(step.path)
-    );
-    if (currentIndex > 0) {
-      router.push(steps[currentIndex - 1].path);
+    if (currentStepIndex > 0) {
+      router.push(steps[currentStepIndex - 1].path);
     } else {
       router.push("/leads");
     }
@@ -39,16 +30,32 @@ export function NewLeadLayout({ children }: { children: React.ReactNode }) {
 
   return (
     <div className="flex flex-col h-full bg-gray-50">
-      <div className="sticky z-10 bg-white p-4 border-b">
+      <div className="sticky top-0 z-10 bg-white p-4 border-b">
         <div className="flex items-center gap-4 max-w-md mx-auto">
           <Button variant="ghost" size="icon" onClick={handleBack}>
             <ArrowLeft className="h-6 w-6" />
           </Button>
-          {isMounted ? (
-            <Progress value={progressValue} className="w-full" />
-          ) : (
-            <div className="w-full h-4 bg-secondary rounded-full" />
-          )}
+          <div className="flex flex-col items-center w-full">
+            <h1 className="text-xl font-bold mb-2">New Lead</h1>
+            <div className="flex w-full items-center gap-2">
+              {steps.map((step) => (
+                <div
+                  key={step.step}
+                  className={cn(
+                    "h-1.5 flex-1 rounded-full",
+                    currentStep && step.step <= currentStep.step
+                      ? "bg-primary"
+                      : "bg-gray-200"
+                  )}
+                />
+              ))}
+            </div>
+             {currentStep && (
+              <p className="text-sm text-muted-foreground mt-2">
+                Step {currentStep.step} of {steps.length}
+              </p>
+            )}
+          </div>
         </div>
       </div>
       <main className="flex-1 overflow-y-auto pb-32">{children}</main>
