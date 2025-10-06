@@ -165,9 +165,8 @@ export default function NewLeadStep1Page() {
                   </FormItem>
                 )}
               />
-
               <div className="pt-6">
-                 <div className="grid grid-cols-2 gap-4 max-w-md mx-auto">
+                 <div className="grid grid-cols-2 gap-4">
                     <Button variant="outline" type="button" size="lg" onClick={() => router.push('/leads')}>
                         Cancel
                     </Button>
