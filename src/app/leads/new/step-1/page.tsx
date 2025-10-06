@@ -27,6 +27,7 @@ import NewLeadLayout from "@/components/leads/new-lead-layout";
 const formSchema = z.object({
   firstName: z.string().min(1, "First name is required"),
   lastName: z.string().min(1, "Last name is required"),
+  countryCode: z.string(),
   phone: z.string().min(1, "Phone number is required"),
   email: z.string().email("Invalid email address").optional().or(z.literal('')),
   leadSource: z.string().optional(),
@@ -43,12 +44,22 @@ const leadSourceOptions = [
   "Campaign",
 ];
 
+const countryCodes = [
+    { code: '+351', country: 'PT' },
+    { code: '+1', country: 'US' },
+    { code: '+44', country: 'GB' },
+    { code: '+33', country: 'FR' },
+    { code: '+49', country: 'DE' },
+    { code: '+34', country: 'ES' },
+];
+
 export default function NewLeadStep1() {
   const router = useRouter();
   // Here you would retrieve stored data from a global state/context if available
   const defaultValues = {
     firstName: "",
     lastName: "",
+    countryCode: "+351",
     phone: "",
     email: "",
     leadSource: "",
@@ -62,7 +73,8 @@ export default function NewLeadStep1() {
 
   const onSubmit = (values: z.infer<typeof formSchema>) => {
     // Here you would save the data to a global state/context
-    console.log(values);
+    const fullPhoneNumber = `${values.countryCode}${values.phone}`;
+    console.log({ ...values, phone: fullPhoneNumber });
     router.push("/leads/new/step-2"); // Navigate to the next step
   };
 
@@ -104,19 +116,41 @@ export default function NewLeadStep1() {
               </FormItem>
             )}
           />
-          <FormField
-            control={form.control}
-            name="phone"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>Phone *</FormLabel>
-                <FormControl>
-                  <Input placeholder="Enter phone number" {...field} />
-                </FormControl>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
+          <FormItem>
+            <FormLabel>Phone *</FormLabel>
+            <div className="flex gap-2">
+                <FormField
+                    control={form.control}
+                    name="countryCode"
+                    render={({ field }) => (
+                        <Select onValueChange={field.onChange} defaultValue={field.value}>
+                            <FormControl>
+                                <SelectTrigger className="w-28">
+                                    <SelectValue placeholder="Code" />
+                                </SelectTrigger>
+                            </FormControl>
+                            <SelectContent>
+                                {countryCodes.map(({code, country}) => (
+                                    <SelectItem key={country} value={code}>
+                                        {code} ({country})
+                                    </SelectItem>
+                                ))}
+                            </SelectContent>
+                        </Select>
+                    )}
+                />
+                <FormField
+                    control={form.control}
+                    name="phone"
+                    render={({ field }) => (
+                    <FormControl>
+                        <Input placeholder="Enter phone number" {...field} />
+                    </FormControl>
+                    )}
+                />
+            </div>
+            <FormMessage>{form.formState.errors.phone?.message}</FormMessage>
+          </FormItem>
           <FormField
             control={form.control}
             name="email"
