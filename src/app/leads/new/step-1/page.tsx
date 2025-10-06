@@ -51,6 +51,8 @@ const countryOptions = countries.map(country => ({
     searchValue: `${country.name.toLowerCase()} ${country.dial_code}`,
 }));
 
+const RequiredIndicator = () => <span className="text-red-500 ml-1">*</span>;
+
 export default function NewLeadStep1() {
   const router = useRouter();
   // Here you would retrieve stored data from a global state/context if available
@@ -93,7 +95,7 @@ export default function NewLeadStep1() {
             name="firstName"
             render={({ field }) => (
               <FormItem>
-                <FormLabel>First Name</FormLabel>
+                <FormLabel>First Name <RequiredIndicator /></FormLabel>
                 <FormControl>
                   <Input placeholder="Enter first name" {...field} />
                 </FormControl>
@@ -106,7 +108,7 @@ export default function NewLeadStep1() {
             name="lastName"
             render={({ field }) => (
               <FormItem>
-                <FormLabel>Last Name</FormLabel>
+                <FormLabel>Last Name <RequiredIndicator /></FormLabel>
                 <FormControl>
                   <Input placeholder="Enter last name" {...field} />
                 </FormControl>
@@ -115,7 +117,7 @@ export default function NewLeadStep1() {
             )}
           />
           <FormItem>
-            <FormLabel>Phone</FormLabel>
+            <FormLabel>Phone <RequiredIndicator /></FormLabel>
             <div className="flex gap-2">
                 <FormField
                     control={form.control}
