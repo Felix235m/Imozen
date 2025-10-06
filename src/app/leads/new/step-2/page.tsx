@@ -37,7 +37,7 @@ const propertyTypes = [
 
 const formSchema = z.object({
   propertyType: z.string().min(1, "Property type is required"),
-  budget: z.number().min(0, "Budget cannot be negative"),
+  budget: z.number().min(1, "Budget is required"),
   budgetCurrency: z.string(),
   bedrooms: z.number().min(0, "Bedrooms cannot be negative"),
 });
@@ -95,7 +95,7 @@ export default function NewLeadStep2Page() {
                 name="propertyType"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Property Type</FormLabel>
+                    <FormLabel>Property Type <span className="text-red-500">*</span></FormLabel>
                     <FormControl>
                       <div className="grid grid-cols-2 gap-4">
                         {propertyTypes.map((type) => (
@@ -120,7 +120,7 @@ export default function NewLeadStep2Page() {
               />
 
               <FormItem>
-                <FormLabel>Budget</FormLabel>
+                <FormLabel>Budget <span className="text-red-500">*</span></FormLabel>
                 <div className="flex items-center gap-2">
                     <FormField
                         control={form.control}
