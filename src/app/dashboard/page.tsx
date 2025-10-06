@@ -1,5 +1,7 @@
+
 "use client";
 
+import { useState } from 'react';
 import {
   Plus,
   Mail,
@@ -16,8 +18,10 @@ import {
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
 import Link from 'next/link';
+import { LeadFollowUpSheet } from '@/components/leads/lead-follow-up-sheet';
+import { allLeadsData, type LeadData } from '@/lib/leads-data';
+import { cn } from '@/lib/utils';
 
 const agentName = "Ethan";
 
@@ -36,11 +40,13 @@ const tasks = [
         name: 'Olivia Rhye',
         description: 'Send follow-up email about 123 Main St.',
         icon: Mail,
+        leadId: 'olivia-bennett-2',
       },
       {
         name: 'Liam Smith',
         description: 'Call to confirm viewing appointment.',
         icon: Phone,
+        leadId: 'liam-harper-5',
       },
     ],
   },
@@ -51,11 +57,13 @@ const tasks = [
         name: 'Ava Johnson',
         description: 'Schedule meeting to discuss offer.',
         icon: Calendar,
+        leadId: 'ava-rodriguez-4',
       },
        {
         name: 'James Brown',
         description: 'Send WhatsApp message with new listings.',
         icon: MessageSquare,
+        leadId: 'd2c5e5f3-a2f2-4f9c-9b0d-7d5b4a3a3c21',
       },
     ],
   },
@@ -66,6 +74,7 @@ const tasks = [
         name: 'Noah Williams',
         description: 'Prepare for property visit at 456 Oak Ave.',
         icon: Home,
+        leadId: 'noah-thompson-3',
       },
     ],
   },
@@ -76,11 +85,13 @@ const tasks = [
         name: 'Emma Garcia',
         description: 'Follow up on contract paperwork.',
         icon: Briefcase,
+        leadId: 'isabella-hayes-6',
       },
       {
         name: 'Benjamin Martinez',
         description: 'Call to discuss feedback from showing.',
         icon: Phone,
+        leadId: 'lucas-foster-7',
       },
     ],
   },
@@ -91,13 +102,26 @@ const tasks = [
         name: 'Mia Rodriguez',
         description: 'Send updated market analysis.',
         icon: Mail,
+        leadId: 'mia-coleman-8',
       },
     ],
   },
 ];
 
-
 export default function AgentDashboardPage() {
+  const [isFollowUpOpen, setIsFollowUpOpen] = useState(false);
+  const [selectedLead, setSelectedLead] = useState<LeadData | null>(null);
+
+  const handleTaskClick = (leadId: string, icon: React.ElementType) => {
+    if (icon === MessageSquare) {
+      const lead = allLeadsData.find(l => l.id === leadId);
+      if (lead) {
+        setSelectedLead(lead);
+        setIsFollowUpOpen(true);
+      }
+    }
+  };
+
   return (
     <div className="p-4 pb-20">
       <section className="py-4">
@@ -133,7 +157,11 @@ export default function AgentDashboardPage() {
               <h4 className="font-semibold text-gray-600 mb-2">{group.date}</h4>
               <div className="space-y-3">
                 {group.items.map((task) => (
-                  <Card key={task.name} className="shadow-sm hover:shadow-md transition-shadow">
+                  <Card 
+                    key={task.name} 
+                    className={cn("shadow-sm hover:shadow-md transition-shadow", task.icon === MessageSquare && "cursor-pointer")}
+                    onClick={() => handleTaskClick(task.leadId, task.icon)}
+                  >
                     <CardContent className="flex items-center gap-4 p-4">
                       <div className="bg-blue-100 p-3 rounded-full">
                          <task.icon className="h-5 w-5 text-primary" />
@@ -151,6 +179,12 @@ export default function AgentDashboardPage() {
           ))}
         </div>
       </section>
+
+      <LeadFollowUpSheet 
+        open={isFollowUpOpen}
+        onOpenChange={setIsFollowUpOpen}
+        lead={selectedLead}
+      />
     </div>
   );
 }
