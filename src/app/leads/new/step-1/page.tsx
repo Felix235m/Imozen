@@ -1,3 +1,4 @@
+
 "use client";
 
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -22,10 +23,12 @@ import {
 } from "@/components/ui/select";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { useRouter } from "next/navigation";
+import { countries } from "@/lib/countries";
 
 const formSchema = z.object({
   firstName: z.string().min(1, "First name is required"),
   lastName: z.string().min(1, "Last name is required"),
+  countryCode: z.string().min(1, "Country code is required"),
   phoneNumber: z.string().min(1, "Phone number is required"),
   email: z.string().email("Invalid email address").optional().or(z.literal('')),
   leadSource: z.string().optional(),
@@ -38,6 +41,7 @@ export default function NewLeadStep1Page() {
     defaultValues: {
       firstName: "",
       lastName: "",
+      countryCode: "+351",
       phoneNumber: "",
       email: "",
       leadSource: "",
@@ -85,19 +89,43 @@ export default function NewLeadStep1Page() {
                   </FormItem>
                 )}
               />
-               <FormField
-                control={form.control}
-                name="phoneNumber"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Phone <span className="text-red-500">*</span></FormLabel>
-                    <FormControl>
-                      <Input type="tel" placeholder="Enter phone number" {...field} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
+              <FormItem>
+                <FormLabel>Phone <span className="text-red-500">*</span></FormLabel>
+                <div className="flex gap-2">
+                  <FormField
+                    control={form.control}
+                    name="countryCode"
+                    render={({ field }) => (
+                      <FormItem>
+                        <Select onValueChange={field.onChange} defaultValue={field.value}>
+                          <FormControl>
+                            <SelectTrigger className="w-32">
+                              <SelectValue placeholder="Code" />
+                            </SelectTrigger>
+                          </FormControl>
+                          <SelectContent>
+                            {countries.map((country) => (
+                              <SelectItem key={country.code} value={country.dial_code}>
+                                {country.name} ({country.dial_code})
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      </FormItem>
+                    )}
+                  />
+                  <FormField
+                    control={form.control}
+                    name="phoneNumber"
+                    render={({ field }) => (
+                      <FormControl>
+                        <Input type="tel" placeholder="Phone number" {...field} />
+                      </FormControl>
+                    )}
+                  />
+                </div>
+                <FormMessage>{form.formState.errors.phoneNumber?.message}</FormMessage>
+              </FormItem>
               <FormField
                 control={form.control}
                 name="email"
