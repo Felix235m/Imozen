@@ -299,7 +299,7 @@ export default function LeadsPage() {
                     </Button>
                   </DropdownMenuTrigger>
                   <DropdownMenuContent align="end" onClick={(e) => e.stopPropagation()}>
-                    <DropdownMenuItem onSelect={() => router.push(`/leads/${lead.id}`)}>
+                    <DropdownMenuItem onSelect={() => router.push(`/leads/${lead.id}?edit=true`)}>
                         <Edit className="mr-2 h-4 w-4" />
                         <span>Edit</span>
                     </DropdownMenuItem>

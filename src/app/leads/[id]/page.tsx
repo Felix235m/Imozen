@@ -3,7 +3,7 @@
 
 import * as React from 'react';
 import { useState, useRef, useEffect } from 'react';
-import { useParams } from 'next/navigation';
+import { useParams, useSearchParams } from 'next/navigation';
 import { ArrowLeft, MoreVertical, Upload, History, FileText, Send, Edit, UserX, UserCheck, Save, X, Mic, Copy, RefreshCw, MessageSquare, Phone, Mail, Trash2, Zap } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -221,8 +221,10 @@ const communicationHistory = [
 
 export default function LeadDetailPage() {
   const params = useParams();
+  const searchParams = useSearchParams();
   const id = params.id as string;
-  const [isEditing, setIsEditing] = useState(false);
+  const isEditMode = searchParams.get('edit') === 'true';
+  const [isEditing, setIsEditing] = useState(isEditMode);
   const [isSaving, setIsSaving] = useState(false);
 
   const [lead, setLead] = useState<(typeof allLeadsData)[0] | null>(null);
@@ -244,7 +246,10 @@ export default function LeadDetailPage() {
       setLead(currentLeadData);
       setAvatarPreview(currentLeadData.avatar);
     }
-  }, [id]);
+    if (isEditMode) {
+        setIsEditing(true);
+    }
+  }, [id, isEditMode]);
 
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -587,7 +592,7 @@ function EditableInfoItem({
   label: string; 
   name?: string; 
   value: string | number; 
-  isEditing: boolean; 
+  isEditing: boolean; _
   onChange?: (e: React.ChangeEvent<HTMLInputElement>) => void; 
   onSelectChange?: (name: string, value: string) => void;
   className?: string, 
@@ -979,4 +984,5 @@ function LeadHistorySheet({ open, onOpenChange, lead, history }: LeadHistoryShee
     );
 }
 
+    
     
