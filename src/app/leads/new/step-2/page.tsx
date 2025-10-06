@@ -23,9 +23,10 @@ import {
 } from "@/components/ui/select";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { useRouter } from "next/navigation";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Home, Building, Warehouse, Mountain, Minus, Plus } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { useToast } from "@/hooks/use-toast";
 
 const propertyTypes = [
   { name: "Apartment", icon: Building },
@@ -43,6 +44,7 @@ const formSchema = z.object({
 
 export default function NewLeadStep2Page() {
   const router = useRouter();
+  const { toast } = useToast();
   
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
@@ -70,7 +72,15 @@ export default function NewLeadStep2Page() {
     router.push("/leads");
   }
 
+  const propertyType = form.watch("propertyType");
   const bedrooms = form.watch("bedrooms");
+  const isBedroomsDisabled = propertyType === 'Commercial' || propertyType === 'Land';
+
+  useEffect(() => {
+    if (isBedroomsDisabled) {
+        form.setValue('bedrooms', 0);
+    }
+  }, [isBedroomsDisabled, form]);
 
   return (
     <div className="p-4">
@@ -153,7 +163,7 @@ export default function NewLeadStep2Page() {
                 control={form.control}
                 name="bedrooms"
                 render={({ field }) => (
-                  <FormItem>
+                  <FormItem className={cn(isBedroomsDisabled && "opacity-50")}>
                     <FormLabel>Number of Bedrooms</FormLabel>
                     <FormControl>
                         <div className="flex items-center justify-center gap-4 p-2 border rounded-lg">
@@ -162,6 +172,7 @@ export default function NewLeadStep2Page() {
                                 variant="outline"
                                 size="icon"
                                 onClick={() => field.onChange(Math.max(0, bedrooms - 1))}
+                                disabled={isBedroomsDisabled}
                             >
                                 <Minus className="h-4 w-4" />
                             </Button>
@@ -171,6 +182,7 @@ export default function NewLeadStep2Page() {
                                 variant="outline"
                                 size="icon"
                                 onClick={() => field.onChange(bedrooms + 1)}
+                                disabled={isBedroomsDisabled}
                             >
                                 <Plus className="h-4 w-4" />
                             </Button>
