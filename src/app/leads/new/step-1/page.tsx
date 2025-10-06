@@ -29,7 +29,7 @@ const formSchema = z.object({
   lastName: z.string().min(1, "Last name is required"),
   phone: z.string().min(1, "Phone number is required"),
   email: z.string().email("Invalid email address").optional().or(z.literal('')),
-  leadSource: z.string().min(1, "Lead source is required"),
+  leadSource: z.string().optional(),
 });
 
 const leadSourceOptions = [
@@ -57,9 +57,10 @@ export default function NewLeadStep1() {
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
     defaultValues,
+    mode: 'onChange'
   });
 
-  const onSubmit = (values: z.infer<typeof formSchema>) => {
+  const onSubmit = (values: z.infer<typeof formSchema>>) => {
     // Here you would save the data to a global state/context
     console.log(values);
     router.push("/leads/new/step-2"); // Navigate to the next step
@@ -69,12 +70,14 @@ export default function NewLeadStep1() {
     <NewLeadLayout
       currentStep={1}
       totalSteps={3}
+      title="Create New Lead"
+      description="Start by entering the lead's contact information."
       onCancel={() => router.push("/leads")}
       onNext={form.handleSubmit(onSubmit)}
       isNextDisabled={!form.formState.isValid}
     >
       <Form {...form}>
-        <form className="space-y-6">
+        <form className="space-y-6" onSubmit={form.handleSubmit(onSubmit)}>
           <FormField
             control={form.control}
             name="firstName"
@@ -132,7 +135,7 @@ export default function NewLeadStep1() {
             name="leadSource"
             render={({ field }) => (
               <FormItem>
-                <FormLabel>Lead Source *</FormLabel>
+                <FormLabel>Lead Source</FormLabel>
                 <Select
                   onValueChange={field.onChange}
                   defaultValue={field.value}

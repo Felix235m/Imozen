@@ -4,6 +4,7 @@ import { ArrowLeft } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
 import { useRouter } from "next/navigation";
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 
 interface NewLeadLayoutProps {
   children: React.ReactNode;
@@ -12,6 +13,8 @@ interface NewLeadLayoutProps {
   onCancel: () => void;
   onNext: () => void;
   isNextDisabled?: boolean;
+  title: string;
+  description: string;
 }
 
 export default function NewLeadLayout({
@@ -21,6 +24,8 @@ export default function NewLeadLayout({
   onCancel,
   onNext,
   isNextDisabled = false,
+  title,
+  description,
 }: NewLeadLayoutProps) {
     const router = useRouter();
 
@@ -48,11 +53,19 @@ export default function NewLeadLayout({
 
       <main className="flex-1 overflow-y-auto p-4 md:p-6">
           <div className="max-w-2xl mx-auto">
-            {children}
+            <Card>
+                <CardHeader>
+                    <CardTitle>{title}</CardTitle>
+                    <CardDescription>{description}</CardDescription>
+                </CardHeader>
+                <CardContent>
+                    {children}
+                </CardContent>
+            </Card>
           </div>
       </main>
 
-      <footer className="grid grid-cols-2 gap-4 border-t bg-white p-4 sticky bottom-0">
+      <footer className="grid grid-cols-2 gap-4 border-t bg-white p-4 sticky bottom-0 z-10">
         <Button variant="outline" size="lg" onClick={onCancel}>
           Cancel
         </Button>
