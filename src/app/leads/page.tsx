@@ -1,3 +1,4 @@
+
 "use client";
 
 import React, { useState, useMemo } from 'react';
@@ -14,6 +15,16 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigge
 import { useToast } from '@/hooks/use-toast';
 import { useRouter } from 'next/navigation';
 import { LeadStatusDialog } from '@/components/leads/lead-status-dialog';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog"
 
 
 type LeadStatus = 'Hot' | 'Warm' | 'Cold';
@@ -49,6 +60,10 @@ export default function LeadsPage() {
   const [isStatusDialogOpen, setIsStatusDialogOpen] = useState(false);
   const [selectedLeadForStatus, setSelectedLeadForStatus] = useState<Lead | null>(null);
 
+  const [leadToDelete, setLeadToDelete] = useState<string | null>(null);
+  const [leadsToDelete, setLeadsToDelete] = useState<string[] | null>(null);
+
+
   const filteredLeads = useMemo(() => {
     return leads.filter(lead => {
       const matchesSearch = lead.name.toLowerCase().includes(searchTerm.toLowerCase());
@@ -80,20 +95,15 @@ export default function LeadsPage() {
       setSelectedLeads([]);
   }
 
-  const handleLeadAction = (leadId: string, action: 'delete' | 'setActive' | 'setInactive') => {
+  const handleLeadAction = (leadId: string, action: 'setActive' | 'setInactive') => {
     let newLeads = [...leads];
     let message = '';
     
-    if (action === 'delete') {
-      newLeads = leads.filter(lead => lead.id !== leadId);
-      message = `Lead deleted.`;
-    } else {
-      const newStatus = action === 'setActive' ? 'Active' : 'Inactive';
-      newLeads = leads.map(lead => 
-        lead.id === leadId ? { ...lead, activeStatus: newStatus } : lead
-      );
-      message = `Lead marked as ${newStatus.toLowerCase()}.`;
-    }
+    const newStatus = action === 'setActive' ? 'Active' : 'Inactive';
+    newLeads = leads.map(lead => 
+      lead.id === leadId ? { ...lead, activeStatus: newStatus } : lead
+    );
+    message = `Lead marked as ${newStatus.toLowerCase()}.`;
     
     setLeads(newLeads);
     toast({
@@ -102,20 +112,44 @@ export default function LeadsPage() {
     });
   };
 
-  const handleBulkAction = (action: 'delete' | 'setActive' | 'setInactive') => {
+  const confirmDeleteSingleLead = (leadId: string) => {
+    setLeadToDelete(leadId);
+  }
+
+  const executeDeleteSingleLead = () => {
+    if (!leadToDelete) return;
+    setLeads(prev => prev.filter(lead => lead.id !== leadToDelete));
+    toast({
+      title: "Success",
+      description: "Lead deleted.",
+    });
+    setLeadToDelete(null);
+  }
+
+  const confirmDeleteBulkLeads = () => {
+    setLeadsToDelete(selectedLeads);
+  }
+
+  const executeDeleteBulkLeads = () => {
+    if (!leadsToDelete) return;
+    setLeads(prev => prev.filter(lead => !leadsToDelete.includes(lead.id)));
+     toast({
+      title: "Success",
+      description: `${leadsToDelete.length} lead(s) deleted.`,
+    });
+    setLeadsToDelete(null);
+    setSelectedLeads([]);
+  }
+
+  const handleBulkAction = (action: 'setActive' | 'setInactive') => {
     let newLeads = [...leads];
     let message = '';
     
-    if (action === 'delete') {
-      newLeads = leads.filter(lead => !selectedLeads.includes(lead.id));
-      message = `${selectedLeads.length} lead(s) deleted.`;
-    } else {
-      const newStatus = action === 'setActive' ? 'Active' : 'Inactive';
-      newLeads = leads.map(lead => 
-        selectedLeads.includes(lead.id) ? { ...lead, activeStatus: newStatus } : lead
-      );
-      message = `${selectedLeads.length} lead(s) marked as ${newStatus.toLowerCase()}.`;
-    }
+    const newStatus = action === 'setActive' ? 'Active' : 'Inactive';
+    newLeads = leads.map(lead => 
+      selectedLeads.includes(lead.id) ? { ...lead, activeStatus: newStatus } : lead
+    );
+    message = `${selectedLeads.length} lead(s) marked as ${newStatus.toLowerCase()}.`;
     
     setLeads(newLeads);
     setSelectedLeads([]);
@@ -213,7 +247,7 @@ export default function LeadsPage() {
                 </Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end">
-                <DropdownMenuItem onClick={() => handleBulkAction('delete')} className="text-red-500">
+                <DropdownMenuItem onClick={confirmDeleteBulkLeads} className="text-red-500">
                   Delete
                 </DropdownMenuItem>
                 <DropdownMenuItem onClick={() => handleBulkAction('setActive')}>Mark as Active</DropdownMenuItem>
@@ -281,7 +315,7 @@ export default function LeadsPage() {
                       )}
                       <span>Mark as {lead.activeStatus === 'Active' ? 'Inactive' : 'Active'}</span>
                     </DropdownMenuItem>
-                    <DropdownMenuItem onSelect={() => handleLeadAction(lead.id, 'delete')} className="text-red-500">
+                    <DropdownMenuItem onSelect={() => confirmDeleteSingleLead(lead.id)} className="text-red-500">
                         <Trash2 className="mr-2 h-4 w-4" />
                         <span>Delete Lead</span>
                     </DropdownMenuItem>
@@ -301,6 +335,43 @@ export default function LeadsPage() {
           onSave={handleStatusSave}
         />
       )}
+
+      <AlertDialog open={!!leadToDelete} onOpenChange={() => setLeadToDelete(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Are you sure?</AlertDialogTitle>
+            <AlertDialogDescription>
+              This action cannot be undone. This will permanently delete the lead.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel onClick={() => setLeadToDelete(null)}>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={executeDeleteSingleLead} className="bg-destructive hover:bg-destructive/90">
+              Delete
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      <AlertDialog open={!!leadsToDelete} onOpenChange={() => setLeadsToDelete(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Are you sure?</AlertDialogTitle>
+            <AlertDialogDescription>
+              This action cannot be undone. This will permanently delete {leadsToDelete?.length} lead(s).
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel onClick={() => setLeadsToDelete(null)}>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={executeDeleteBulkLeads} className="bg-destructive hover:bg-destructive/90">
+              Delete
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
     </div>
   );
 }
+
+    

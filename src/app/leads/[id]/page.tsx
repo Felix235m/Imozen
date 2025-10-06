@@ -26,6 +26,16 @@ import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription } from '
 import { Textarea } from '@/components/ui/textarea';
 import { format } from 'date-fns';
 import { LeadStatusDialog } from '@/components/leads/lead-status-dialog';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog"
 
 const allLeadsData = [
   {
@@ -223,6 +233,7 @@ export default function LeadDetailPage() {
   const [isFollowUpOpen, setIsFollowUpOpen] = useState(false);
   const [isHistoryOpen, setIsHistoryOpen] = useState(false);
   const [isStatusDialogOpen, setIsStatusDialogOpen] = useState(false);
+  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
 
   const [notes, setNotes] = useState(initialNotes);
   const [currentNote, setCurrentNote] = useState(initialCurrentNote);
@@ -305,6 +316,17 @@ export default function LeadDetailPage() {
     });
   };
   
+  const handleDeleteLead = () => {
+    // In a real app, you'd make an API call to delete the lead
+    toast({
+      title: "Lead Deleted",
+      description: `${lead?.firstName} ${lead?.lastName} has been deleted.`,
+    });
+    // For now, just navigate back to leads page
+    // In a real app, you might want to redirect to a different page or handle state update
+    window.location.href = '/leads';
+  }
+
   const getStatusBadgeClass = (status: 'Hot' | 'Warm' | 'Cold') => {
     switch (status) {
       case 'Hot': return 'bg-red-100 text-red-700 border-red-200';
@@ -385,7 +407,7 @@ export default function LeadDetailPage() {
                 <span>Mark as {lead.activeStatus === 'Active' ? 'Inactive' : 'Active'}</span>
               </DropdownMenuItem>
               <DropdownMenuSeparator />
-              <DropdownMenuItem onSelect={() => alert('Delete action')} className="text-red-600">
+              <DropdownMenuItem onSelect={() => setIsDeleteDialogOpen(true)} className="text-red-600">
                 <Trash2 className="mr-2 h-4 w-4" />
                 <span>Delete Lead</span>
               </DropdownMenuItem>
@@ -521,6 +543,23 @@ export default function LeadDetailPage() {
         lead={{id: lead.id, name: `${lead.firstName} ${lead.lastName}`, status: lead.status}}
         onSave={handleStatusSave}
       />
+      <AlertDialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Are you sure?</AlertDialogTitle>
+            <AlertDialogDescription>
+              This action cannot be undone. This will permanently delete the lead
+              for {lead.firstName} {lead.lastName}.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={handleDeleteLead} className="bg-destructive hover:bg-destructive/90">
+              Delete
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }
@@ -939,3 +978,5 @@ function LeadHistorySheet({ open, onOpenChange, lead, history }: LeadHistoryShee
         </Sheet>
     );
 }
+
+    
