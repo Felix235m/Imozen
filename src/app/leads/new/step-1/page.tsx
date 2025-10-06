@@ -105,7 +105,7 @@ export default function NewLeadStep1Page() {
                           </FormControl>
                           <SelectContent>
                             {countries.map(country => (
-                              <SelectItem key={country.code} value={country.dial_code}>
+                              <SelectItem key={`${country.code}-${country.dial_code}`} value={country.dial_code}>
                                 {country.name} ({country.dial_code})
                               </SelectItem>
                             ))}
@@ -166,7 +166,7 @@ export default function NewLeadStep1Page() {
                 )}
               />
 
-              <div className="fixed bottom-20 left-0 right-0 p-4 bg-white border-t">
+              <div className="pt-6">
                  <div className="grid grid-cols-2 gap-4 max-w-md mx-auto">
                     <Button variant="outline" type="button" size="lg" onClick={() => router.push('/leads')}>
                         Cancel

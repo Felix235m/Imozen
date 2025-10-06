@@ -220,7 +220,7 @@ export default function NewLeadStep3Page() {
                 )}
               />
 
-              <div className="fixed bottom-20 left-0 right-0 p-4 bg-white border-t">
+              <div className="pt-6">
                  <div className="grid grid-cols-3 gap-4 max-w-md mx-auto">
                     <Button variant="outline" type="button" size="lg" onClick={() => router.back()}>
                         Previous
