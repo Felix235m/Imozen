@@ -1,4 +1,3 @@
-
 "use client";
 
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -23,12 +22,10 @@ import {
 } from "@/components/ui/select";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { useRouter } from "next/navigation";
-import { countries } from "@/lib/countries";
 
 const formSchema = z.object({
   firstName: z.string().min(1, "First name is required"),
   lastName: z.string().min(1, "Last name is required"),
-  phoneCountryCode: z.string().min(1, "Country code is required"),
   phoneNumber: z.string().min(1, "Phone number is required"),
   email: z.string().email("Invalid email address").optional().or(z.literal('')),
   leadSource: z.string().optional(),
@@ -41,7 +38,6 @@ export default function NewLeadStep1Page() {
     defaultValues: {
       firstName: "",
       lastName: "",
-      phoneCountryCode: "+351",
       phoneNumber: "",
       email: "",
       leadSource: "",
@@ -89,46 +85,19 @@ export default function NewLeadStep1Page() {
                   </FormItem>
                 )}
               />
-              <FormItem>
-                <FormLabel>Phone <span className="text-red-500">*</span></FormLabel>
-                <div className="flex gap-2">
-                  <FormField
-                    control={form.control}
-                    name="phoneCountryCode"
-                    render={({ field }) => (
-                      <FormItem className="w-1/3">
-                        <Select onValueChange={field.onChange} defaultValue={field.value}>
-                          <FormControl>
-                            <SelectTrigger>
-                              <SelectValue placeholder="Country" />
-                            </SelectTrigger>
-                          </FormControl>
-                          <SelectContent>
-                            {countries.map(country => (
-                              <SelectItem key={country.code} value={country.dial_code}>
-                                {country.name} ({country.dial_code})
-                              </SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                  <FormField
-                    control={form.control}
-                    name="phoneNumber"
-                    render={({ field }) => (
-                      <FormItem className="flex-1">
-                        <FormControl>
-                          <Input type="tel" placeholder="Enter phone number" {...field} />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                </div>
-              </FormItem>
+               <FormField
+                control={form.control}
+                name="phoneNumber"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Phone <span className="text-red-500">*</span></FormLabel>
+                    <FormControl>
+                      <Input type="tel" placeholder="Enter phone number" {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
               <FormField
                 control={form.control}
                 name="email"
