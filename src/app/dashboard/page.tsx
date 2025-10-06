@@ -145,7 +145,7 @@ export default function AgentDashboardPage() {
       </section>
 
       <section className="mb-6">
-        <Link href="/agents/new" passHref>
+        <Link href="/leads/new" passHref>
           <Button className="w-full bg-primary" size="lg">
             <Plus className="mr-2 h-5 w-5" />
             Add New Lead
