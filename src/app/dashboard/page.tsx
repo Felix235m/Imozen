@@ -1,3 +1,4 @@
+
 "use client";
 
 import { useState } from 'react';
@@ -12,7 +13,8 @@ import {
   TrendingUp,
   Users,
   MessageSquare,
-  Briefcase
+  Briefcase,
+  Plus
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
@@ -140,6 +142,15 @@ export default function AgentDashboardPage() {
             </CardContent>
           </Card>
         ))}
+      </section>
+
+      <section className="mb-6">
+        <Link href="/agents/new" passHref>
+          <Button className="w-full bg-primary" size="lg">
+            <Plus className="mr-2 h-5 w-5" />
+            Add New Lead
+          </Button>
+        </Link>
       </section>
 
       <section>
