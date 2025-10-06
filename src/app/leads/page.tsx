@@ -266,11 +266,6 @@ export default function LeadsPage() {
                 onChange={(e) => setSearchTerm(e.target.value)}
               />
             </div>
-            <Link href="/leads/new/step-1">
-              <Button size="icon" className="rounded-full bg-primary h-10 w-10 shrink-0">
-                <Plus className="h-6 w-6" />
-              </Button>
-            </Link>
           </>
         )}
       </div>

@@ -2,7 +2,6 @@
 
 import { useState } from 'react';
 import {
-  Plus,
   Mail,
   Phone,
   Calendar,
@@ -141,15 +140,6 @@ export default function AgentDashboardPage() {
             </CardContent>
           </Card>
         ))}
-      </section>
-
-      <section className="mb-6">
-         <Link href="/leads/new/step-1" className='w-full'>
-            <Button className="w-full bg-primary" size="lg">
-              <Plus className="mr-2 h-5 w-5" />
-              Add New Lead
-            </Button>
-         </Link>
       </section>
 
       <section>
