@@ -5,7 +5,6 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
 import { useRouter } from "next/navigation";
-import { Button } from "@/components/ui/button";
 import {
   Form,
   FormControl,
@@ -23,11 +22,13 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import NewLeadLayout from "@/components/leads/new-lead-layout";
+import { countries } from "@/lib/countries";
+import { Combobox } from "@/components/ui/combobox";
 
 const formSchema = z.object({
   firstName: z.string().min(1, "First name is required"),
   lastName: z.string().min(1, "Last name is required"),
-  countryCode: z.string(),
+  countryCode: z.string().min(1, "Country code is required"),
   phone: z.string().min(1, "Phone number is required"),
   email: z.string().email("Invalid email address").optional().or(z.literal('')),
   leadSource: z.string().optional(),
@@ -44,14 +45,11 @@ const leadSourceOptions = [
   "Campaign",
 ];
 
-const countryCodes = [
-    { code: '+351', country: 'PT' },
-    { code: '+1', country: 'US' },
-    { code: '+44', country: 'GB' },
-    { code: '+33', country: 'FR' },
-    { code: '+49', country: 'DE' },
-    { code: '+34', country: 'ES' },
-];
+const countryOptions = countries.map(country => ({
+    value: country.dial_code,
+    label: `${country.name} (${country.dial_code})`,
+    searchValue: `${country.name.toLowerCase()} ${country.dial_code}`,
+}));
 
 export default function NewLeadStep1() {
   const router = useRouter();
@@ -95,7 +93,7 @@ export default function NewLeadStep1() {
             name="firstName"
             render={({ field }) => (
               <FormItem>
-                <FormLabel>First Name *</FormLabel>
+                <FormLabel>First Name</FormLabel>
                 <FormControl>
                   <Input placeholder="Enter first name" {...field} />
                 </FormControl>
@@ -108,7 +106,7 @@ export default function NewLeadStep1() {
             name="lastName"
             render={({ field }) => (
               <FormItem>
-                <FormLabel>Last Name *</FormLabel>
+                <FormLabel>Last Name</FormLabel>
                 <FormControl>
                   <Input placeholder="Enter last name" {...field} />
                 </FormControl>
@@ -117,39 +115,38 @@ export default function NewLeadStep1() {
             )}
           />
           <FormItem>
-            <FormLabel>Phone *</FormLabel>
+            <FormLabel>Phone</FormLabel>
             <div className="flex gap-2">
                 <FormField
                     control={form.control}
                     name="countryCode"
                     render={({ field }) => (
-                        <Select onValueChange={field.onChange} defaultValue={field.value}>
-                            <FormControl>
-                                <SelectTrigger className="w-28">
-                                    <SelectValue placeholder="Code" />
-                                </SelectTrigger>
-                            </FormControl>
-                            <SelectContent>
-                                {countryCodes.map(({code, country}) => (
-                                    <SelectItem key={country} value={code}>
-                                        {code} ({country})
-                                    </SelectItem>
-                                ))}
-                            </SelectContent>
-                        </Select>
+                        <FormItem className="w-48">
+                             <Combobox
+                                options={countryOptions}
+                                value={field.value}
+                                onChange={field.onChange}
+                                placeholder="Select country..."
+                                searchPlaceholder="Search country..."
+                                notFoundText="No country found."
+                             />
+                             <FormMessage />
+                        </FormItem>
                     )}
                 />
                 <FormField
                     control={form.control}
                     name="phone"
                     render={({ field }) => (
-                    <FormControl>
-                        <Input placeholder="Enter phone number" {...field} />
-                    </FormControl>
+                        <FormItem className="flex-1">
+                            <FormControl>
+                                <Input placeholder="Enter phone number" {...field} />
+                            </FormControl>
+                            <FormMessage />
+                        </FormItem>
                     )}
                 />
             </div>
-            <FormMessage>{form.formState.errors.phone?.message}</FormMessage>
           </FormItem>
           <FormField
             control={form.control}
