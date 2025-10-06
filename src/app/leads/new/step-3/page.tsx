@@ -35,9 +35,9 @@ const propertiesViewedOptions = ["No", "A few", "Many"];
 const formSchema = z.object({
   financingType: z.string().min(1, "Financing type is required"),
   creditPreApproval: z.boolean().default(false),
-  purchaseTimeframe: z.string().min(1, "Purchase timeframe is required"),
-  searchDuration: z.string().min(1, "Search duration is required"),
-  propertiesViewed: z.string().min(1, "This field is required"),
+  purchaseTimeframe: z.string().optional(),
+  searchDuration: z.string().optional(),
+  propertiesViewed: z.string().optional(),
 });
 
 export default function NewLeadStep3Page() {
@@ -57,9 +57,7 @@ export default function NewLeadStep3Page() {
 
   const onSubmit = (values: z.infer<typeof formSchema>) => {
     console.log("Step 3 data:", values);
-    // On "Next", you would proceed to the next step or finish
-    // For now, it will just log the data.
-    // router.push("/leads/new/summary");
+    router.push("/leads/new/step-4");
   };
 
   const handleSaveAsDraft = () => {
@@ -95,7 +93,7 @@ export default function NewLeadStep3Page() {
                 name="financingType"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Financing Type</FormLabel>
+                    <FormLabel>Financing Type <span className="text-red-500">*</span></FormLabel>
                     <FormControl>
                       <div className="grid grid-cols-2 gap-4">
                         {financingTypes.map((type) => (
@@ -222,8 +220,8 @@ export default function NewLeadStep3Page() {
                 )}
               />
 
-              <div className="pt-6">
-                 <div className="grid grid-cols-3 gap-4">
+              <div className="fixed bottom-20 left-0 right-0 p-4 bg-white border-t">
+                 <div className="grid grid-cols-3 gap-4 max-w-md mx-auto">
                     <Button variant="outline" type="button" size="lg" onClick={() => router.back()}>
                         Previous
                     </Button>
