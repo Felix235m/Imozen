@@ -658,33 +658,35 @@ export default function LeadDetailPage() {
         </AlertDialogContent>
       </AlertDialog>
       <AlertDialog open={isConfirmSaveOpen} onOpenChange={setIsConfirmSaveOpen}>
-        <AlertDialogContent>
+        <AlertDialogContent className="sm:max-w-md">
           <AlertDialogHeader>
             <AlertDialogTitle>Confirm Changes</AlertDialogTitle>
             <AlertDialogDescription>
               Please review the changes before saving.
             </AlertDialogDescription>
           </AlertDialogHeader>
-          <div>
-            <h4 className="font-semibold mb-2">Changes:</h4>
-            <ul className="list-disc list-inside space-y-1 text-sm">
-                {changeSummary.map(change => (
-                    <li key={change.field}>
-                        <span className="font-medium">{change.field}:</span> {formatValue(change.field, change.oldValue)} &rarr; {formatValue(change.field, change.newValue)}
-                    </li>
-                ))}
-                {avatarPreview !== originalLead?.avatar && <li>Avatar updated</li>}
-            </ul>
+          <div className="space-y-4 text-sm">
+            <div>
+                <h4 className="font-semibold mb-2">Changes:</h4>
+                <ul className="list-disc list-inside space-y-1">
+                    {changeSummary.map(change => (
+                        <li key={change.field}>
+                            <span className="font-medium">{change.field}:</span> {formatValue(change.field, change.oldValue)} &rarr; {formatValue(change.field, change.newValue)}
+                        </li>
+                    ))}
+                    {avatarPreview !== originalLead?.avatar && <li>Avatar updated</li>}
+                </ul>
+            </div>
             {suggestedStatus && (
-                <div className="mt-4 p-3 bg-yellow-50 border border-yellow-200 rounded-md">
-                    <p className="text-sm text-yellow-800">Based on the updated property requirements, we suggest changing the lead status from 
-                    <Badge variant="outline" className={cn("mx-1", getStatusBadgeClass(lead.status))}>{lead.status}</Badge> 
+                <div className="p-3 bg-yellow-50 border border-yellow-200 rounded-md">
+                    <p className="text-yellow-800">Based on the updated property requirements, we suggest changing the lead status from 
+                    <Badge variant="outline" className={cn("mx-1.5", getStatusBadgeClass(lead.status))}>{lead.status}</Badge> 
                     to 
-                    <Badge variant="outline" className={cn("mx-1", getStatusBadgeClass(suggestedStatus))}>{suggestedStatus}</Badge>.</p>
+                    <Badge variant="outline" className={cn("mx-1.5", getStatusBadgeClass(suggestedStatus))}>{suggestedStatus}</Badge>.</p>
                 </div>
             )}
           </div>
-          <AlertDialogFooter>
+          <AlertDialogFooter className="mt-4">
             <AlertDialogCancel onClick={() => setIsConfirmSaveOpen(false)}>Cancel</AlertDialogCancel>
             <AlertDialogAction onClick={confirmSave}>
               {isSaving ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
@@ -1113,6 +1115,8 @@ function LeadHistorySheet({ open, onOpenChange, lead, history }: LeadHistoryShee
 }
 
     
+    
+
     
 
     
