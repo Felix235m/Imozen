@@ -1,3 +1,4 @@
+
 "use client";
 
 import * as React from "react";
@@ -5,6 +6,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 import * as z from "zod";
 import { Loader2, Lock, User } from "lucide-react";
+import Link from 'next/link';
 
 import { Button } from "@/components/ui/button";
 import {
@@ -161,8 +163,8 @@ export function LoginForm({
               Log In
             </Button>
             <div className="text-center">
-              <Button variant="link" type="button" className="p-0 h-auto">
-                Forgot Password?
+              <Button variant="link" type="button" className="p-0 h-auto" asChild>
+                <Link href="/forgot-password">Forgot Password?</Link>
               </Button>
             </div>
           </form>
