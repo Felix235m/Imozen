@@ -103,12 +103,6 @@ export default function NewAgentPage() {
           </Link>
           <h1 className="ml-4 text-xl font-semibold">Add New Agent</h1>
         </div>
-        <div>
-          <Button size="sm" className="bg-primary" onClick={handleSave} disabled={isSaving}>
-            {isSaving ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Save className="mr-2 h-4 w-4" />}
-            Save
-          </Button>
-        </div>
       </header>
 
       <main className="flex-1 overflow-y-auto p-4">
@@ -182,9 +176,8 @@ export default function NewAgentPage() {
         </Card>
       </main>
 
-       <footer className="grid grid-cols-2 gap-4 border-t bg-white p-4">
-            <Button variant="outline" size="lg" onClick={() => router.push('/agents')} disabled={isSaving}>Cancel</Button>
-             <Button variant="default" size="lg" className="bg-primary" onClick={handleSave} disabled={isSaving}>
+       <footer className="flex justify-center border-t bg-white p-4">
+            <Button variant="default" size="lg" className="bg-primary w-full max-w-xs" onClick={handleSave} disabled={isSaving}>
                 {isSaving ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Save className="mr-2 h-4 w-4" />}
                 Create Agent
             </Button>
