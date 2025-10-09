@@ -60,9 +60,16 @@ export function LoginForm({
           username: values.username,
           password: values.password
         });
-        console.log('Login successful', data);
-        // Assuming the token is in data.token
-        // You might want to save this token to localStorage/sessionStorage
+        
+        if (data.success) {
+            localStorage.setItem('auth_token', data.token);
+            localStorage.setItem('agent_data', JSON.stringify(data.agent));
+        } else {
+            // This case might not be hit if callAuthApi throws on non-ok responses,
+            // but is good for safety.
+            throw new Error(data.error?.message || 'Login failed');
+        }
+
       } else { // Admin login
          const isAdminCredentials = values.username === "ImoZen@2250" && values.password === "9500339370@2250";
          if (!isAdminCredentials) {
