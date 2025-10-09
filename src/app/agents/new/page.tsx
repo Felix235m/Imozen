@@ -172,16 +172,15 @@ export default function NewAgentPage() {
               <Label htmlFor="sheetUrl">Sheet URL</Label>
               <Input id="sheetUrl" name="sheetUrl" value={agentData.sheetUrl} onChange={handleInputChange} placeholder="e.g., https://docs.google.com/spreadsheets/d/..." />
             </div>
+            <div className="pt-6">
+                <Button variant="default" size="lg" className="bg-primary w-full" onClick={handleSave} disabled={isSaving}>
+                    {isSaving ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Save className="mr-2 h-4 w-4" />}
+                    Create Agent
+                </Button>
+            </div>
           </CardContent>
         </Card>
       </main>
-
-       <footer className="flex justify-center border-t bg-white p-4">
-            <Button variant="default" size="lg" className="bg-primary w-full max-w-xs" onClick={handleSave} disabled={isSaving}>
-                {isSaving ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Save className="mr-2 h-4 w-4" />}
-                Create Agent
-            </Button>
-      </footer>
     </div>
   );
 }
