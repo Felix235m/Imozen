@@ -64,12 +64,16 @@ export default function NewAgentPage() {
   const handleSave = async () => {
     setIsSaving(true);
     
-    // In a real app, you would handle the file upload to a storage service
-    // and get a URL. For now, we'll continue using pravatar for simplicity.
     const newAgentPayload = {
-      ...agentData,
-      avatar: avatarPreview || `https://i.pravatar.cc/150?u=${agentData.email}`,
-    }
+      agent_name: agentData.name,
+      agent_phone: agentData.phone,
+      agent_email: agentData.email,
+      agent_language: agentData.language,
+      login_username: agentData.username,
+      password: agentData.password,
+      sheet_url: agentData.sheetUrl || null,
+      // The avatar is handled separately and not sent to this specific API
+    };
 
     try {
       await callAuthApi('onboard_agent', newAgentPayload);
