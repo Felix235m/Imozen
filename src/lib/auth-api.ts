@@ -16,10 +16,16 @@ export async function callAuthApi(operation: Operation, payload: any) {
   if (!response.ok) {
     try {
         const errorData = JSON.parse(text);
+        // The error response could have the message in `error.message` or just `message`
         throw new Error(errorData.error?.message || errorData.message || 'API request failed');
-    } catch (e) {
-        // If parsing fails, it's likely a simple text error message from the server.
-        throw new Error(text || 'API request failed with non-JSON response');
+    } catch (e: any) {
+        // If parsing fails, it could be that `e` is the error from the `throw new Error` above.
+        // Or it could be a raw string error from the server.
+        // We'll prioritize the message from the thrown error if it exists.
+        if (e.message.includes('{')) {
+             throw new Error(text || 'API request failed with non-JSON response');
+        }
+        throw new Error(e.message || text || 'API request failed with non-JSON response');
     }
   }
 
