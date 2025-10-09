@@ -1,8 +1,9 @@
+
 "use client";
 
 import { useState, useRef } from 'react';
 import { useRouter } from 'next/navigation';
-import { ArrowLeft, Save, Loader2, Upload } from 'lucide-react';
+import { ArrowLeft, Save, Loader2, Upload, RefreshCw } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -48,6 +49,16 @@ export default function NewAgentPage() {
       };
       reader.readAsDataURL(file);
     }
+  };
+
+  const generateRandomPassword = () => {
+    const length = 12;
+    const charset = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789!@#$%^&*()_+~`|}{[]:;?><,./-=";
+    let newPassword = "";
+    for (let i = 0, n = charset.length; i < length; ++i) {
+        newPassword += charset.charAt(Math.floor(Math.random() * n));
+    }
+    setAgentData(prev => ({ ...prev, password: newPassword }));
   };
 
   const handleSave = async () => {
@@ -143,7 +154,12 @@ export default function NewAgentPage() {
             </div>
             <div className="space-y-2">
                 <Label htmlFor="password">Password</Label>
-                <Input id="password" name="password" type="password" value={agentData.password} onChange={handleInputChange} placeholder="Create a strong password" />
+                <div className="flex items-center gap-2">
+                    <Input id="password" name="password" type="text" value={agentData.password} onChange={handleInputChange} placeholder="Create a strong password" />
+                    <Button type="button" variant="ghost" size="icon" onClick={generateRandomPassword} aria-label="Generate random password">
+                        <RefreshCw className="h-5 w-5" />
+                    </Button>
+                </div>
             </div>
             <div className="space-y-2">
               <Label htmlFor="language">Language</Label>
@@ -170,7 +186,7 @@ export default function NewAgentPage() {
             <Button variant="outline" size="lg" onClick={() => router.push('/agents')} disabled={isSaving}>Cancel</Button>
              <Button variant="default" size="lg" className="bg-primary" onClick={handleSave} disabled={isSaving}>
                 {isSaving ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Save className="mr-2 h-4 w-4" />}
-                Save Agent
+                Create Agent
             </Button>
       </footer>
     </div>
