@@ -68,9 +68,7 @@ export function LoginForm({
             localStorage.setItem('auth_token', data.token);
             localStorage.setItem('agent_data', JSON.stringify(data.agent));
         } else {
-            // This case might not be hit if callAuthApi throws on non-ok responses,
-            // but is good for safety.
-            throw new Error(data.error?.message || 'Login failed');
+            throw new Error(data.error?.message || "Please check your username and password.");
         }
 
       } else { // Admin login
