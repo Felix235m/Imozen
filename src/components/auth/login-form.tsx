@@ -154,12 +154,17 @@ export function LoginForm({
             </div>
             <Button
               type="submit"
-              className="w-full bg-accent text-accent-foreground transition-all hover:bg-accent/90 hover:scale-[1.02] active:scale-[0.98]"
+              className="w-full bg-primary text-primary-foreground transition-all hover:bg-primary/90 hover:scale-[1.02] active:scale-[0.98]"
               disabled={isLoading}
             >
               {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
               Log In
             </Button>
+            <div className="text-center">
+              <Button variant="link" type="button" className="p-0 h-auto">
+                Forgot Password?
+              </Button>
+            </div>
           </form>
         </Form>
       </CardContent>
