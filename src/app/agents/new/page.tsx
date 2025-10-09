@@ -66,7 +66,7 @@ export default function NewAgentPage() {
     
     const newAgentPayload = {
       agent_name: agentData.name,
-      agent_phone: agentData.phone,
+      agent_phone: `+351${agentData.phone}`,
       agent_email: agentData.email,
       agent_language: agentData.language,
       login_username: agentData.username,
@@ -144,7 +144,12 @@ export default function NewAgentPage() {
             </div>
             <div className="space-y-2">
               <Label htmlFor="phone">Phone Number</Label>
-              <Input id="phone" name="phone" type="tel" value={agentData.phone} onChange={handleInputChange} placeholder="e.g., +1 (555) 000-0000" />
+              <div className="flex items-center gap-2">
+                <div className="flex h-10 w-fit items-center justify-center rounded-md border border-input bg-background px-3 py-2 text-sm">
+                  +351
+                </div>
+                <Input id="phone" name="phone" type="tel" value={agentData.phone} onChange={handleInputChange} placeholder="912 345 678" />
+              </div>
             </div>
             <div className="space-y-2">
               <Label htmlFor="username">Username</Label>
