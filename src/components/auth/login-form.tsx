@@ -25,6 +25,7 @@ import {
 import { Input } from "@/components/ui/input";
 import { useToast } from "@/hooks/use-toast";
 import { ImoZenLogo } from "@/components/logo";
+import { callAuthApi } from "@/lib/auth-api";
 
 const formSchema = z.object({
   username: z.string().min(1, { message: "Username is required." }),
@@ -50,23 +51,25 @@ export function LoginForm({
     },
   });
 
-  function onSubmit(values: z.infer<typeof formSchema>) {
+  async function onSubmit(values: z.infer<typeof formSchema>) {
     setIsLoading(true);
     
-    // Simulate a quick process, but no artifical delay
-    const isAdminLogin = loginType === 'admin';
-    const isAdminCredentials = values.username === "ImoZen@2250" && values.password === "9500339370@2250";
-    // Dummy check for agent, you can replace this
-    const isAgentCredentials = values.username === "agent" && values.password === "password";
+    try {
+      if (loginType === 'agent') {
+        const data = await callAuthApi('login', {
+          username: values.username,
+          password: values.password
+        });
+        console.log('Login successful', data);
+        // Assuming the token is in data.token
+        // You might want to save this token to localStorage/sessionStorage
+      } else { // Admin login
+         const isAdminCredentials = values.username === "ImoZen@2250" && values.password === "9500339370@2250";
+         if (!isAdminCredentials) {
+            throw new Error("Please check your username and password.");
+         }
+      }
 
-    let success = false;
-    if (isAdminLogin && isAdminCredentials) {
-      success = true;
-    } else if (!isAdminLogin && isAgentCredentials) {
-      success = true;
-    }
-
-    if (success) {
       toast({
         title: "Login Successful",
         description: "Welcome! You are now logged in.",
@@ -74,15 +77,17 @@ export function LoginForm({
       if (onLoginSuccess) {
         onLoginSuccess();
       }
-    } else {
-      toast({
-        variant: "destructive",
-        title: "Authentication Failed",
-        description: "Please check your username and password.",
-      });
-      form.setValue("password", "");
+
+    } catch (error: any) {
+        toast({
+            variant: "destructive",
+            title: "Authentication Failed",
+            description: error.message || "An unexpected error occurred.",
+        });
+        form.setValue("password", "");
+    } finally {
+        setIsLoading(false);
     }
-    setIsLoading(false);
   }
 
   return (

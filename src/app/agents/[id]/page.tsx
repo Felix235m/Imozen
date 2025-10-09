@@ -11,6 +11,7 @@ import { Input } from '@/components/ui/input';
 import { useToast } from '@/hooks/use-toast';
 import { Loader2 } from 'lucide-react';
 import { useParams } from 'next/navigation';
+import { callAuthApi } from '@/lib/auth-api';
 
 const initialAgentData = {
   name: 'Sophia Carter',
@@ -65,24 +66,18 @@ export default function AgentDetailPage() {
   const handleSave = async () => {
     setIsSaving(true);
     try {
-      const response = await fetch('https://eurekagathr.app.n8n.cloud/webhook-test/Agent%20Data', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(agent),
-      });
+      const agentPayload = {
+        ...agent,
+        agent_id: agent.id, // The API might expect agent_id
+      };
+      await callAuthApi('update_agent', agentPayload);
 
-      if (response.ok) {
-        toast({
-          title: "Success",
-          description: "Agent details saved successfully.",
-        });
-        setIsEditing(false);
-      } else {
-        const errorData = await response.text();
-        throw new Error(errorData || 'Failed to save agent data.');
-      }
+      toast({
+        title: "Success",
+        description: "Agent details saved successfully.",
+      });
+      setIsEditing(false);
+      
     } catch (error: any) {
       console.error(error);
       toast({

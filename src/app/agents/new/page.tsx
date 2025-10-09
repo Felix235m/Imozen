@@ -11,6 +11,7 @@ import { useToast } from '@/hooks/use-toast';
 import Link from 'next/link';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { callAuthApi } from '@/lib/auth-api';
 
 export default function NewAgentPage() {
   const router = useRouter();
@@ -23,6 +24,7 @@ export default function NewAgentPage() {
     username: '',
     language: 'English',
     sheetUrl: '',
+    password: ''
   });
   const [avatarPreview, setAvatarPreview] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -50,35 +52,23 @@ export default function NewAgentPage() {
 
   const handleSave = async () => {
     setIsSaving(true);
+    
     // In a real app, you would handle the file upload to a storage service
     // and get a URL. For now, we'll continue using pravatar for simplicity.
-    const newAgent = {
+    const newAgentPayload = {
       ...agentData,
-      id: `agent-${Date.now()}`,
-      status: 'Active',
-      createdAt: new Date().toISOString().split('T')[0],
       avatar: avatarPreview || `https://i.pravatar.cc/150?u=${agentData.email}`,
     }
 
     try {
-      const response = await fetch('https://eurekagathr.app.n8n.cloud/webhook-test/Agent%20Data', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(newAgent),
-      });
+      await callAuthApi('onboard_agent', newAgentPayload);
 
-      if (response.ok) {
-        toast({
-          title: "Success",
-          description: "New agent created successfully.",
-        });
-        router.push('/agents');
-      } else {
-        const errorData = await response.text();
-        throw new Error(errorData || 'Failed to create new agent.');
-      }
+      toast({
+        title: "Success",
+        description: "New agent created successfully.",
+      });
+      router.push('/agents');
+
     } catch (error: any) {
       console.error(error);
       toast({
@@ -150,6 +140,10 @@ export default function NewAgentPage() {
             <div className="space-y-2">
               <Label htmlFor="username">Username</Label>
               <Input id="username" name="username" value={agentData.username} onChange={handleInputChange} placeholder="e.g., johndoe" />
+            </div>
+            <div className="space-y-2">
+                <Label htmlFor="password">Password</Label>
+                <Input id="password" name="password" type="password" value={agentData.password} onChange={handleInputChange} placeholder="Create a strong password" />
             </div>
             <div className="space-y-2">
               <Label htmlFor="language">Language</Label>
