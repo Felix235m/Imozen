@@ -78,11 +78,6 @@ export default function NewAgentPage() {
     try {
       await callAuthApi('onboard_agent', newAgentPayload);
 
-      toast({
-        title: "Success",
-        description: "New agent created successfully.",
-      });
-
       const query = new URLSearchParams({
         name: agentData.name,
         phone: newAgentPayload.agent_phone,
