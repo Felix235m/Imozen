@@ -50,7 +50,7 @@ export default function ForgotPasswordPage() {
     
     try {
       await callAuthApi('password_reset_request', {
-        contact: values.contact
+        identifier: values.contact
       });
       setIsSuccess(true);
     } catch (error: any) {
