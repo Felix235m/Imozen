@@ -65,24 +65,11 @@ function AgentSuccessContent() {
 }
 
 function CredentialRow({ label, value, isSensitive = false }: { label: string; value: string; isSensitive?: boolean }) {
-  const { toast } = useToast();
-  
-  const handleCopy = () => {
-    navigator.clipboard.writeText(value);
-    toast({
-      title: "Copied!",
-      description: `${label} copied to clipboard.`,
-    });
-  };
-
   return (
     <div className="flex items-center justify-between text-sm">
       <span className="font-medium text-gray-600">{label}:</span>
       <div className="flex items-center gap-2">
         <span className={`font-mono ${isSensitive ? 'blur-sm hover:blur-none transition-all' : ''}`}>{value}</span>
-        <Button variant="ghost" size="icon" className="h-6 w-6" onClick={handleCopy}>
-          <Copy className="h-4 w-4 text-gray-500" />
-        </Button>
       </div>
     </div>
   );
