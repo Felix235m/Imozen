@@ -1,4 +1,4 @@
-const API_BASE_URL = 'https://eurekagathr.app.n8n.cloud/webhook-test/domain/auth-agents';
+const API_BASE_URL = 'https://eurekagathr.app.n8n.cloud/webhook/domain/auth-agents';
 
 type Operation = 'login' | 'password_reset_request' | 'password_reset_complete' | 'onboard_agent' | 'update_agent';
 
