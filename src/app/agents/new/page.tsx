@@ -82,7 +82,16 @@ export default function NewAgentPage() {
         title: "Success",
         description: "New agent created successfully.",
       });
-      router.push('/agents');
+
+      const query = new URLSearchParams({
+        name: agentData.name,
+        phone: newAgentPayload.agent_phone,
+        email: agentData.email,
+        username: agentData.username,
+        password: agentData.password,
+      });
+
+      router.push(`/agents/new/success?${query.toString()}`);
 
     } catch (error: any) {
       console.error(error);
