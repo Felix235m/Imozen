@@ -133,8 +133,14 @@ export default function AgentDashboardPage() {
   const handleAddNewLead = async () => {
     setIsAddingLead(true);
     try {
-      const agentData = JSON.parse(localStorage.getItem('agent_data') || '{}');
-      await callAuthApi('validate_session', agentData);
+      const agentDataString = localStorage.getItem('agent_data');
+      if (!agentDataString) {
+        throw new Error("Agent data not found in session.");
+      }
+      const agentData = JSON.parse(agentDataString);
+
+      await callAuthApi('validate_session', { agent: agentData });
+      
       router.push('/leads/new');
     } catch (error: any) {
       toast({
