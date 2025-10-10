@@ -120,8 +120,13 @@ export default function AgentDashboardPage() {
   useEffect(() => {
     const agentDataString = localStorage.getItem('agent_data');
     if (agentDataString) {
-      const agentData = JSON.parse(agentDataString);
-      setAgentName(agentData.agent_name || 'Agent');
+      try {
+        const agentData = JSON.parse(agentDataString);
+        setAgentName(agentData.agent_name || 'Agent');
+      } catch (error) {
+        console.error("Failed to parse agent data from localStorage", error);
+        setAgentName('Agent');
+      }
     }
   }, []);
 
@@ -138,7 +143,30 @@ export default function AgentDashboardPage() {
   };
 
   const handleAddNewLead = async () => {
-    router.push('/leads/new');
+    setIsCheckingSession(true);
+    try {
+      const agentDataString = localStorage.getItem('agent_data');
+      if (!agentDataString) {
+        throw new Error('Agent data not found.');
+      }
+      const agentData = JSON.parse(agentDataString);
+
+      await callAuthApi('validate_session', { agent: agentData });
+      
+      router.push('/leads/new');
+
+    } catch (error: any) {
+      toast({
+        variant: "destructive",
+        title: "Session Expired",
+        description: "Your session has expired. Please log in again.",
+      });
+      localStorage.removeItem('auth_token');
+      localStorage.removeItem('agent_data');
+      router.push('/');
+    } finally {
+      setIsCheckingSession(false);
+    }
   };
 
   return (

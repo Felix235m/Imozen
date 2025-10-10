@@ -18,9 +18,9 @@ export async function callAuthApi(operation: Operation, payload: any) {
 
   let body;
   if (operation === 'validate_session') {
-    // This is the critical fix: Ensure the body is correctly structured for this specific operation.
-    // The payload coming in is the agent data object itself.
-    body = JSON.stringify({ operation, agent: payload });
+    // For validate_session, the payload is expected to be { agent: agentData }
+    // and we want the body to be { operation: 'validate_session', agent: agentData }
+    body = JSON.stringify({ operation, ...payload });
   } else {
     body = JSON.stringify({ operation, ...payload });
   }
