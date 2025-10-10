@@ -1,5 +1,4 @@
 
-
 const API_BASE_URL = 'https://eurekagathr.app.n8n.cloud/webhook/domain/auth-agents';
 const LEAD_CREATION_URL = 'https://eurekagathr.app.n8n.cloud/webhook-test/domain/lead-creation';
 
@@ -20,8 +19,8 @@ export async function callAuthApi(operation: Operation, payload: any) {
   let body;
   if (operation === 'validate_session') {
     // This is the critical fix: Ensure the body is correctly structured for this specific operation.
-    // The payload coming in is { agent: agentData }, so we stringify it directly.
-    body = JSON.stringify({ operation, ...payload });
+    // The payload coming in is the agent data object itself.
+    body = JSON.stringify({ operation, agent: payload });
   } else {
     body = JSON.stringify({ operation, ...payload });
   }
