@@ -16,11 +16,12 @@ export async function callAuthApi(operation: Operation, payload: any) {
     headers['Authorization'] = `Bearer ${token}`;
   }
 
+  const body = JSON.stringify({ operation, ...payload });
 
   const response = await fetch(url, {
     method: 'POST',
     headers,
-    body: JSON.stringify({ operation, ...payload })
+    body: body
   });
 
   const text = await response.text();
