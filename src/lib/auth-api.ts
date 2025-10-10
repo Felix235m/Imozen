@@ -1,13 +1,24 @@
+
 const API_BASE_URL = 'https://eurekagathr.app.n8n.cloud/webhook/domain/auth-agents';
 
 type Operation = 'login' | 'password_reset_request' | 'password_reset_complete' | 'onboard_agent' | 'update_agent';
 
 export async function callAuthApi(operation: Operation, payload: any) {
+  const headers: HeadersInit = {
+    'Content-Type': 'application/json',
+  };
+
+  // Add the token to the header for all operations except login
+  if (operation !== 'login') {
+    const token = typeof window !== 'undefined' ? localStorage.getItem('auth_token') : null;
+    if (token) {
+      headers['Authorization'] = `Bearer ${token}`;
+    }
+  }
+
   const response = await fetch(API_BASE_URL, {
     method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-    },
+    headers,
     body: JSON.stringify({ operation, ...payload })
   });
 

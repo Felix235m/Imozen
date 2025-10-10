@@ -64,7 +64,7 @@ export function LoginForm({
           password: values.password
         });
         
-        if (data.success) {
+        if (data.success === true) {
             localStorage.setItem('auth_token', data.token);
             localStorage.setItem('agent_data', JSON.stringify(data.agent));
         } else {
