@@ -16,7 +16,7 @@ type ProfileData = {
   email: string;
   phone: string;
   language: string;
-  avatar: string;
+  avatar?: string;
 };
 
 export default function ProfilePage() {
@@ -30,21 +30,26 @@ export default function ProfilePage() {
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    const agentDataString = localStorage.getItem('agent_data');
-    if (agentDataString) {
-      const agentData = JSON.parse(agentDataString);
-      const profileData = {
-        name: agentData.agent_name || '',
-        email: agentData.agent_email || '',
-        phone: agentData.agent_phone || '',
-        language: agentData.agent_language || 'English',
-        avatar: agentData.agent_image_url || `https://i.pravatar.cc/150?u=${agentData.agent_email}`,
-      };
-      setProfile(profileData);
-      setOriginalProfile(profileData);
-      setAvatarPreview(profileData.avatar);
+    try {
+      const agentDataString = localStorage.getItem('agent_data');
+      if (agentDataString) {
+        const agentData = JSON.parse(agentDataString);
+        const profileData = {
+          name: agentData.agent_name || '',
+          email: agentData.agent_email || '',
+          phone: agentData.agent_phone || '',
+          language: agentData.agent_language || 'English',
+          avatar: agentData.agent_image_url || undefined,
+        };
+        setProfile(profileData);
+        setOriginalProfile(profileData);
+        setAvatarPreview(profileData.avatar || null);
+      }
+    } catch (error) {
+        console.error("Failed to load agent data", error)
+    } finally {
+        setIsLoading(false);
     }
-    setIsLoading(false);
   }, []);
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -74,12 +79,27 @@ export default function ProfilePage() {
     // Simulate API call
     await new Promise(resolve => setTimeout(resolve, 1000));
     if (profile) {
-      setOriginalProfile(profile);
+      const updatedProfile = { ...profile, avatar: avatarPreview || profile.avatar };
+      setOriginalProfile(updatedProfile);
+      setProfile(updatedProfile);
+      
+      // Also update localStorage
+      const agentDataString = localStorage.getItem('agent_data');
+      if (agentDataString) {
+        const agentData = JSON.parse(agentDataString);
+        agentData.agent_name = updatedProfile.name;
+        agentData.agent_email = updatedProfile.email;
+        agentData.agent_phone = updatedProfile.phone;
+        agentData.agent_language = updatedProfile.language;
+        agentData.agent_image_url = updatedProfile.avatar;
+        localStorage.setItem('agent_data', JSON.stringify(agentData));
+      }
+
+      toast({
+        title: "Success",
+        description: "Your profile has been updated.",
+      });
     }
-    toast({
-      title: "Success",
-      description: "Your profile has been updated.",
-    });
     setIsEditing(false);
     setIsSaving(false);
   };
@@ -87,7 +107,7 @@ export default function ProfilePage() {
   const handleCancel = () => {
     if (originalProfile) {
         setProfile(originalProfile);
-        setAvatarPreview(originalProfile.avatar);
+        setAvatarPreview(originalProfile.avatar || null);
     }
     setIsEditing(false);
   };
@@ -102,8 +122,8 @@ export default function ProfilePage() {
 
   if (!profile) {
     return (
-      <div className="flex h-screen items-center justify-center">
-        <p>Could not load agent profile. Please try logging out and back in.</p>
+      <div className="flex h-screen items-center justify-center p-4 text-center">
+        <p>Could not load your agent profile. Please try logging out and back in.</p>
       </div>
     );
   }
@@ -133,7 +153,7 @@ export default function ProfilePage() {
             <div className="relative">
               <Avatar className="h-24 w-24">
                 <AvatarImage src={avatarPreview || undefined} alt={profile.name} />
-                <AvatarFallback>{profile.name.charAt(0)}</AvatarFallback>
+                <AvatarFallback>{profile.name ? profile.name.charAt(0).toUpperCase() : 'A'}</AvatarFallback>
               </Avatar>
               {isEditing && (
                 <>

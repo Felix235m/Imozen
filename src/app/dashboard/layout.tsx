@@ -46,15 +46,19 @@ export default function DashboardLayout({
 }) {
   const pathname = usePathname();
   const router = useRouter();
-  const [agentAvatar, setAgentAvatar] = useState("https://i.pravatar.cc/150?u=ethan");
+  const [agentAvatar, setAgentAvatar] = useState<string | undefined>(undefined);
   const [agentInitial, setAgentInitial] = useState("A");
 
   useEffect(() => {
-    const agentDataString = localStorage.getItem('agent_data');
-    if (agentDataString) {
-      const agentData = JSON.parse(agentDataString);
-      setAgentAvatar(agentData.agent_image_url || `https://i.pravatar.cc/150?u=${agentData.agent_email}`);
-      setAgentInitial(agentData.agent_name ? agentData.agent_name.charAt(0) : 'A');
+    try {
+      const agentDataString = localStorage.getItem('agent_data');
+      if (agentDataString) {
+        const agentData = JSON.parse(agentDataString);
+        setAgentAvatar(agentData.agent_image_url || undefined);
+        setAgentInitial(agentData.agent_name ? agentData.agent_name.charAt(0).toUpperCase() : 'A');
+      }
+    } catch (error) {
+      console.error("Failed to parse agent data from localStorage", error);
     }
   }, []);
 
