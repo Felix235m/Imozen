@@ -14,8 +14,7 @@ import {
   Users,
   MessageSquare,
   Briefcase,
-  Plus,
-  Loader2
+  Plus
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
@@ -23,8 +22,8 @@ import { LeadFollowUpSheet } from '@/components/leads/lead-follow-up-sheet';
 import { allLeadsData, type LeadData } from '@/lib/leads-data';
 import { cn } from '@/lib/utils';
 import { useRouter } from 'next/navigation';
-import { callAuthApi } from '@/lib/auth-api';
 import { useToast } from '@/hooks/use-toast';
+import Link from 'next/link';
 
 const agentName = "Ethan";
 
@@ -114,9 +113,7 @@ const tasks = [
 export default function AgentDashboardPage() {
   const [isFollowUpOpen, setIsFollowUpOpen] = useState(false);
   const [selectedLead, setSelectedLead] = useState<LeadData | null>(null);
-  const [isAddingLead, setIsAddingLead] = useState(false);
   const router = useRouter();
-  const { toast } = useToast();
 
   const handleTaskClick = (leadId: string, icon: React.ElementType) => {
     if (icon === MessageSquare) {
@@ -127,32 +124,6 @@ export default function AgentDashboardPage() {
       }
     } else {
         router.push(`/leads/${leadId}`);
-    }
-  };
-
-  const handleAddNewLead = async () => {
-    setIsAddingLead(true);
-    try {
-      const agentDataString = localStorage.getItem('agent_data');
-      if (!agentDataString) {
-        throw new Error("Agent data not found in session.");
-      }
-      const agentData = JSON.parse(agentDataString);
-
-      await callAuthApi('validate_session', agentData);
-      
-      router.push('/leads/new');
-    } catch (error: any) {
-      toast({
-        variant: "destructive",
-        title: "Session Expired",
-        description: "Your session has expired. Please log in again.",
-      });
-      localStorage.removeItem('auth_token');
-      localStorage.removeItem('agent_data');
-      router.push('/');
-    } finally {
-      setIsAddingLead(false);
     }
   };
 
@@ -175,10 +146,12 @@ export default function AgentDashboardPage() {
       </section>
 
       <section className="mb-6">
-          <Button className="w-full bg-primary" size="lg" onClick={handleAddNewLead} disabled={isAddingLead}>
-            {isAddingLead ? <Loader2 className="mr-2 h-5 w-5 animate-spin" /> : <Plus className="mr-2 h-5 w-5" />}
-            Add New Lead
-          </Button>
+          <Link href="/leads/new" className="w-full">
+            <Button className="w-full bg-primary" size="lg">
+              <Plus className="mr-2 h-5 w-5" />
+              Add New Lead
+            </Button>
+          </Link>
       </section>
 
       <section>
