@@ -139,7 +139,7 @@ export default function AgentDashboardPage() {
       }
       const agentData = JSON.parse(agentDataString);
 
-      await callAuthApi('validate_session', { agent: agentData });
+      await callAuthApi('validate_session', agentData);
       
       router.push('/leads/new');
     } catch (error: any) {

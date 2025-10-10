@@ -1,6 +1,5 @@
 
 
-
 const API_BASE_URL = 'https://eurekagathr.app.n8n.cloud/webhook/domain/auth-agents';
 const LEAD_CREATION_URL = 'https://eurekagathr.app.n8n.cloud/webhook-test/domain/lead-creation';
 
@@ -18,7 +17,12 @@ export async function callAuthApi(operation: Operation, payload: any) {
     headers['Authorization'] = `Bearer ${token}`;
   }
 
-  const body = JSON.stringify({ operation, ...payload });
+  let body;
+  if (operation === 'validate_session') {
+    body = JSON.stringify({ operation: 'validate_session', agent: payload });
+  } else {
+    body = JSON.stringify({ operation, ...payload });
+  }
 
   const response = await fetch(url, {
     method: 'POST',
