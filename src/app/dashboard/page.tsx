@@ -1,7 +1,7 @@
 
 "use client";
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import {
   Mail,
   Phone,
@@ -24,10 +24,7 @@ import { allLeadsData, type LeadData } from '@/lib/leads-data';
 import { cn } from '@/lib/utils';
 import { useRouter } from 'next/navigation';
 import { useToast } from '@/hooks/use-toast';
-import Link from 'next/link';
 import { callAuthApi } from '@/lib/auth-api';
-
-const agentName = "Ethan";
 
 const stats = [
   { title: 'Leads for Follow-up', value: '23', icon: Users },
@@ -116,8 +113,17 @@ export default function AgentDashboardPage() {
   const [isFollowUpOpen, setIsFollowUpOpen] = useState(false);
   const [selectedLead, setSelectedLead] = useState<LeadData | null>(null);
   const [isCheckingSession, setIsCheckingSession] = useState(false);
+  const [agentName, setAgentName] = useState('');
   const router = useRouter();
   const { toast } = useToast();
+
+  useEffect(() => {
+    const agentDataString = localStorage.getItem('agent_data');
+    if (agentDataString) {
+      const agentData = JSON.parse(agentDataString);
+      setAgentName(agentData.agent_name || 'Agent');
+    }
+  }, []);
 
   const handleTaskClick = (leadId: string, icon: React.ElementType) => {
     if (icon === MessageSquare) {
@@ -132,33 +138,7 @@ export default function AgentDashboardPage() {
   };
 
   const handleAddNewLead = async () => {
-    setIsCheckingSession(true);
-    try {
-      const agentDataString = localStorage.getItem('agent_data');
-      if (!agentDataString) {
-        throw new Error("Agent data not found. Please log in again.");
-      }
-      const agentData = JSON.parse(agentDataString);
-
-      // Pass the agentData wrapped in an object with the key 'agent'
-      await callAuthApi('validate_session', { agent: agentData });
-
-      // If API call is successful, navigate to the new lead page
-      router.push('/leads/new');
-
-    } catch (error: any) {
-      toast({
-        variant: "destructive",
-        title: "Session Expired",
-        description: "Your session has expired. Please log in again.",
-      });
-      // Clear local storage and redirect to login
-      localStorage.removeItem('auth_token');
-      localStorage.removeItem('agent_data');
-      router.push('/');
-    } finally {
-      setIsCheckingSession(false);
-    }
+    router.push('/leads/new');
   };
 
   return (

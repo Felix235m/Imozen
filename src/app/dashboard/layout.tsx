@@ -1,3 +1,4 @@
+
 "use client"
 
 import {
@@ -21,6 +22,7 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { ImoZenLogo } from '@/components/logo';
 import { cn } from '@/lib/utils';
+import { useEffect, useState } from 'react';
 
 
 const navItems = [
@@ -44,9 +46,21 @@ export default function DashboardLayout({
 }) {
   const pathname = usePathname();
   const router = useRouter();
+  const [agentAvatar, setAgentAvatar] = useState("https://i.pravatar.cc/150?u=ethan");
+  const [agentInitial, setAgentInitial] = useState("A");
+
+  useEffect(() => {
+    const agentDataString = localStorage.getItem('agent_data');
+    if (agentDataString) {
+      const agentData = JSON.parse(agentDataString);
+      setAgentAvatar(agentData.agent_image_url || `https://i.pravatar.cc/150?u=${agentData.agent_email}`);
+      setAgentInitial(agentData.agent_name ? agentData.agent_name.charAt(0) : 'A');
+    }
+  }, []);
 
   const handleLogout = () => {
-    // In a real app, you'd clear session/token here
+    localStorage.removeItem('auth_token');
+    localStorage.removeItem('agent_data');
     router.push('/');
   };
 
@@ -70,8 +84,8 @@ export default function DashboardLayout({
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <Avatar className="h-8 w-8 cursor-pointer">
-                <AvatarImage src="https://i.pravatar.cc/150?u=ethan" alt="Agent" />
-                <AvatarFallback>A</AvatarFallback>
+                <AvatarImage src={agentAvatar} alt="Agent" />
+                <AvatarFallback>{agentInitial}</AvatarFallback>
               </Avatar>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end">

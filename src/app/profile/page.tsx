@@ -1,6 +1,7 @@
+
 "use client";
 
-import { useState, useRef } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { Edit, Save, Loader2, Upload } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -10,29 +11,51 @@ import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useToast } from '@/hooks/use-toast';
 
-const initialProfileData = {
-  name: 'Ethan Carter',
-  email: 'ethan.carter@example.com',
-  phone: '123-456-7890',
-  language: 'English',
-  avatar: 'https://i.pravatar.cc/150?u=ethan',
+type ProfileData = {
+  name: string;
+  email: string;
+  phone: string;
+  language: string;
+  avatar: string;
 };
 
 export default function ProfilePage() {
   const [isEditing, setIsEditing] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
-  const [profile, setProfile] = useState(initialProfileData);
-  const [avatarPreview, setAvatarPreview] = useState<string | null>(initialProfileData.avatar);
+  const [profile, setProfile] = useState<ProfileData | null>(null);
+  const [originalProfile, setOriginalProfile] = useState<ProfileData | null>(null);
+  const [avatarPreview, setAvatarPreview] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const { toast } = useToast();
+  const [isLoading, setIsLoading] = useState(true);
+
+  useEffect(() => {
+    const agentDataString = localStorage.getItem('agent_data');
+    if (agentDataString) {
+      const agentData = JSON.parse(agentDataString);
+      const profileData = {
+        name: agentData.agent_name || '',
+        email: agentData.agent_email || '',
+        phone: agentData.agent_phone || '',
+        language: agentData.agent_language || 'English',
+        avatar: agentData.agent_image_url || `https://i.pravatar.cc/150?u=${agentData.agent_email}`,
+      };
+      setProfile(profileData);
+      setOriginalProfile(profileData);
+      setAvatarPreview(profileData.avatar);
+    }
+    setIsLoading(false);
+  }, []);
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (!profile) return;
     const { name, value } = e.target;
-    setProfile(prev => ({ ...prev, [name]: value }));
+    setProfile(prev => prev ? { ...prev, [name]: value } : null);
   };
 
   const handleLanguageChange = (value: string) => {
-    setProfile(prev => ({ ...prev, language: value }));
+    if (!profile) return;
+    setProfile(prev => prev ? { ...prev, language: value } : null);
   };
 
   const handleAvatarChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -50,7 +73,9 @@ export default function ProfilePage() {
     setIsSaving(true);
     // Simulate API call
     await new Promise(resolve => setTimeout(resolve, 1000));
-    // In a real app, you would save the data to your backend
+    if (profile) {
+      setOriginalProfile(profile);
+    }
     toast({
       title: "Success",
       description: "Your profile has been updated.",
@@ -60,10 +85,28 @@ export default function ProfilePage() {
   };
 
   const handleCancel = () => {
-    setProfile(initialProfileData);
-    setAvatarPreview(initialProfileData.avatar);
+    if (originalProfile) {
+        setProfile(originalProfile);
+        setAvatarPreview(originalProfile.avatar);
+    }
     setIsEditing(false);
   };
+
+  if (isLoading) {
+    return (
+        <div className="flex h-screen items-center justify-center">
+            <Loader2 className="h-8 w-8 animate-spin" />
+        </div>
+    )
+  }
+
+  if (!profile) {
+    return (
+      <div className="flex h-screen items-center justify-center">
+        <p>Could not load agent profile. Please try logging out and back in.</p>
+      </div>
+    );
+  }
 
   return (
     <div className="p-4 pb-20">
