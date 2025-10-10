@@ -14,7 +14,8 @@ import {
   Users,
   MessageSquare,
   Briefcase,
-  Plus
+  Plus,
+  Loader2,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
@@ -24,6 +25,7 @@ import { cn } from '@/lib/utils';
 import { useRouter } from 'next/navigation';
 import { useToast } from '@/hooks/use-toast';
 import Link from 'next/link';
+import { callAuthApi } from '@/lib/auth-api';
 
 const agentName = "Ethan";
 
@@ -113,7 +115,9 @@ const tasks = [
 export default function AgentDashboardPage() {
   const [isFollowUpOpen, setIsFollowUpOpen] = useState(false);
   const [selectedLead, setSelectedLead] = useState<LeadData | null>(null);
+  const [isCheckingSession, setIsCheckingSession] = useState(false);
   const router = useRouter();
+  const { toast } = useToast();
 
   const handleTaskClick = (leadId: string, icon: React.ElementType) => {
     if (icon === MessageSquare) {
@@ -124,6 +128,35 @@ export default function AgentDashboardPage() {
       }
     } else {
         router.push(`/leads/${leadId}`);
+    }
+  };
+
+  const handleAddNewLead = async () => {
+    setIsCheckingSession(true);
+    try {
+      const agentDataString = localStorage.getItem('agent_data');
+      if (!agentDataString) {
+        throw new Error("Agent data not found. Please log in again.");
+      }
+      const agentData = JSON.parse(agentDataString);
+
+      await callAuthApi('validate_session', { agent: agentData });
+
+      // If API call is successful, navigate to the new lead page
+      router.push('/leads/new');
+
+    } catch (error: any) {
+      toast({
+        variant: "destructive",
+        title: "Session Expired",
+        description: "Your session has expired. Please log in again.",
+      });
+      // Clear local storage and redirect to login
+      localStorage.removeItem('auth_token');
+      localStorage.removeItem('agent_data');
+      router.push('/');
+    } finally {
+      setIsCheckingSession(false);
     }
   };
 
@@ -146,12 +179,10 @@ export default function AgentDashboardPage() {
       </section>
 
       <section className="mb-6">
-          <Link href="/leads/new" className="w-full">
-            <Button className="w-full bg-primary" size="lg">
-              <Plus className="mr-2 h-5 w-5" />
-              Add New Lead
-            </Button>
-          </Link>
+          <Button className="w-full bg-primary" size="lg" onClick={handleAddNewLead} disabled={isCheckingSession}>
+            {isCheckingSession ? <Loader2 className="mr-2 h-5 w-5 animate-spin" /> : <Plus className="mr-2 h-5 w-5" />}
+            Add New Lead
+          </Button>
       </section>
 
       <section>
