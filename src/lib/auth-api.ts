@@ -20,7 +20,7 @@ export async function callAuthApi(operation: Operation, payload: any) {
   if (operation === 'validate_session') {
       body = JSON.stringify({
           operation: 'validate_session',
-          agent: payload
+          agent: payload // The payload is the agentData object itself
       });
   } else {
       body = JSON.stringify({ operation, ...payload });
