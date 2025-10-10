@@ -134,7 +134,7 @@ export default function AgentDashboardPage() {
     setIsAddingLead(true);
     try {
       const agentData = JSON.parse(localStorage.getItem('agent_data') || '{}');
-      await callAuthApi('validate_session', { agent: agentData });
+      await callAuthApi('validate_session', agentData);
       router.push('/leads/new');
     } catch (error: any) {
       toast({
