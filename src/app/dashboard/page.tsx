@@ -140,6 +140,7 @@ export default function AgentDashboardPage() {
       }
       const agentData = JSON.parse(agentDataString);
 
+      // Pass the agentData wrapped in an object with the key 'agent'
       await callAuthApi('validate_session', { agent: agentData });
 
       // If API call is successful, navigate to the new lead page
