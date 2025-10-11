@@ -34,7 +34,7 @@ export function LeadFollowUpSheet({ open, onOpenChange, lead }: LeadFollowUpShee
     
     if (!lead) return null;
 
-    const aiMessage = `Hi ${lead.firstName}, thanks for your interest. I'd love to schedule a quick call to discuss your requirements and see how I can help you find your perfect home. Are you available for a brief chat sometime this week?`;
+    const aiMessage = `Hi ${lead.name.split(' ')[0]}, thanks for your interest. I'd love to schedule a quick call to discuss your requirements and see how I can help you find your perfect home. Are you available for a brief chat sometime this week?`;
 
     return (
         <Sheet open={open} onOpenChange={onOpenChange}>
@@ -47,24 +47,24 @@ export function LeadFollowUpSheet({ open, onOpenChange, lead }: LeadFollowUpShee
                         <SheetTitle>Send to WhatsApp</SheetTitle>
                      </div>
                      <SheetDescription className="sr-only">
-                       Send an AI-generated follow-up message to {lead.firstName} {lead.lastName}.
+                       Send an AI-generated follow-up message to {lead.name}.
                     </SheetDescription>
                 </SheetHeader>
 
                 <div className="flex-1 overflow-y-auto p-4 space-y-6">
                     <div className="flex items-start gap-4">
                         <Avatar className="h-12 w-12">
-                            <AvatarImage src={lead.avatar} />
-                            <AvatarFallback>{lead.firstName.charAt(0)}{lead.lastName.charAt(0)}</AvatarFallback>
+                            <AvatarImage src={lead.image_url} />
+                            <AvatarFallback>{lead.name.split(' ').map(n=>n[0]).join('')}</AvatarFallback>
                         </Avatar>
                         <div>
                             <div className="flex items-center gap-2">
-                                <h3 className="text-lg font-bold">{lead.firstName} {lead.lastName}</h3>
-                                <Badge variant="outline" className={cn("text-sm", getStatusBadgeClass(lead.status))}>{lead.status}</Badge>
+                                <h3 className="text-lg font-bold">{lead.name}</h3>
+                                <Badge variant="outline" className={cn("text-sm", getStatusBadgeClass(lead.temperature))}>{lead.temperature}</Badge>
                             </div>
-                            <p className="text-sm text-gray-500">{lead.phone}</p>
-                            <p className="text-sm text-gray-500">{lead.email}</p>
-                            <p className="text-xs text-gray-400 mt-1">Source: {lead.source} | Created: {lead.createdAt}</p>
+                            <p className="text-sm text-gray-500">{lead.contact.phone}</p>
+                            <p className="text-sm text-gray-500">{lead.contact.email}</p>
+                            <p className="text-xs text-gray-400 mt-1">Source: {lead.management.source} | Created: {lead.created_at_formatted}</p>
                         </div>
                     </div>
                     
@@ -106,3 +106,5 @@ export function LeadFollowUpSheet({ open, onOpenChange, lead }: LeadFollowUpShee
         </Sheet>
     );
 }
+
+    

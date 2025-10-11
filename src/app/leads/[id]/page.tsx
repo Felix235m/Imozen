@@ -36,7 +36,6 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog"
-import { Label } from '@/components/ui/label';
 import { type LeadData } from '@/lib/leads-data';
 import { LeadFollowUpSheet } from '@/components/leads/lead-follow-up-sheet';
 import { callLeadApi } from '@/lib/auth-api';
@@ -46,39 +45,6 @@ type Note = {
     content: string;
     date: string;
 };
-
-const communicationHistory = [
-    {
-      id: 'hist3',
-      type: 'SMS',
-      title: 'SMS Follow-up',
-      date: '2024-01-18T11:00:00Z',
-      description: 'Sent a text to schedule viewings for the favorited properties. Awaiting response.',
-      icon: MessageSquare,
-      iconColor: 'text-purple-600',
-      bgColor: 'bg-purple-100',
-    },
-    {
-      id: 'hist2',
-      type: 'Email',
-      title: 'Sent Property Listings',
-      date: '2024-01-16T14:00:00Z',
-      description: 'Emailed a list of 5 condos that match her criteria. She favorited two of them.',
-      icon: Mail,
-      iconColor: 'text-green-600',
-      bgColor: 'bg-green-100',
-    },
-    {
-      id: 'hist1',
-      type: 'Call',
-      title: 'Initial Call',
-      date: '2024-01-15T10:30:00Z',
-      description: 'Discussed property requirements and budget. Client is looking for a 2-bedroom condo downtown.',
-      icon: Phone,
-      iconColor: 'text-blue-600',
-      bgColor: 'bg-blue-100',
-    },
-];
 
 type ChangeSummary = {
   field: string;
@@ -107,19 +73,27 @@ export default function LeadDetailPage() {
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const [isConfirmSaveOpen, setIsConfirmSaveOpen] = useState(false);
   const [changeSummary, setChangeSummary] = useState<ChangeSummary[]>([]);
-  const [suggestedStatus, setSuggestedStatus] = useState<LeadData['status'] | null>(null);
+  const [suggestedStatus, setSuggestedStatus] = useState<LeadData['temperature'] | null>(null);
 
   const [notes, setNotes] = useState<Note[]>([]);
   const [currentNote, setCurrentNote] = useState<Note>({ id: '', content: '', date: '' });
+  
+  const communicationHistory = useMemo(() => lead?.communication_history || [], [lead]);
 
   const fetchLeadDetails = useCallback(async () => {
     try {
-      const currentLeadData = await callLeadApi('get_lead_details', { lead_id: id });
+      const response = await callLeadApi('get_lead_details', { lead_id: id });
+      const currentLeadData = Array.isArray(response) && response.length > 0 ? response[0] : null;
+
+      if (!currentLeadData) {
+        throw new Error('Lead not found');
+      }
+      
       setLead(currentLeadData);
       setOriginalLead(currentLeadData);
-      setAvatarPreview(currentLeadData.avatar);
-      setNotes(currentLeadData.notes || []);
-      setCurrentNote(currentLeadData.currentNote || { id: '', content: '', date: '' });
+      setAvatarPreview(currentLeadData.image_url);
+      setNotes(currentLeadData.management.agent_notes ? [{id: 'initial', content: currentLeadData.management.agent_notes, date: currentLeadData.created_at}] : []);
+      setCurrentNote({ id: '', content: '', date: '' });
 
       if (isEditMode) {
         setIsEditing(true);
@@ -138,19 +112,39 @@ export default function LeadDetailPage() {
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
     if (lead) {
-      setLead(prev => prev ? ({ ...prev, [name]: name === 'budget' || name === 'bedrooms' ? Number(value) : value }) : null);
+      const keys = name.split('.');
+      setLead(prev => {
+        if (!prev) return null;
+        const newLead = { ...prev };
+        let current: any = newLead;
+        for (let i = 0; i < keys.length - 1; i++) {
+          current = current[keys[i]];
+        }
+        current[keys[keys.length - 1]] = name.includes('budget') || name.includes('bedrooms') ? Number(value) : value;
+        return newLead;
+      });
     }
   };
 
   const handleSelectChange = (name: string, value: string) => {
      if (lead) {
-        setLead(prev => prev ? ({ ...prev, [name]: value }) : null);
+        const keys = name.split('.');
+        setLead(prev => {
+            if (!prev) return null;
+            const newLead = { ...prev };
+            let current: any = newLead;
+            for (let i = 0; i < keys.length - 1; i++) {
+            current = current[keys[i]];
+            }
+            current[keys[keys.length - 1]] = value;
+            return newLead;
+        });
      }
   };
 
-  const handleStatusChange = (value: 'Hot' | 'Warm' | 'Cold') => {
+  const handleTemperatureChange = (value: 'Hot' | 'Warm' | 'Cold') => {
     if (lead) {
-        setLead(prev => prev ? ({ ...prev, status: value }) : null);
+        setLead(prev => prev ? ({ ...prev, temperature: value }) : null);
     }
   };
 
@@ -162,7 +156,6 @@ export default function LeadDetailPage() {
         const result = reader.result as string;
         setAvatarPreview(result);
         
-        // Upload image immediately
         callLeadApi('upload_lead_image', { lead_id: id, image: result })
             .then(() => toast({ title: "Avatar updated" }))
             .catch(() => toast({ variant: "destructive", title: "Error", description: "Could not upload avatar." }));
@@ -173,16 +166,16 @@ export default function LeadDetailPage() {
 
   const getQualificationScore = (leadData: LeadData) => {
     let score = 0;
-    if (leadData.budget > 900000) score += 2;
-    else if (leadData.budget > 500000) score += 1;
+    if (leadData.property.budget > 900000) score += 2;
+    else if (leadData.property.budget > 500000) score += 1;
 
-    if (leadData.bedrooms >= 4) score += 2;
-    else if (leadData.bedrooms >= 2) score += 1;
+    if (leadData.property.bedrooms >= 4) score += 2;
+    else if (leadData.property.bedrooms >= 2) score += 1;
     
     return score;
   }
 
-  const getStatusFromScore = (score: number): LeadData['status'] => {
+  const getStatusFromScore = (score: number): LeadData['temperature'] => {
     if (score >= 3) return 'Hot';
     if (score >= 1) return 'Warm';
     return 'Cold';
@@ -192,31 +185,37 @@ export default function LeadDetailPage() {
     if (!lead || !originalLead) return;
 
     const changes: ChangeSummary[] = [];
-    (Object.keys(lead) as Array<keyof LeadData>).forEach(key => {
-      if (lead[key] !== originalLead[key]) {
-        changes.push({
-          field: key.replace(/([A-Z])/g, ' $1').replace(/^./, str => str.toUpperCase()),
-          oldValue: originalLead[key],
-          newValue: lead[key]
-        });
-      }
-    });
+    
+    const compareObjects = (obj1: any, obj2: any, prefix = '') => {
+        for (const key in obj1) {
+            if (typeof obj1[key] === 'object' && obj1[key] !== null && !Array.isArray(obj1[key])) {
+                 compareObjects(obj1[key], obj2[key], `${prefix}${key}.`);
+            } else if (obj1[key] !== obj2[key]) {
+                changes.push({
+                    field: (prefix + key).replace(/([A-Z])/g, ' $1').replace(/^./, str => str.toUpperCase()),
+                    oldValue: obj2[key],
+                    newValue: obj1[key]
+                });
+            }
+        }
+    }
+    compareObjects(lead, originalLead);
 
-    if (changes.length === 0 && avatarPreview === originalLead.avatar) {
+    if (changes.length === 0 && avatarPreview === originalLead.image_url) {
       setIsEditing(false);
       return;
     }
     
     setChangeSummary(changes);
     
-    const propertyRequirementsChanged = changes.some(c => ['Property Type', 'Budget', 'Bedrooms'].includes(c.field));
+    const propertyRequirementsChanged = changes.some(c => ['Property.Type', 'Property.Budget', 'Property.Bedrooms'].includes(c.field));
 
     if (propertyRequirementsChanged) {
         const oldScore = getQualificationScore(originalLead);
         const newScore = getQualificationScore(lead);
         if (newScore !== oldScore) {
             const newStatus = getStatusFromScore(newScore);
-            if(newStatus !== lead.status) {
+            if(newStatus !== lead.temperature) {
                 setSuggestedStatus(newStatus);
             } else {
                 setSuggestedStatus(null);
@@ -235,7 +234,7 @@ export default function LeadDetailPage() {
     if (!lead) return;
     setIsSaving(true);
     
-    const finalLead = suggestedStatus ? { ...lead, status: suggestedStatus } : lead;
+    const finalLead = suggestedStatus ? { ...lead, temperature: suggestedStatus } : lead;
 
     try {
         await callLeadApi('edit_lead', { lead_id: id, ...finalLead });
@@ -260,17 +259,17 @@ export default function LeadDetailPage() {
   const handleCancel = () => {
     if (originalLead) {
       setLead({ ...originalLead });
-      setAvatarPreview(originalLead.avatar);
+      setAvatarPreview(originalLead.image_url);
     }
     setIsEditing(false);
   };
 
   const toggleActiveStatus = async () => {
     if (!lead) return;
-    const newStatus = lead.activeStatus === 'Active' ? 'Inactive' : 'Active';
+    const newStatus = lead.status === 'Active' ? 'Inactive' : 'Active';
     try {
-        await callLeadApi('edit_lead', { lead_id: id, activeStatus: newStatus });
-        setLead(prev => prev ? ({ ...prev, activeStatus: newStatus }) : null);
+        await callLeadApi('edit_lead', { lead_id: id, status: newStatus });
+        setLead(prev => prev ? ({ ...prev, status: newStatus }) : null);
         toast({
           title: "Status Updated",
           description: `Lead marked as ${newStatus.toLowerCase()}.`,
@@ -285,7 +284,7 @@ export default function LeadDetailPage() {
         await callLeadApi('delete_lead', { lead_id: id });
         toast({
           title: "Lead Deleted",
-          description: `${lead?.firstName} ${lead?.lastName} has been deleted.`,
+          description: `${lead?.name} has been deleted.`,
         });
         router.push('/leads');
     } catch (error) {
@@ -314,20 +313,17 @@ export default function LeadDetailPage() {
   }
 
   const handleStatusSave = (leadId: string, newStatus: 'Hot' | 'Warm' | 'Cold', note: string) => {
-    if (!lead || lead.id !== leadId) return;
+    if (!lead || lead.lead_id !== leadId) return;
 
-    callLeadApi('edit_lead', { lead_id: leadId, status: newStatus, note }).then(() => {
-        handleStatusChange(newStatus);
+    callLeadApi('edit_lead', { lead_id: leadId, temperature: newStatus, note }).then(() => {
+        handleTemperatureChange(newStatus);
 
-        if (currentNote.content.trim()) {
-            setNotes(prev => [currentNote, ...prev]);
-        }
-        const newCurrentNote: Note = {
+        const newNote: Note = {
             id: `note-${Date.now()}`,
             content: note,
             date: new Date().toISOString(),
         };
-        setCurrentNote(newCurrentNote);
+        setNotes(prev => [newNote, ...prev]);
         
         toast({
             title: "Status updated",
@@ -340,8 +336,8 @@ export default function LeadDetailPage() {
   };
   
   const formatValue = (field: string, value: any) => {
-    if (field === 'Budget') {
-      return `$${Number(value).toLocaleString()}`;
+    if (field.toLowerCase().includes('budget')) {
+      return `€${Number(value).toLocaleString()}`;
     }
     if (typeof value === 'boolean') {
         return value ? 'Yes' : 'No';
@@ -382,12 +378,12 @@ export default function LeadDetailPage() {
                 <span>Change Status</span>
               </DropdownMenuItem>
               <DropdownMenuItem onSelect={toggleActiveStatus}>
-                {lead.activeStatus === 'Active' ? (
+                {lead.status === 'Active' ? (
                   <UserX className="mr-2 h-4 w-4" />
                 ) : (
                   <UserCheck className="mr-2 h-4 w-4" />
                 )}
-                <span>Mark as {lead.activeStatus === 'Active' ? 'Inactive' : 'Active'}</span>
+                <span>Mark as {lead.status === 'Active' ? 'Inactive' : 'Active'}</span>
               </DropdownMenuItem>
               <DropdownMenuSeparator />
               <DropdownMenuItem onSelect={() => setIsDeleteDialogOpen(true)} className="text-red-600">
@@ -403,8 +399,8 @@ export default function LeadDetailPage() {
         <section className="flex flex-col items-center py-6 text-center">
           <div className="relative mb-4">
             <Avatar className="h-24 w-24">
-              <AvatarImage src={avatarPreview || undefined} alt={`${lead.firstName} ${lead.lastName}`} />
-              <AvatarFallback>{lead.firstName.charAt(0)}{lead.lastName.charAt(0)}</AvatarFallback>
+              <AvatarImage src={avatarPreview || undefined} alt={lead.name} />
+              <AvatarFallback>{lead.name.split(' ').map(n => n[0]).join('')}</AvatarFallback>
             </Avatar>
             {isEditing && (
                 <>
@@ -427,10 +423,10 @@ export default function LeadDetailPage() {
             )}
           </div>
           <div className='flex items-center gap-2'>
-            <h2 className="text-2xl font-bold">{`${lead.firstName} ${lead.lastName}`}</h2>
+            <h2 className="text-2xl font-bold">{lead.name}</h2>
             {isEditing ? (
-              <Select value={lead.status} onValueChange={handleStatusChange}>
-                <SelectTrigger className={cn("text-sm w-28", getStatusBadgeClass(lead.status))}>
+              <Select value={lead.temperature} onValueChange={handleTemperatureChange}>
+                <SelectTrigger className={cn("text-sm w-28", getStatusBadgeClass(lead.temperature))}>
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
@@ -440,16 +436,16 @@ export default function LeadDetailPage() {
                 </SelectContent>
               </Select>
             ) : (
-              <Badge variant="outline" className={cn("text-sm", getStatusBadgeClass(lead.status))}>{lead.status}</Badge>
+              <Badge variant="outline" className={cn("text-sm", getStatusBadgeClass(lead.temperature))}>{lead.temperature}</Badge>
             )}
           </div>
-           {lead.activeStatus === 'Inactive' && !isEditing && (
+           {lead.status === 'Inactive' && !isEditing && (
               <Badge variant="secondary" className="mt-2">Inactive</Badge>
            )}
           <div className='flex items-center gap-2 text-sm text-gray-500 mt-1'>
-            <span>ID: {lead.id}</span>
+            <span>ID: {lead.lead_id}</span>
             <span>&bull;</span>
-            <span>Created: {lead.createdAt}</span>
+            <span>Created: {lead.created_at_formatted}</span>
           </div>
         </section>
 
@@ -460,10 +456,10 @@ export default function LeadDetailPage() {
             </CardHeader>
             <CardContent>
               <div className="grid grid-cols-2 gap-y-4 gap-x-8 text-sm">
-                <EditableInfoItem label="First Name" name="firstName" value={lead.firstName} isEditing={isEditing} onChange={handleInputChange} />
-                <EditableInfoItem label="Last Name" name="lastName" value={lead.lastName} isEditing={isEditing} onChange={handleInputChange} />
-                <EditableInfoItem label="Email" name="email" value={lead.email} isEditing={isEditing} onChange={handleInputChange} className="col-span-2" />
-                <EditableInfoItem label="Phone Number" name="phone" value={lead.phone} isEditing={isEditing} onChange={handleInputChange} className="col-span-2" />
+                <EditableInfoItem label="Name" name="name" value={lead.name} isEditing={isEditing} onChange={handleInputChange} className="col-span-2" />
+                <EditableInfoItem label="Email" name="contact.email" value={lead.contact.email} isEditing={isEditing} onChange={handleInputChange} className="col-span-2" />
+                <EditableInfoItem label="Phone Number" name="contact.phone" value={lead.contact.phone.toString()} isEditing={isEditing} onChange={handleInputChange} className="col-span-2" />
+                <EditableInfoItem label="Language" name="contact.language" value={lead.contact.language} isEditing={isEditing} onSelectChange={handleSelectChange} selectOptions={['English', 'Portuguese', 'French']} />
               </div>
             </CardContent>
           </Card>
@@ -474,9 +470,10 @@ export default function LeadDetailPage() {
             </CardHeader>
             <CardContent>
               <div className="grid grid-cols-2 gap-y-4 gap-x-8 text-sm">
-                <EditableInfoItem label="Property Type" name="propertyType" value={lead.propertyType} isEditing={isEditing} onSelectChange={handleSelectChange} />
-                <EditableInfoItem label="Budget" name="budget" value={`$${lead.budget.toLocaleString('en-US')}`} isEditing={isEditing} onChange={handleInputChange} type="number" displayValue={lead.budget.toString()} />
-                <EditableInfoItem label="Bedrooms" name="bedrooms" value={lead.bedrooms} isEditing={isEditing} onChange={handleInputChange} type="number" />
+                <EditableInfoItem label="Property Type" name="property.type" value={lead.property.type} isEditing={isEditing} onSelectChange={handleSelectChange} selectOptions={['Condo', 'Apartment', 'House', 'Commercial', 'Land']} />
+                <EditableInfoItem label="Budget" name="property.budget" value={lead.property.budget_formatted} isEditing={isEditing} onChange={handleInputChange} type="number" displayValue={lead.property.budget.toString()} />
+                <EditableInfoItem label="Bedrooms" name="property.bedrooms" value={lead.property.bedrooms} isEditing={isEditing} onChange={handleInputChange} type="number" />
+                 <InfoItem label="Locations" value={lead.property.locations.join(', ')} className="col-span-2" />
               </div>
             </CardContent>
           </Card>
@@ -505,9 +502,7 @@ export default function LeadDetailPage() {
         onOpenChange={setIsNotesOpen}
         lead={lead}
         notes={notes}
-        currentNote={currentNote}
         setNotes={setNotes}
-        setCurrentNote={setCurrentNote}
       />
       <LeadFollowUpSheet
         open={isFollowUpOpen}
@@ -523,7 +518,7 @@ export default function LeadDetailPage() {
       <LeadStatusDialog 
         open={isStatusDialogOpen} 
         onOpenChange={setIsStatusDialogOpen}
-        lead={{id: lead.id, name: `${lead.firstName} ${lead.lastName}`, status: lead.status}}
+        lead={{id: lead.lead_id, name: lead.name, status: lead.temperature}}
         onSave={handleStatusSave}
       />
       <AlertDialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
@@ -532,7 +527,7 @@ export default function LeadDetailPage() {
             <AlertDialogTitle>Are you sure?</AlertDialogTitle>
             <AlertDialogDescription>
               This action cannot be undone. This will permanently delete the lead
-              for {lead.firstName} {lead.lastName}.
+              for {lead.name}.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
@@ -560,13 +555,13 @@ export default function LeadDetailPage() {
                             <span className="font-medium">{change.field}:</span> {formatValue(change.field, change.oldValue)} &rarr; {formatValue(change.field, change.newValue)}
                         </li>
                     ))}
-                    {avatarPreview !== originalLead?.avatar && <li>Avatar updated</li>}
+                    {avatarPreview !== originalLead?.image_url && <li>Avatar updated</li>}
                 </ul>
             </div>
             {suggestedStatus && (
                 <div className="p-3 bg-yellow-50 border border-yellow-200 rounded-md">
                     <p className="text-yellow-800">Based on the updated property requirements, we suggest changing the lead status from 
-                    <Badge variant="outline" className={cn("mx-1.5", getStatusBadgeClass(lead.status))}>{lead.status}</Badge> 
+                    <Badge variant="outline" className={cn("mx-1.5", getStatusBadgeClass(lead.temperature))}>{lead.temperature}</Badge> 
                     to 
                     <Badge variant="outline" className={cn("mx-1.5", getStatusBadgeClass(suggestedStatus))}>{suggestedStatus}</Badge>.</p>
                 </div>
@@ -603,20 +598,22 @@ function EditableInfoItem({
   onSelectChange, 
   className, 
   type = 'text', 
-  displayValue 
+  displayValue,
+  selectOptions
 }: { 
   label: string; 
   name?: string; 
   value: string | number; 
-  isEditing: boolean; _
+  isEditing: boolean; 
   onChange?: (e: React.ChangeEvent<HTMLInputElement>) => void; 
   onSelectChange?: (name: string, value: string) => void;
-  className?: string, 
-  type?: string, 
-  displayValue?: string 
+  className?: string; 
+  type?: string; 
+  displayValue?: string;
+  selectOptions?: string[];
 }) {
   if (isEditing && name) {
-    if (name === 'propertyType' && onSelectChange) {
+    if (selectOptions && onSelectChange) {
       return (
         <div className={cn("grid gap-1", className)}>
           <p className="text-gray-500">{label}</p>
@@ -625,11 +622,9 @@ function EditableInfoItem({
               <SelectValue placeholder={label} />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="Condo">Condo</SelectItem>
-              <SelectItem value="Apartment">Apartment</SelectItem>
-              <SelectItem value="House">House</SelectItem>
-              <SelectItem value="Commercial">Commercial</SelectItem>
-              <SelectItem value="Land">Land</SelectItem>
+              {selectOptions.map(option => (
+                <SelectItem key={option} value={option}>{option}</SelectItem>
+              ))}
             </SelectContent>
           </Select>
         </div>
@@ -680,17 +675,14 @@ type LeadNotesSheetProps = {
   onOpenChange: (open: boolean) => void;
   lead: LeadData;
   notes: Note[];
-  currentNote: Note;
   setNotes: React.Dispatch<React.SetStateAction<Note[]>>;
-  setCurrentNote: React.Dispatch<React.SetStateAction<Note>>;
 };
 
-function LeadNotesSheet({ open, onOpenChange, lead, notes, currentNote, setNotes, setCurrentNote }: LeadNotesSheetProps) {
+function LeadNotesSheet({ open, onOpenChange, lead, notes, setNotes }: LeadNotesSheetProps) {
     const { toast } = useToast();
-    const [noteContent, setNoteContent] = useState(currentNote.content);
-    const [isCreatingNew, setIsCreatingNew] = useState(false);
-    
-    const isModified = noteContent !== currentNote.content;
+    const [noteContent, setNoteContent] = useState('');
+    const textareaRef = useRef<HTMLTextAreaElement>(null);
+    const [isSaving, setIsSaving] = useState(false);
 
     const handleCopy = (text: string) => {
         navigator.clipboard.writeText(text);
@@ -699,7 +691,7 @@ function LeadNotesSheet({ open, onOpenChange, lead, notes, currentNote, setNotes
         });
     }
 
-    const handleSaveNote = () => {
+    const handleSaveNote = async () => {
         const trimmedContent = noteContent.trim();
         if (!trimmedContent) {
             toast({
@@ -709,48 +701,30 @@ function LeadNotesSheet({ open, onOpenChange, lead, notes, currentNote, setNotes
             });
             return;
         }
-
-        if (isCreatingNew) {
-            // Saving a brand new note
-            const newCurrentNote: Note = {
+        setIsSaving(true);
+        try {
+            await callLeadApi('edit_lead', { lead_id: lead.lead_id, note: trimmedContent });
+            const newNote: Note = {
                 id: `note-${Date.now()}`,
                 content: trimmedContent,
                 date: new Date().toISOString(),
             };
-            setCurrentNote(newCurrentNote);
-            setNoteContent(newCurrentNote.content);
-            setIsCreatingNew(false);
-            toast({
-                title: 'Note saved',
-                description: 'The new note has been saved.',
-            });
-        } else {
-            // Updating the existing current note
-            const updatedNote = {
-                ...currentNote,
-                content: trimmedContent,
-                date: new Date().toISOString(), // Update timestamp on edit
-            };
-            setCurrentNote(updatedNote);
-            setNoteContent(updatedNote.content);
-            toast({
-                title: 'Note updated',
-                description: 'Your changes have been saved.',
-            });
+            setNotes(prev => [newNote, ...prev]);
+            setNoteContent('');
+            toast({ title: "Note saved successfully" });
+        } catch (error) {
+            toast({ variant: 'destructive', title: 'Error', description: 'Could not save note.' });
+        } finally {
+            setIsSaving(false);
         }
     };
 
-    const handleNewNoteClick = () => {
-        if (currentNote.content.trim()) {
-            setNotes(prevNotes => [currentNote, ...prevNotes]);
-        }
-        setCurrentNote({ id: '', content: '', date: '' });
-        setNoteContent("");
-        setIsCreatingNew(true);
+    useEffect(() => {
         if (textareaRef.current) {
-            textareaRef.current.focus();
+            textareaRef.current.style.height = 'auto';
+            textareaRef.current.style.height = `${textareaRef.current.scrollHeight}px`;
         }
-    }
+    }, [noteContent, open]);
 
     const getStatusBadgeClass = (status: 'Hot' | 'Warm' | 'Cold') => {
         switch (status) {
@@ -760,24 +734,6 @@ function LeadNotesSheet({ open, onOpenChange, lead, notes, currentNote, setNotes
             default: return 'bg-gray-100 text-gray-700';
         }
     };
-    
-    const textareaRef = useRef<HTMLTextAreaElement>(null);
-
-    useEffect(() => {
-        if (textareaRef.current) {
-            textareaRef.current.style.height = 'auto';
-            textareaRef.current.style.height = `${textareaRef.current.scrollHeight}px`;
-        }
-    }, [noteContent, open]);
-
-     useEffect(() => {
-        if (open) {
-            setNoteContent(currentNote.content);
-            setIsCreatingNew(false);
-        }
-    }, [open, currentNote]);
-
-    const showSaveButton = isCreatingNew || (isModified && !isCreatingNew);
 
     return (
         <Sheet open={open} onOpenChange={onOpenChange}>
@@ -790,24 +746,24 @@ function LeadNotesSheet({ open, onOpenChange, lead, notes, currentNote, setNotes
                         <SheetTitle>Lead Notes</SheetTitle>
                      </div>
                      <SheetDescription className="sr-only">
-                       Manage notes for {lead.firstName} {lead.lastName}. You can add a new note, view the history of notes, and copy existing notes.
+                       Manage notes for {lead.name}.
                     </SheetDescription>
                 </SheetHeader>
 
                 <div className="flex-1 overflow-y-auto p-4 space-y-6">
                     <div className="flex items-start gap-4">
                         <Avatar className="h-12 w-12">
-                            <AvatarImage src={lead.avatar} />
-                            <AvatarFallback>{lead.firstName.charAt(0)}{lead.lastName.charAt(0)}</AvatarFallback>
+                            <AvatarImage src={lead.image_url} />
+                            <AvatarFallback>{lead.name.split(' ').map(n=>n[0]).join('')}</AvatarFallback>
                         </Avatar>
                         <div>
                             <div className="flex items-center gap-2">
-                                <h3 className="text-lg font-bold">{lead.firstName} {lead.lastName}</h3>
-                                <Badge variant="outline" className={cn("text-sm", getStatusBadgeClass(lead.status))}>{lead.status}</Badge>
+                                <h3 className="text-lg font-bold">{lead.name}</h3>
+                                <Badge variant="outline" className={cn("text-sm", getStatusBadgeClass(lead.temperature))}>{lead.temperature}</Badge>
                             </div>
-                            <p className="text-sm text-gray-500">{lead.phone}</p>
-                            <p className="text-sm text-gray-500">{lead.email}</p>
-                            <p className="text-xs text-gray-400 mt-1">Source: {lead.source} | Created: {lead.createdAt}</p>
+                            <p className="text-sm text-gray-500">{lead.contact.phone}</p>
+                            <p className="text-sm text-gray-500">{lead.contact.email}</p>
+                            <p className="text-xs text-gray-400 mt-1">Source: {lead.management.source} | Created: {lead.created_at_formatted}</p>
                         </div>
                     </div>
 
@@ -824,11 +780,9 @@ function LeadNotesSheet({ open, onOpenChange, lead, notes, currentNote, setNotes
                                 <Button variant="ghost" size="icon">
                                     <Mic className="h-5 w-5 text-gray-500" />
                                 </Button>
-                                {showSaveButton ? (
-                                    <Button onClick={handleSaveNote}>Save Note</Button>
-                                ) : (
-                                    <Button onClick={handleNewNoteClick}>New Note</Button>
-                                )}
+                                <Button onClick={handleSaveNote} disabled={isSaving}>
+                                    {isSaving ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : "Save Note"}
+                                </Button>
                             </div>
                         </CardContent>
                     </Card>
@@ -890,7 +844,7 @@ function LeadHistorySheet({ open, onOpenChange, lead, history }: LeadHistoryShee
                         <SheetTitle>Communication History</SheetTitle>
                      </div>
                      <SheetDescription className="sr-only">
-                       View the communication history for {lead.firstName} {lead.lastName}.
+                       View the communication history for {lead.name}.
                     </SheetDescription>
                 </SheetHeader>
 
@@ -923,3 +877,5 @@ function LeadHistorySheet({ open, onOpenChange, lead, history }: LeadHistoryShee
         </Sheet>
     );
 }
+
+    
