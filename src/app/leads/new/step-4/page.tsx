@@ -67,7 +67,7 @@ export default function NewLeadStep4Page() {
             lead_id: leadId,
         };
 
-        const response = await fetch("https://eurekagathr.app.n8n.cloud/webhook-test/New-Lead", {
+        const response = await fetch("https://eurekagathr.app.n8n.cloud/webhook/New-Lead", {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
@@ -86,6 +86,8 @@ export default function NewLeadStep4Page() {
             }
         }
         
+        const responseData = await response.json();
+
         toast({
             title: "Lead Created!",
             description: "The new lead has been successfully added to your list.",
@@ -95,7 +97,11 @@ export default function NewLeadStep4Page() {
         sessionStorage.removeItem('lead_id');
         sessionStorage.removeItem('lead_creation_session_id');
 
-        router.push("/leads");
+        if (responseData.lead_id) {
+          router.push(`/leads/${responseData.lead_id}`);
+        } else {
+          router.push("/leads");
+        }
 
     } catch (error: any) {
         toast({
@@ -115,9 +121,6 @@ export default function NewLeadStep4Page() {
     leadFormData.step4 = values;
     sessionStorage.setItem('leadFormData', JSON.stringify(leadFormData));
     
-    // In a real app, you would compile all data and save as a draft
-    console.log("Saving as draft:", leadFormData);
-
     toast({
         title: "Draft Saved",
         description: "Your lead information has been saved as a draft.",
@@ -175,3 +178,4 @@ export default function NewLeadStep4Page() {
     </div>
   );
 }
+
