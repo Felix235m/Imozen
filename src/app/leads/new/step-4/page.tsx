@@ -17,6 +17,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { useRouter } from "next/navigation";
 import { useToast } from "@/hooks/use-toast";
+import { useEffect } from "react";
 
 const formSchema = z.object({
   initialNote: z.string().optional(),
@@ -33,19 +34,48 @@ export default function NewLeadStep4Page() {
     },
   });
 
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const storedData = sessionStorage.getItem('leadFormData');
+      if (storedData) {
+        const data = JSON.parse(storedData);
+        if (data.step4) {
+          form.reset(data.step4);
+        }
+      }
+    }
+  }, [form]);
+
   const onSubmit = (values: z.infer<typeof formSchema>) => {
-    console.log("Step 4 data:", values);
+    const storedData = sessionStorage.getItem('leadFormData');
+    const leadFormData = storedData ? JSON.parse(storedData) : {};
+    leadFormData.step4 = values;
+    sessionStorage.setItem('leadFormData', JSON.stringify(leadFormData));
+    
     // In a real app, you would compile all data from previous steps and create the lead
+    console.log("Final lead data:", leadFormData);
+    
     toast({
         title: "Lead Created!",
         description: "The new lead has been successfully added to your list.",
     });
+
+    // Clear session storage after submission
+    sessionStorage.removeItem('leadFormData');
+
     router.push("/leads");
   };
 
   const handleSaveAsDraft = () => {
-    console.log("Saving as draft:", form.getValues());
+    const values = form.getValues();
+    const storedData = sessionStorage.getItem('leadFormData');
+    const leadFormData = storedData ? JSON.parse(storedData) : {};
+    leadFormData.step4 = values;
+    sessionStorage.setItem('leadFormData', JSON.stringify(leadFormData));
+    
     // In a real app, you would compile all data and save as a draft
+    console.log("Saving as draft:", leadFormData);
+
     toast({
         title: "Draft Saved",
         description: "Your lead information has been saved as a draft.",

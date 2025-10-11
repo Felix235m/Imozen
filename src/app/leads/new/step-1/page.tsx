@@ -25,7 +25,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/com
 import { useRouter } from "next/navigation";
 import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/hooks/use-toast";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Loader2 } from "lucide-react";
 
 const formSchema = z.object({
@@ -44,24 +44,27 @@ export default function NewLeadStep1Page() {
   
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
-    defaultValues: () => {
-      if (typeof window !== 'undefined') {
-        const storedData = sessionStorage.getItem('leadFormData');
-        if (storedData) {
-          const data = JSON.parse(storedData);
-          return data.step1 || {};
-        }
-      }
-      return {
-        firstName: "",
-        lastName: "",
-        phoneNumber: "",
-        email: "",
-        leadSource: "",
-        initialMessage: "",
-      };
+    defaultValues: {
+      firstName: "",
+      lastName: "",
+      phoneNumber: "",
+      email: "",
+      leadSource: "",
+      initialMessage: "",
     },
   });
+
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const storedData = sessionStorage.getItem('leadFormData');
+      if (storedData) {
+        const data = JSON.parse(storedData);
+        if (data.step1) {
+          form.reset(data.step1);
+        }
+      }
+    }
+  }, [form]);
 
   const onSubmit = async (values: z.infer<typeof formSchema>) => {
     setIsSubmitting(true);

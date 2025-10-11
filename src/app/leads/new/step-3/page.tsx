@@ -16,7 +16,7 @@ import {
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { useRouter } from "next/navigation";
 import { useEffect } from "react";
-import { DollarSign, CreditCard, Check } from "lucide-react";
+import { DollarSign, CreditCard } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useToast } from "@/hooks/use-toast";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -55,13 +55,33 @@ export default function NewLeadStep3Page() {
     },
   });
 
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const storedData = sessionStorage.getItem('leadFormData');
+      if (storedData) {
+        const data = JSON.parse(storedData);
+        if (data.step3) {
+          form.reset(data.step3);
+        }
+      }
+    }
+  }, [form]);
+
   const onSubmit = (values: z.infer<typeof formSchema>) => {
-    console.log("Step 3 data:", values);
+    const storedData = sessionStorage.getItem('leadFormData');
+    const leadFormData = storedData ? JSON.parse(storedData) : {};
+    leadFormData.step3 = values;
+    sessionStorage.setItem('leadFormData', JSON.stringify(leadFormData));
     router.push("/leads/new/step-4");
   };
 
   const handleSaveAsDraft = () => {
-    console.log("Saving as draft:", form.getValues());
+    const values = form.getValues();
+    const storedData = sessionStorage.getItem('leadFormData');
+    const leadFormData = storedData ? JSON.parse(storedData) : {};
+    leadFormData.step3 = values;
+    sessionStorage.setItem('leadFormData', JSON.stringify(leadFormData));
+    
     toast({
         title: "Draft Saved",
         description: "Your lead information has been saved as a draft.",

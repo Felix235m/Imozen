@@ -2,7 +2,7 @@
 "use client";
 
 import { zodResolver } from "@hookform/resolvers/zod";
-import { useForm, Controller } from "react-hook-form";
+import { useForm } from "react-hook-form";
 import * as z from "zod";
 import { Button } from "@/components/ui/button";
 import {
@@ -24,9 +24,12 @@ import {
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
-import { Home, Building, Warehouse, Mountain, Minus, Plus } from "lucide-react";
+import { Home, Building, Warehouse, Mountain, Minus, Plus, X, Search } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useToast } from "@/hooks/use-toast";
+import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from "@/components/ui/command";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Badge } from "@/components/ui/badge";
 
 const propertyTypes = [
   { name: "Apartment", icon: Building },
@@ -35,8 +38,23 @@ const propertyTypes = [
   { name: "Land", icon: Mountain },
 ];
 
+const allLocations = [
+    { value: "lisbon", label: "Lisbon" },
+    { value: "porto", label: "Porto" },
+    { value: "faro", label: "Faro" },
+    { value: "coimbra", label: "Coimbra" },
+    { value: "braga", label: "Braga" },
+    { value: "aveiro", label: "Aveiro" },
+    { value: "sintra", label: "Sintra" },
+    { value: "cascais", label: "Cascais" },
+    { value: "funchal", label: "Funchal" },
+    { value: "guimaraes", label: "Guimarães" }
+];
+
+
 const formSchema = z.object({
   propertyType: z.string().min(1, "Property type is required"),
+  locations: z.array(z.string()).optional(),
   budget: z.number().min(1, "Budget is required"),
   budgetCurrency: z.string(),
   bedrooms: z.number().min(0, "Bedrooms cannot be negative"),
@@ -45,24 +63,47 @@ const formSchema = z.object({
 export default function NewLeadStep2Page() {
   const router = useRouter();
   const { toast } = useToast();
+  const [openLocationPopover, setOpenLocationPopover] = useState(false);
   
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
     defaultValues: {
       propertyType: "",
+      locations: [],
       budget: 0,
       budgetCurrency: "EUR",
       bedrooms: 0,
     },
   });
 
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const storedData = sessionStorage.getItem('leadFormData');
+      if (storedData) {
+        const data = JSON.parse(storedData);
+        if (data.step2) {
+          form.reset(data.step2);
+        }
+      }
+    }
+  }, [form]);
+
+
   const onSubmit = (values: z.infer<typeof formSchema>) => {
-    console.log("Step 2 data:", values);
+    const storedData = sessionStorage.getItem('leadFormData');
+    const leadFormData = storedData ? JSON.parse(storedData) : {};
+    leadFormData.step2 = values;
+    sessionStorage.setItem('leadFormData', JSON.stringify(leadFormData));
     router.push("/leads/new/step-3");
   };
 
   const handleSaveAsDraft = () => {
-    console.log("Saving as draft:", form.getValues());
+    const values = form.getValues();
+    const storedData = sessionStorage.getItem('leadFormData');
+    const leadFormData = storedData ? JSON.parse(storedData) : {};
+    leadFormData.step2 = values;
+    sessionStorage.setItem('leadFormData', JSON.stringify(leadFormData));
+    
     toast({
         title: "Draft Saved",
         description: "Your lead information has been saved as a draft.",
@@ -72,6 +113,7 @@ export default function NewLeadStep2Page() {
 
   const propertyType = form.watch("propertyType");
   const bedrooms = form.watch("bedrooms");
+  const locations = form.watch("locations") || [];
   const isBedroomsDisabled = propertyType === 'Commercial' || propertyType === 'Land';
 
   useEffect(() => {
@@ -79,6 +121,20 @@ export default function NewLeadStep2Page() {
         form.setValue('bedrooms', 0);
     }
   }, [isBedroomsDisabled, form]);
+
+  const handleLocationSelect = (locationValue: string) => {
+    const currentLocations = form.getValues('locations') || [];
+    if (!currentLocations.includes(locationValue)) {
+      form.setValue('locations', [...currentLocations, locationValue]);
+    }
+    setOpenLocationPopover(false);
+  }
+
+  const handleLocationRemove = (locationValue: string) => {
+    const currentLocations = form.getValues('locations') || [];
+    form.setValue('locations', currentLocations.filter(loc => loc !== locationValue));
+  }
+
 
   return (
     <div className="p-4">
@@ -116,6 +172,72 @@ export default function NewLeadStep2Page() {
                     </FormControl>
                     <FormMessage />
                   </FormItem>
+                )}
+              />
+
+              <FormField
+                control={form.control}
+                name="locations"
+                render={({ field }) => (
+                    <FormItem className="flex flex-col">
+                        <FormLabel>Location Preferences</FormLabel>
+                        <Popover open={openLocationPopover} onOpenChange={setOpenLocationPopover}>
+                            <PopoverTrigger asChild>
+                                <Button
+                                    variant="outline"
+                                    role="combobox"
+                                    aria-expanded={openLocationPopover}
+                                    className="w-full justify-start h-auto min-h-10"
+                                >
+                                    <div className="flex gap-1 flex-wrap items-center">
+                                        <Search className="h-4 w-4 mr-2 shrink-0" />
+                                        {locations.length > 0 ? (
+                                            locations.map(locValue => {
+                                                const location = allLocations.find(l => l.value === locValue);
+                                                return (
+                                                    <Badge
+                                                        key={locValue}
+                                                        variant="secondary"
+                                                        className="mr-1"
+                                                        onClick={(e) => {
+                                                            e.stopPropagation();
+                                                            handleLocationRemove(locValue);
+                                                        }}
+                                                    >
+                                                        {location?.label}
+                                                        <X className="ml-1 h-3 w-3" />
+                                                    </Badge>
+                                                )
+                                            })
+                                        ) : (
+                                            <span className="text-muted-foreground">Select locations...</span>
+                                        )}
+                                    </div>
+                                </Button>
+                            </PopoverTrigger>
+                            <PopoverContent className="w-[--radix-popover-trigger-width] p-0" align="start">
+                                <Command>
+                                    <CommandInput placeholder="Search location..." />
+                                    <CommandList>
+                                        <CommandEmpty>No location found.</CommandEmpty>
+                                        <CommandGroup>
+                                            {allLocations.map((location) => (
+                                                <CommandItem
+                                                    key={location.value}
+                                                    value={location.label}
+                                                    onSelect={() => handleLocationSelect(location.value)}
+                                                    disabled={locations.includes(location.value)}
+                                                >
+                                                    {location.label}
+                                                </CommandItem>
+                                            ))}
+                                        </CommandGroup>
+                                    </CommandList>
+                                </Command>
+                            </PopoverContent>
+                        </Popover>
+                        <FormMessage />
+                    </FormItem>
                 )}
               />
 
