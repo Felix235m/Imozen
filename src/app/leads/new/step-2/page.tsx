@@ -24,12 +24,12 @@ import {
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
-import { Home, Building, Warehouse, Mountain, Minus, Plus, X, Search } from "lucide-react";
+import { Home, Building, Warehouse, Mountain, Minus, Plus, X, ChevronsUpDown } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useToast } from "@/hooks/use-toast";
-import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from "@/components/ui/command";
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Badge } from "@/components/ui/badge";
+import { DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuCheckboxItem } from "@/components/ui/dropdown-menu";
+
 
 const propertyTypes = [
   { name: "Apartment", icon: Building },
@@ -63,7 +63,6 @@ const formSchema = z.object({
 export default function NewLeadStep2Page() {
   const router = useRouter();
   const { toast } = useToast();
-  const [openLocationPopover, setOpenLocationPopover] = useState(false);
   
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
@@ -128,10 +127,11 @@ export default function NewLeadStep2Page() {
 
   const handleLocationSelect = (locationValue: string) => {
     const currentLocations = form.getValues('locations') || [];
-    if (!currentLocations.includes(locationValue)) {
-      form.setValue('locations', [...currentLocations, locationValue]);
+    if (currentLocations.includes(locationValue)) {
+        form.setValue('locations', currentLocations.filter(loc => loc !== locationValue));
+    } else {
+        form.setValue('locations', [...currentLocations, locationValue]);
     }
-    setOpenLocationPopover(false);
   }
 
   const handleLocationRemove = (locationValue: string) => {
@@ -185,63 +185,51 @@ export default function NewLeadStep2Page() {
                 render={({ field }) => (
                     <FormItem className="flex flex-col">
                         <FormLabel>Location Preferences</FormLabel>
-                        <Popover open={openLocationPopover} onOpenChange={setOpenLocationPopover}>
-                            <PopoverTrigger asChild>
+                        <DropdownMenu>
+                            <DropdownMenuTrigger asChild>
                                 <Button
                                     variant="outline"
-                                    role="combobox"
-                                    aria-expanded={openLocationPopover}
-                                    className="w-full justify-start h-auto min-h-10"
+                                    className="w-full justify-between h-auto min-h-10"
                                 >
                                     <div className="flex gap-1 flex-wrap items-center">
-                                        <Search className="h-4 w-4 mr-2 shrink-0" />
-                                        {locations.length > 0 ? (
-                                            locations.map(locValue => {
-                                                const location = allLocations.find(l => l.value === locValue);
-                                                return (
-                                                    <Badge
-                                                        key={locValue}
-                                                        variant="secondary"
-                                                        className="mr-1"
-                                                        onClick={(e) => {
-                                                            e.stopPropagation();
-                                                            handleLocationRemove(locValue);
-                                                        }}
-                                                    >
-                                                        {location?.label}
-                                                        <X className="ml-1 h-3 w-3" />
-                                                    </Badge>
-                                                )
-                                            })
-                                        ) : (
-                                            <span className="text-muted-foreground">Select locations...</span>
-                                        )}
-                                    </div>
-                                </Button>
-                            </PopoverTrigger>
-                            <PopoverContent className="w-[--radix-popover-trigger-width] p-0" align="start">
-                                <Command>
-                                    <CommandInput placeholder="Search location..." />
-                                    <CommandList>
-                                        <CommandEmpty>No location found.</CommandEmpty>
-                                        <CommandGroup>
-                                            {allLocations.map((location) => (
-                                                <CommandItem
-                                                    key={location.value}
-                                                    value={location.label}
-                                                    onPointerUp={() => {
-                                                      handleLocationSelect(location.value);
+                                    {locations.length > 0 ? (
+                                        locations.map(locValue => {
+                                            const location = allLocations.find(l => l.value === locValue);
+                                            return (
+                                                <Badge
+                                                    key={locValue}
+                                                    variant="secondary"
+                                                    className="mr-1"
+                                                    onClick={(e) => {
+                                                        e.stopPropagation();
+                                                        handleLocationRemove(locValue);
                                                     }}
-                                                    disabled={locations.includes(location.value)}
                                                 >
-                                                    {location.label}
-                                                </CommandItem>
-                                            ))}
-                                        </CommandGroup>
-                                    </CommandList>
-                                </Command>
-                            </PopoverContent>
-                        </Popover>
+                                                    {location?.label}
+                                                    <X className="ml-1 h-3 w-3" />
+                                                </Badge>
+                                            )
+                                        })
+                                    ) : (
+                                        <span className="text-muted-foreground">Select locations...</span>
+                                    )}
+                                    </div>
+                                    <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                                </Button>
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent className="w-[--radix-dropdown-menu-trigger-width]">
+                                {allLocations.map((location) => (
+                                    <DropdownMenuCheckboxItem
+                                        key={location.value}
+                                        checked={locations.includes(location.value)}
+                                        onSelect={(e) => e.preventDefault()}
+                                        onClick={() => handleLocationSelect(location.value)}
+                                    >
+                                        {location.label}
+                                    </DropdownMenuCheckboxItem>
+                                ))}
+                            </DropdownMenuContent>
+                        </DropdownMenu>
                         <FormMessage />
                     </FormItem>
                 )}
