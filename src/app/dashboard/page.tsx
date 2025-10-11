@@ -156,8 +156,11 @@ export default function AgentDashboardPage() {
         agent_id: agentData.agent_id,
       });
 
-      if (response && response.session_id && response.lead_id) {
-        sessionStorage.setItem('lead_creation_session_id', response.session_id);
+      const sessionData = Array.isArray(response) ? response[0] : response;
+
+      if (sessionData && sessionData.session_id && sessionData.lead_id) {
+        sessionStorage.setItem('lead_creation_session_id', sessionData.session_id);
+        sessionStorage.setItem('lead_id', sessionData.lead_id);
         router.push('/leads/new');
       } else {
         throw new Error('Invalid session. Please log in again.');
