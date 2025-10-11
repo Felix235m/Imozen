@@ -153,24 +153,24 @@ export default function NewLeadStep4Page() {
                     </FormItem>
                   )}
                 />
+                 <div className="pt-6">
+                    <div className="grid grid-cols-3 gap-4 max-w-md mx-auto">
+                        <Button variant="outline" type="button" size="lg" onClick={() => router.back()}>
+                            Previous
+                        </Button>
+                        <Button variant="secondary" type="button" size="lg" onClick={handleSaveAsDraft}>
+                            Save as Draft
+                        </Button>
+                        <Button type="submit" size="lg" className="bg-primary" disabled={isSubmitting}>
+                            {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                            Create New Lead
+                        </Button>
+                    </div>
+                </div>
               </form>
             </Form>
           </CardContent>
         </Card>
-      </div>
-      <div className="fixed bottom-0 left-0 right-0 bg-white p-4 border-t">
-        <div className="grid grid-cols-3 gap-4 max-w-md mx-auto">
-           <Button variant="outline" type="button" size="lg" onClick={() => router.back()}>
-               Previous
-           </Button>
-           <Button variant="secondary" type="button" size="lg" onClick={handleSaveAsDraft}>
-               Save as Draft
-           </Button>
-           <Button type="button" size="lg" className="bg-primary" disabled={isSubmitting} onClick={form.handleSubmit(onSubmit)}>
-               {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-               Create New Lead
-           </Button>
-       </div>
       </div>
     </div>
   );
