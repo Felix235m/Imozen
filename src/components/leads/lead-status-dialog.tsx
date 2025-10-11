@@ -1,3 +1,4 @@
+
 "use client"
 
 import { useState, useEffect } from 'react';
@@ -15,26 +16,26 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Loader2 } from 'lucide-react';
 
-type LeadStatus = 'Hot' | 'Warm' | 'Cold';
+type LeadTemperature = 'Hot' | 'Warm' | 'Cold';
 type Lead = {
   id: string;
   name: string;
-  status: LeadStatus;
+  status: LeadTemperature;
 };
 
 type LeadStatusDialogProps = {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   lead: Lead;
-  onSave: (leadId: string, newStatus: LeadStatus, note: string) => void;
+  onSave: (leadId: string, newStatus: LeadTemperature, note: string) => void;
 };
 
 export function LeadStatusDialog({ open, onOpenChange, lead, onSave }: LeadStatusDialogProps) {
-  const [newStatus, setNewStatus] = useState<LeadStatus>(lead.status);
+  const [newStatus, setNewStatus] = useState<LeadTemperature>(lead.status);
   const [note, setNote] = useState('');
   const [isSaving, setIsSaving] = useState(false);
 
-  const statusOptions: LeadStatus[] = ['Hot', 'Warm', 'Cold'];
+  const statusOptions: LeadTemperature[] = ['Hot', 'Warm', 'Cold'];
   const availableStatuses = statusOptions.filter(s => s !== lead.status);
 
   const handleSaveClick = () => {
@@ -72,7 +73,7 @@ export function LeadStatusDialog({ open, onOpenChange, lead, onSave }: LeadStatu
             <Label>New Status</Label>
             <RadioGroup
               value={newStatus}
-              onValueChange={(value: LeadStatus) => setNewStatus(value)}
+              onValueChange={(value: LeadTemperature) => setNewStatus(value)}
               className="flex gap-4"
             >
               {availableStatuses.map(status => (
@@ -104,3 +105,5 @@ export function LeadStatusDialog({ open, onOpenChange, lead, onSave }: LeadStatu
     </Dialog>
   )
 }
+
+    

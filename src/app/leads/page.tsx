@@ -28,15 +28,17 @@ import {
 import { callLeadApi } from '@/lib/auth-api';
 
 
-type LeadStatus = 'Hot' | 'Warm' | 'Cold';
-type LeadActiveStatus = 'Active' | 'Inactive';
+type LeadTemperature = 'Hot' | 'Warm' | 'Cold';
+type LeadStatus = 'Active' | 'Inactive';
 
 type Lead = {
-  id: string;
+  lead_id: string;
   name: string;
+  temperature: LeadTemperature;
   status: LeadStatus;
-  nextFollowUp: string;
-  activeStatus: LeadActiveStatus;
+  next_follow_up: {
+    status: string;
+  };
 };
 
 export default function LeadsPage() {
@@ -57,8 +59,13 @@ export default function LeadsPage() {
   const fetchLeads = useCallback(async () => {
     setIsLoading(true);
     try {
-        const data = await callLeadApi('get_all_leads');
-        setLeads(Array.isArray(data) ? data : []);
+        const response = await callLeadApi('get_all_leads');
+        const data = Array.isArray(response) && response.length > 0 ? response[0] : null;
+        if (data && Array.isArray(data.leads)) {
+            setLeads(data.leads);
+        } else {
+            setLeads([]);
+        }
     } catch (error) {
         toast({
             variant: "destructive",
@@ -81,7 +88,7 @@ export default function LeadsPage() {
       if (activeTab === 'All Leads') {
         return matchesSearch;
       }
-      const matchesTab = lead.status === activeTab.replace(' Leads', '');
+      const matchesTab = lead.temperature === activeTab.replace(' Leads', '');
       return matchesSearch && matchesTab;
     });
   }, [searchTerm, activeTab, leads]);
@@ -98,7 +105,7 @@ export default function LeadsPage() {
     if (selectedLeads.length === filteredLeads.length) {
       setSelectedLeads([]);
     } else {
-      setSelectedLeads(filteredLeads.map(lead => lead.id));
+      setSelectedLeads(filteredLeads.map(lead => lead.lead_id));
     }
   }
   
@@ -109,9 +116,9 @@ export default function LeadsPage() {
   const handleLeadAction = async (leadId: string, action: 'setActive' | 'setInactive') => {
     const newStatus = action === 'setActive' ? 'Active' : 'Inactive';
     try {
-      await callLeadApi('edit_lead', { lead_id: leadId, activeStatus: newStatus });
+      await callLeadApi('edit_lead', { lead_id: leadId, status: newStatus });
       setLeads(leads.map(lead => 
-        lead.id === leadId ? { ...lead, activeStatus: newStatus } : lead
+        lead.lead_id === leadId ? { ...lead, status: newStatus } : lead
       ));
       toast({
         title: "Success",
@@ -130,7 +137,7 @@ export default function LeadsPage() {
     if (!leadToDelete) return;
     try {
         await callLeadApi('delete_lead', { lead_id: leadToDelete });
-        setLeads(prev => prev.filter(lead => lead.id !== leadToDelete));
+        setLeads(prev => prev.filter(lead => lead.lead_id !== leadToDelete));
         toast({
           title: "Success",
           description: "Lead deleted.",
@@ -149,7 +156,7 @@ export default function LeadsPage() {
     if (!leadsToDelete) return;
     try {
         await Promise.all(leadsToDelete.map(id => callLeadApi('delete_lead', { lead_id: id })));
-        setLeads(prev => prev.filter(lead => !leadsToDelete.includes(lead.id)));
+        setLeads(prev => prev.filter(lead => !leadsToDelete.includes(lead.lead_id)));
         toast({
             title: "Success",
             description: `${leadsToDelete.length} lead(s) deleted.`,
@@ -164,9 +171,9 @@ export default function LeadsPage() {
   const handleBulkAction = async (action: 'setActive' | 'setInactive') => {
     const newStatus = action === 'setActive' ? 'Active' : 'Inactive';
     try {
-        await Promise.all(selectedLeads.map(id => callLeadApi('edit_lead', { lead_id: id, activeStatus: newStatus })));
+        await Promise.all(selectedLeads.map(id => callLeadApi('edit_lead', { lead_id: id, status: newStatus })));
         setLeads(leads.map(lead => 
-          selectedLeads.includes(lead.id) ? { ...lead, activeStatus: newStatus } : lead
+          selectedLeads.includes(lead.lead_id) ? { ...lead, status: newStatus } : lead
         ));
         setSelectedLeads([]);
         toast({
@@ -183,11 +190,11 @@ export default function LeadsPage() {
     setIsStatusDialogOpen(true);
   };
 
-  const handleStatusSave = (leadId: string, newStatus: LeadStatus, note: string) => {
-    callLeadApi('edit_lead', { lead_id: leadId, status: newStatus, note: note }).then(() => {
+  const handleStatusSave = (leadId: string, newStatus: LeadTemperature, note: string) => {
+    callLeadApi('edit_lead', { lead_id: leadId, temperature: newStatus, note: note }).then(() => {
         setLeads(prevLeads =>
           prevLeads.map(lead =>
-            lead.id === leadId ? { ...lead, status: newStatus } : lead
+            lead.lead_id === leadId ? { ...lead, temperature: newStatus } : lead
           )
         );
         toast({
@@ -201,7 +208,7 @@ export default function LeadsPage() {
   };
 
 
-  const getStatusBadgeClass = (status: LeadStatus) => {
+  const getStatusBadgeClass = (status: LeadTemperature) => {
     switch (status) {
       case 'Hot': return 'bg-red-100 text-red-700 border-red-200';
       case 'Warm': return 'bg-yellow-100 text-yellow-700 border-yellow-200';
@@ -213,31 +220,31 @@ export default function LeadsPage() {
   const isBulkEditing = selectedLeads.length > 0;
   
   const LeadCard = ({lead}: {lead: Lead }) => (
-    <Card className={cn("shadow-sm", selectedLeads.includes(lead.id) && "bg-blue-50 border-primary")}>
+    <Card className={cn("shadow-sm", selectedLeads.includes(lead.lead_id) && "bg-blue-50 border-primary")}>
       <CardContent className="flex items-center justify-between p-4" >
         <div className="flex items-center gap-4" onClick={(e) => {
             if (isBulkEditing) {
                 e.preventDefault();
-                handleSelectLead(lead.id)
+                handleSelectLead(lead.lead_id)
             }
         }}>
           <Checkbox 
-              id={`lead-${lead.id}`} 
-              checked={selectedLeads.includes(lead.id)}
-              onCheckedChange={() => handleSelectLead(lead.id)}
+              id={`lead-${lead.lead_id}`} 
+              checked={selectedLeads.includes(lead.lead_id)}
+              onCheckedChange={() => handleSelectLead(lead.lead_id)}
               onClick={(e) => e.stopPropagation()}
           />
-          <Link href={`/leads/${lead.id}`} className="grid gap-0.5">
+          <Link href={`/leads/${lead.lead_id}`} className="grid gap-0.5">
             <span className={cn("font-semibold", isBulkEditing && 'cursor-pointer')}>{lead.name}</span>
             <div className="flex items-center gap-2 flex-wrap">
-              <Badge variant="outline" className={cn("text-xs", getStatusBadgeClass(lead.status))}>{lead.status}</Badge>
-              {lead.activeStatus === 'Inactive' && (
+              <Badge variant="outline" className={cn("text-xs", getStatusBadgeClass(lead.temperature))}>{lead.temperature}</Badge>
+              {lead.status === 'Inactive' && (
                   <Badge variant="secondary">Inactive</Badge>
               )}
               <p className="text-sm text-gray-500">
                 Next follow-up:
-                <span className={cn(lead.nextFollowUp === 'Overdue' && "text-red-500 font-medium ml-1")}>
-                  {lead.nextFollowUp}
+                <span className={cn(lead.next_follow_up.status === 'Overdue' && "text-red-500 font-medium ml-1")}>
+                  {lead.next_follow_up.status}
                 </span>
               </p>
             </div>
@@ -257,7 +264,16 @@ export default function LeadsPage() {
 
   return (
     <div className="flex h-full flex-col bg-gray-50 p-4 pb-20">
-      <div className="flex gap-2 mb-4 pt-4 items-center">
+       <div className="flex items-center justify-between py-4">
+        <h1 className="text-2xl font-bold">Leads</h1>
+        <Link href="/leads/new/step-1">
+          <Button variant="default" className="bg-primary">
+            <Plus className="mr-2 h-4 w-4" />
+            Add New Lead
+          </Button>
+        </Link>
+      </div>
+      <div className="flex gap-2 mb-4 items-center">
         {isBulkEditing ? (
           <>
             <Button variant="ghost" size="icon" onClick={cancelSelection}>
@@ -313,7 +329,7 @@ export default function LeadsPage() {
 
       <div className="flex-1 overflow-y-auto space-y-3 pb-16">
         {filteredLeads.map((lead) => (
-           <div key={lead.id} className="relative group">
+           <div key={lead.lead_id} className="relative group">
              <LeadCard lead={lead} />
             {!isBulkEditing && (
               <div className="absolute right-2 top-1/2 -translate-y-1/2">
@@ -324,7 +340,7 @@ export default function LeadsPage() {
                     </Button>
                   </DropdownMenuTrigger>
                   <DropdownMenuContent align="end" onClick={(e) => e.stopPropagation()}>
-                    <DropdownMenuItem onSelect={() => router.push(`/leads/${lead.id}?edit=true`)}>
+                    <DropdownMenuItem onSelect={() => router.push(`/leads/${lead.lead_id}?edit=true`)}>
                         <Edit className="mr-2 h-4 w-4" />
                         <span>Edit</span>
                     </DropdownMenuItem>
@@ -332,15 +348,15 @@ export default function LeadsPage() {
                         <Zap className="mr-2 h-4 w-4" />
                         <span>Change Status</span>
                     </DropdownMenuItem>
-                    <DropdownMenuItem onSelect={() => handleLeadAction(lead.id, lead.activeStatus === 'Active' ? 'setInactive' : 'setActive')}>
-                      {lead.activeStatus === 'Active' ? (
+                    <DropdownMenuItem onSelect={() => handleLeadAction(lead.lead_id, lead.status === 'Active' ? 'setInactive' : 'setActive')}>
+                      {lead.status === 'Active' ? (
                         <UserX className="mr-2 h-4 w-4" />
                       ) : (
                         <UserCheck className="mr-2 h-4 w-4" />
                       )}
-                      <span>Mark as {lead.activeStatus === 'Active' ? 'Inactive' : 'Active'}</span>
+                      <span>Mark as {lead.status === 'Active' ? 'Inactive' : 'Active'}</span>
                     </DropdownMenuItem>
-                    <DropdownMenuItem onSelect={() => confirmDeleteSingleLead(lead.id)} className="text-red-500">
+                    <DropdownMenuItem onSelect={() => confirmDeleteSingleLead(lead.lead_id)} className="text-red-500">
                         <Trash2 className="mr-2 h-4 w-4" />
                         <span>Delete Lead</span>
                     </DropdownMenuItem>
@@ -353,11 +369,11 @@ export default function LeadsPage() {
       </div>
       {selectedLeadForStatus && (
         <LeadStatusDialog
-          key={selectedLeadForStatus.id}
+          key={selectedLeadForStatus.lead_id}
           open={isStatusDialogOpen}
           onOpenChange={setIsStatusDialogOpen}
-          lead={selectedLeadForStatus}
-          onSave={handleStatusSave}
+          lead={{id: selectedLeadForStatus.lead_id, name: selectedLeadForStatus.name, status: selectedLeadForStatus.temperature}}
+          onSave={handleStatusSave as any}
         />
       )}
 
