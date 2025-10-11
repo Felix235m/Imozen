@@ -46,6 +46,7 @@ export default function LeadsPage() {
   const [activeTab, setActiveTab] = useState('All Leads');
   const [leads, setLeads] = useState<Lead[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [isNavigating, setIsNavigating] = useState<string | null>(null);
   const [selectedLeads, setSelectedLeads] = useState<string[]>([]);
   const { toast } = useToast();
   const router = useRouter();
@@ -60,7 +61,6 @@ export default function LeadsPage() {
     setIsLoading(true);
     try {
         const response = await callLeadApi('get_all_leads');
-        // The response is an array with one object: [{ success: true, leads: [...] }]
         if (Array.isArray(response) && response.length > 0 && response[0].leads) {
             setLeads(response[0].leads);
         } else {
@@ -84,6 +84,7 @@ export default function LeadsPage() {
   }, [fetchLeads]);
 
   const filteredLeads = useMemo(() => {
+    if (!Array.isArray(leads)) return [];
     return leads.filter(lead => {
       const matchesSearch = lead.name.toLowerCase().includes(searchTerm.toLowerCase());
       if (activeTab === 'All Leads') {
@@ -93,6 +94,25 @@ export default function LeadsPage() {
       return matchesSearch && matchesTab;
     });
   }, [searchTerm, activeTab, leads]);
+
+  const handleNavigateToLead = async (leadId: string) => {
+    if (isBulkEditing) {
+        handleSelectLead(leadId);
+        return;
+    }
+    setIsNavigating(leadId);
+    try {
+        await callLeadApi('get_lead_details', { lead_id: leadId });
+        router.push(`/leads/${leadId}`);
+    } catch (error) {
+        toast({
+            variant: "destructive",
+            title: "Error",
+            description: "Could not load lead details. The lead may have been deleted.",
+        });
+        setIsNavigating(null);
+    }
+  };
 
   const handleSelectLead = (leadId: string) => {
     setSelectedLeads(prevSelected =>
@@ -221,21 +241,19 @@ export default function LeadsPage() {
   const isBulkEditing = selectedLeads.length > 0;
   
   const LeadCard = ({lead}: {lead: Lead }) => (
-    <Card className={cn("shadow-sm", selectedLeads.includes(lead.lead_id) && "bg-blue-50 border-primary")}>
-      <CardContent className="flex items-center justify-between p-4" >
-        <div className="flex items-center gap-4" onClick={(e) => {
-            if (isBulkEditing) {
-                e.preventDefault();
-                handleSelectLead(lead.lead_id)
-            }
-        }}>
+    <Card 
+      className={cn("shadow-sm cursor-pointer hover:shadow-md transition-shadow", selectedLeads.includes(lead.lead_id) && "bg-blue-50 border-primary")}
+      onClick={() => handleNavigateToLead(lead.lead_id)}
+    >
+      <CardContent className="flex items-center justify-between p-4">
+        <div className="flex items-center gap-4">
           <Checkbox 
               id={`lead-${lead.lead_id}`} 
               checked={selectedLeads.includes(lead.lead_id)}
               onCheckedChange={() => handleSelectLead(lead.lead_id)}
               onClick={(e) => e.stopPropagation()}
           />
-          <Link href={`/leads/${lead.lead_id}`} className="grid gap-0.5">
+          <div className="grid gap-0.5">
             <span className={cn("font-semibold", isBulkEditing && 'cursor-pointer')}>{lead.name}</span>
             <div className="flex items-center gap-2 flex-wrap">
               <Badge variant="outline" className={cn("text-xs", getStatusBadgeClass(lead.temperature))}>{lead.temperature}</Badge>
@@ -249,8 +267,9 @@ export default function LeadsPage() {
                 </span>
               </p>
             </div>
-          </Link>
+          </div>
         </div>
+        {isNavigating === lead.lead_id && <Loader2 className="h-5 w-5 animate-spin text-primary" />}
       </CardContent>
     </Card>
   )
@@ -336,7 +355,7 @@ export default function LeadsPage() {
               <div className="absolute right-2 top-1/2 -translate-y-1/2">
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild>
-                    <Button variant="ghost" size="icon" onClick={(e) => e.preventDefault()}>
+                    <Button variant="ghost" size="icon" onClick={(e) => e.stopPropagation()}>
                       <MoreVertical className="h-5 w-5 text-gray-500" />
                     </Button>
                   </DropdownMenuTrigger>
