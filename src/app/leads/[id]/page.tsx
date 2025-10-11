@@ -714,6 +714,12 @@ function LeadNotesSheet({ open, onOpenChange, lead, notes, setNotes }: LeadNotes
     };
 
     useEffect(() => {
+        if (open) {
+            setNoteContent('');
+        }
+    }, [open]);
+
+    useEffect(() => {
         if (textareaRef.current) {
             textareaRef.current.style.height = 'auto';
             textareaRef.current.style.height = `${textareaRef.current.scrollHeight}px`;
@@ -763,7 +769,7 @@ function LeadNotesSheet({ open, onOpenChange, lead, notes, setNotes }: LeadNotes
 
                     <Card>
                         <CardHeader>
-                            <CardTitle className="text-lg">Current Note</CardTitle>
+                            <CardTitle className="text-lg">New Note</CardTitle>
                         </CardHeader>
                         <CardContent>
                             <Textarea
@@ -879,6 +885,8 @@ function LeadHistorySheet({ open, onOpenChange, lead, history }: LeadHistoryShee
         </Sheet>
     );
 }
+
+    
 
     
 
