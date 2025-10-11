@@ -1,8 +1,8 @@
 
 "use client";
 
-import React, { useState, useMemo } from 'react';
-import { Search, Plus, MoreVertical, X, Edit, Zap, UserCheck, UserX, Trash2 } from 'lucide-react';
+import React, { useState, useMemo, useEffect, useCallback } from 'react';
+import { Search, Plus, MoreVertical, X, Edit, Zap, UserCheck, UserX, Trash2, Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent } from '@/components/ui/card';
@@ -25,6 +25,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog"
+import { callLeadApi } from '@/lib/auth-api';
 
 
 type LeadStatus = 'Hot' | 'Warm' | 'Cold';
@@ -38,21 +39,11 @@ type Lead = {
   activeStatus: LeadActiveStatus;
 };
 
-const allLeads: Lead[] = [
-  { id: 'd2c5e5f3-a2f2-4f9c-9b0d-7d5b4a3a3c21', name: 'Sophia Carter', status: 'Hot' as LeadStatus, nextFollowUp: 'Overdue', activeStatus: 'Active' as LeadActiveStatus },
-  { id: 'olivia-bennett-2', name: 'Olivia Bennett', status: 'Warm' as LeadStatus, nextFollowUp: 'Today', activeStatus: 'Active' as LeadActiveStatus },
-  { id: 'noah-thompson-3', name: 'Noah Thompson', status: 'Cold' as LeadStatus, nextFollowUp: 'This week', activeStatus: 'Active' as LeadActiveStatus },
-  { id: 'ava-rodriguez-4', name: 'Ava Rodriguez', status: 'Hot' as LeadStatus, nextFollowUp: 'Overdue', activeStatus: 'Inactive' as LeadActiveStatus },
-  { id: 'liam-harper-5', name: 'Liam Harper', status: 'Warm' as LeadStatus, nextFollowUp: 'Next week', activeStatus: 'Active' as LeadActiveStatus },
-  { id: 'isabella-hayes-6', name: 'Isabella Hayes', status: 'Cold' as LeadStatus, nextFollowUp: '15 Jul 2024', activeStatus: 'Active' as LeadActiveStatus },
-  { id: 'lucas-foster-7', name: 'Lucas Foster', status: 'Hot' as LeadStatus, nextFollowUp: 'Overdue', activeStatus: 'Active' as LeadActiveStatus },
-  { id: 'mia-coleman-8', name: 'Mia Coleman', status: 'Warm' as LeadStatus, nextFollowUp: '20 Jul 2024', activeStatus: 'Inactive' as LeadActiveStatus },
-];
-
 export default function LeadsPage() {
   const [searchTerm, setSearchTerm] = useState('');
   const [activeTab, setActiveTab] = useState('All Leads');
-  const [leads, setLeads] = useState(allLeads);
+  const [leads, setLeads] = useState<Lead[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
   const [selectedLeads, setSelectedLeads] = useState<string[]>([]);
   const { toast } = useToast();
   const router = useRouter();
@@ -63,6 +54,25 @@ export default function LeadsPage() {
   const [leadToDelete, setLeadToDelete] = useState<string | null>(null);
   const [leadsToDelete, setLeadsToDelete] = useState<string[] | null>(null);
 
+  const fetchLeads = useCallback(async () => {
+    setIsLoading(true);
+    try {
+        const data = await callLeadApi('get_all_leads');
+        setLeads(data);
+    } catch (error) {
+        toast({
+            variant: "destructive",
+            title: "Error",
+            description: "Could not load leads.",
+        });
+    } finally {
+        setIsLoading(false);
+    }
+  }, [toast]);
+
+  useEffect(() => {
+    fetchLeads();
+  }, [fetchLeads]);
 
   const filteredLeads = useMemo(() => {
     return leads.filter(lead => {
@@ -95,34 +105,38 @@ export default function LeadsPage() {
       setSelectedLeads([]);
   }
 
-  const handleLeadAction = (leadId: string, action: 'setActive' | 'setInactive') => {
-    let newLeads = [...leads];
-    let message = '';
-    
+  const handleLeadAction = async (leadId: string, action: 'setActive' | 'setInactive') => {
     const newStatus = action === 'setActive' ? 'Active' : 'Inactive';
-    newLeads = leads.map(lead => 
-      lead.id === leadId ? { ...lead, activeStatus: newStatus } : lead
-    );
-    message = `Lead marked as ${newStatus.toLowerCase()}.`;
-    
-    setLeads(newLeads);
-    toast({
-      title: "Success",
-      description: message,
-    });
+    try {
+      await callLeadApi('edit_lead', { lead_id: leadId, activeStatus: newStatus });
+      setLeads(leads.map(lead => 
+        lead.id === leadId ? { ...lead, activeStatus: newStatus } : lead
+      ));
+      toast({
+        title: "Success",
+        description: `Lead marked as ${newStatus.toLowerCase()}.`,
+      });
+    } catch (error) {
+       toast({ variant: "destructive", title: "Error", description: "Could not update lead status." });
+    }
   };
 
   const confirmDeleteSingleLead = (leadId: string) => {
     setLeadToDelete(leadId);
   }
 
-  const executeDeleteSingleLead = () => {
+  const executeDeleteSingleLead = async () => {
     if (!leadToDelete) return;
-    setLeads(prev => prev.filter(lead => lead.id !== leadToDelete));
-    toast({
-      title: "Success",
-      description: "Lead deleted.",
-    });
+    try {
+        await callLeadApi('delete_lead', { lead_id: leadToDelete });
+        setLeads(prev => prev.filter(lead => lead.id !== leadToDelete));
+        toast({
+          title: "Success",
+          description: "Lead deleted.",
+        });
+    } catch(error) {
+        toast({ variant: "destructive", title: "Error", description: "Could not delete lead." });
+    }
     setLeadToDelete(null);
   }
 
@@ -130,33 +144,37 @@ export default function LeadsPage() {
     setLeadsToDelete(selectedLeads);
   }
 
-  const executeDeleteBulkLeads = () => {
+  const executeDeleteBulkLeads = async () => {
     if (!leadsToDelete) return;
-    setLeads(prev => prev.filter(lead => !leadsToDelete.includes(lead.id)));
-     toast({
-      title: "Success",
-      description: `${leadsToDelete.length} lead(s) deleted.`,
-    });
+    try {
+        await Promise.all(leadsToDelete.map(id => callLeadApi('delete_lead', { lead_id: id })));
+        setLeads(prev => prev.filter(lead => !leadsToDelete.includes(lead.id)));
+        toast({
+            title: "Success",
+            description: `${leadsToDelete.length} lead(s) deleted.`,
+        });
+        setSelectedLeads([]);
+    } catch (error) {
+        toast({ variant: "destructive", title: "Error", description: "Could not delete selected leads." });
+    }
     setLeadsToDelete(null);
-    setSelectedLeads([]);
   }
 
-  const handleBulkAction = (action: 'setActive' | 'setInactive') => {
-    let newLeads = [...leads];
-    let message = '';
-    
+  const handleBulkAction = async (action: 'setActive' | 'setInactive') => {
     const newStatus = action === 'setActive' ? 'Active' : 'Inactive';
-    newLeads = leads.map(lead => 
-      selectedLeads.includes(lead.id) ? { ...lead, activeStatus: newStatus } : lead
-    );
-    message = `${selectedLeads.length} lead(s) marked as ${newStatus.toLowerCase()}.`;
-    
-    setLeads(newLeads);
-    setSelectedLeads([]);
-    toast({
-      title: "Success",
-      description: message,
-    });
+    try {
+        await Promise.all(selectedLeads.map(id => callLeadApi('edit_lead', { lead_id: id, activeStatus: newStatus })));
+        setLeads(leads.map(lead => 
+          selectedLeads.includes(lead.id) ? { ...lead, activeStatus: newStatus } : lead
+        ));
+        setSelectedLeads([]);
+        toast({
+          title: "Success",
+          description: `${selectedLeads.length} lead(s) marked as ${newStatus.toLowerCase()}.`,
+        });
+    } catch (error) {
+       toast({ variant: "destructive", title: "Error", description: `Could not mark leads as ${newStatus.toLowerCase()}.` });
+    }
   };
 
   const openStatusDialog = (lead: Lead) => {
@@ -165,17 +183,20 @@ export default function LeadsPage() {
   };
 
   const handleStatusSave = (leadId: string, newStatus: LeadStatus, note: string) => {
-    setLeads(prevLeads =>
-      prevLeads.map(lead =>
-        lead.id === leadId ? { ...lead, status: newStatus } : lead
-      )
-    );
-    // In a real app, you would also save the note.
-    toast({
-      title: 'Status Updated',
-      description: `Lead status changed to ${newStatus} and note was added.`,
-    });
-    setIsStatusDialogOpen(false);
+    callLeadApi('edit_lead', { lead_id: leadId, status: newStatus, note: note }).then(() => {
+        setLeads(prevLeads =>
+          prevLeads.map(lead =>
+            lead.id === leadId ? { ...lead, status: newStatus } : lead
+          )
+        );
+        toast({
+          title: 'Status Updated',
+          description: `Lead status changed to ${newStatus} and note was added.`,
+        });
+        setIsStatusDialogOpen(false);
+    }).catch(() => {
+         toast({ variant: "destructive", title: "Error", description: "Could not update lead status." });
+    })
   };
 
 
@@ -224,6 +245,14 @@ export default function LeadsPage() {
       </CardContent>
     </Card>
   )
+
+  if (isLoading) {
+      return (
+        <div className="flex items-center justify-center h-full">
+            <Loader2 className="h-8 w-8 animate-spin" />
+        </div>
+      )
+  }
 
   return (
     <div className="flex h-full flex-col bg-gray-50 p-4 pb-20">
@@ -368,5 +397,3 @@ export default function LeadsPage() {
     </div>
   );
 }
-
-    

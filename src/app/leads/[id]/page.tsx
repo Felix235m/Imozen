@@ -1,10 +1,9 @@
 
-
 "use client";
 
 import * as React from 'react';
-import { useState, useRef, useEffect, useMemo } from 'react';
-import { useParams, useSearchParams } from 'next/navigation';
+import { useState, useRef, useEffect, useMemo, useCallback } from 'react';
+import { useParams, useRouter, useSearchParams } from 'next/navigation';
 import { ArrowLeft, MoreVertical, Upload, History, FileText, Send, Edit, UserX, UserCheck, Save, X, Mic, Copy, RefreshCw, MessageSquare, Phone, Mail, Trash2, Zap } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -38,32 +37,14 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog"
 import { Label } from '@/components/ui/label';
-import { allLeadsData, type LeadData } from '@/lib/leads-data';
+import { type LeadData } from '@/lib/leads-data';
 import { LeadFollowUpSheet } from '@/components/leads/lead-follow-up-sheet';
+import { callLeadApi } from '@/lib/auth-api';
 
 type Note = {
     id: string;
     content: string;
     date: string;
-};
-
-const initialNotes = [
-    {
-        id: 'note2',
-        content: 'Initial contact. Expressed interest in 2-bedroom condos downtown. Budget around $650k. Wants to see properties with good natural light.',
-        date: '2024-05-28T11:15:00Z'
-    },
-    {
-        id: 'note1',
-        content: 'Lead created from website inquiry form.',
-        date: '2024-01-15T09:00:00Z'
-    }
-];
-
-const initialCurrentNote = {
-    id: 'note3',
-    content: 'Client is very interested in properties with a backyard for their dog. Prefers modern architecture and has a flexible budget for the right place. They mentioned a strong preference for a quiet neighborhood. Called on June 8th to reschedule a viewing due to a personal commitment, seemed a bit hesitant about the price point of the downtown condo.',
-    date: '2024-06-10T14:30:00Z'
 };
 
 const communicationHistory = [
@@ -108,6 +89,7 @@ type ChangeSummary = {
 export default function LeadDetailPage() {
   const params = useParams();
   const searchParams = useSearchParams();
+  const router = useRouter();
   const id = params.id as string;
   const isEditMode = searchParams.get('edit') === 'true';
   const [isEditing, setIsEditing] = useState(isEditMode);
@@ -127,21 +109,30 @@ export default function LeadDetailPage() {
   const [changeSummary, setChangeSummary] = useState<ChangeSummary[]>([]);
   const [suggestedStatus, setSuggestedStatus] = useState<LeadData['status'] | null>(null);
 
-  const [notes, setNotes] = useState(initialNotes);
-  const [currentNote, setCurrentNote] = useState(initialCurrentNote);
+  const [notes, setNotes] = useState<Note[]>([]);
+  const [currentNote, setCurrentNote] = useState<Note>({ id: '', content: '', date: '' });
+
+  const fetchLeadDetails = useCallback(async () => {
+    try {
+      const currentLeadData = await callLeadApi('get_lead_details', { lead_id: id });
+      setLead(currentLeadData);
+      setOriginalLead(currentLeadData);
+      setAvatarPreview(currentLeadData.avatar);
+      setNotes(currentLeadData.notes || []);
+      setCurrentNote(currentLeadData.currentNote || { id: '', content: '', date: '' });
+
+      if (isEditMode) {
+        setIsEditing(true);
+      }
+    } catch (error) {
+       toast({ variant: 'destructive', title: 'Error', description: 'Could not load lead details.' });
+       router.push('/leads');
+    }
+  }, [id, toast, router, isEditMode]);
 
   useEffect(() => {
-    const currentLeadData = allLeadsData.find(l => l.id === id);
-    if (currentLeadData) {
-      const leadCopy = { ...currentLeadData };
-      setLead(leadCopy);
-      setOriginalLead({ ...currentLeadData });
-      setAvatarPreview(leadCopy.avatar);
-    }
-    if (isEditMode) {
-        setIsEditing(true);
-    }
-  }, [id, isEditMode]);
+    fetchLeadDetails();
+  }, [fetchLeadDetails]);
 
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -170,6 +161,11 @@ export default function LeadDetailPage() {
       reader.onloadend = () => {
         const result = reader.result as string;
         setAvatarPreview(result);
+        
+        // Upload image immediately
+        callLeadApi('upload_lead_image', { lead_id: id, image: result })
+            .then(() => toast({ title: "Avatar updated" }))
+            .catch(() => toast({ variant: "destructive", title: "Error", description: "Could not upload avatar." }));
       };
       reader.readAsDataURL(file);
     }
@@ -241,26 +237,23 @@ export default function LeadDetailPage() {
     
     const finalLead = suggestedStatus ? { ...lead, status: suggestedStatus } : lead;
 
-    // Simulate API call
-    await new Promise(resolve => setTimeout(resolve, 1000));
-    toast({
-      title: "Success",
-      description: "Lead details saved successfully.",
-    });
-
-    const leadIndex = allLeadsData.findIndex(l => l.id === finalLead.id);
-    if(leadIndex !== -1) {
-        allLeadsData[leadIndex] = { ...finalLead, avatar: avatarPreview || finalLead.avatar };
+    try {
+        await callLeadApi('edit_lead', { lead_id: id, ...finalLead });
+        toast({
+          title: "Success",
+          description: "Lead details saved successfully.",
+        });
+        setOriginalLead(finalLead);
+        setLead(finalLead);
+    } catch (error) {
+        toast({ variant: 'destructive', title: 'Error', description: 'Could not save lead details.' });
+    } finally {
+        setIsEditing(false);
+        setIsSaving(false);
+        setIsConfirmSaveOpen(false);
+        setChangeSummary([]);
+        setSuggestedStatus(null);
     }
-    
-    setLead({ ...allLeadsData[leadIndex] });
-    setOriginalLead({ ...allLeadsData[leadIndex] });
-
-    setIsEditing(false);
-    setIsSaving(false);
-    setIsConfirmSaveOpen(false);
-    setChangeSummary([]);
-    setSuggestedStatus(null);
   };
 
 
@@ -272,25 +265,34 @@ export default function LeadDetailPage() {
     setIsEditing(false);
   };
 
-  const toggleActiveStatus = () => {
+  const toggleActiveStatus = async () => {
     if (!lead) return;
     const newStatus = lead.activeStatus === 'Active' ? 'Inactive' : 'Active';
-    setLead(prev => prev ? ({ ...prev, activeStatus: newStatus }) : null);
-    toast({
-      title: "Status Updated",
-      description: `Lead marked as ${newStatus.toLowerCase()}.`,
-    });
+    try {
+        await callLeadApi('edit_lead', { lead_id: id, activeStatus: newStatus });
+        setLead(prev => prev ? ({ ...prev, activeStatus: newStatus }) : null);
+        toast({
+          title: "Status Updated",
+          description: `Lead marked as ${newStatus.toLowerCase()}.`,
+        });
+    } catch(error) {
+        toast({ variant: 'destructive', title: 'Error', description: 'Could not update status.' });
+    }
   };
   
-  const handleDeleteLead = () => {
-    // In a real app, you'd make an API call to delete the lead
-    toast({
-      title: "Lead Deleted",
-      description: `${lead?.firstName} ${lead?.lastName} has been deleted.`,
-    });
-    // For now, just navigate back to leads page
-    // In a real app, you might want to redirect to a different page or handle state update
-    window.location.href = '/leads';
+  const handleDeleteLead = async () => {
+    try {
+        await callLeadApi('delete_lead', { lead_id: id });
+        toast({
+          title: "Lead Deleted",
+          description: `${lead?.firstName} ${lead?.lastName} has been deleted.`,
+        });
+        router.push('/leads');
+    } catch (error) {
+        toast({ variant: 'destructive', title: 'Error', description: 'Could not delete lead.' });
+    } finally {
+        setIsDeleteDialogOpen(false);
+    }
   }
 
   const getStatusBadgeClass = (status: 'Hot' | 'Warm' | 'Cold' | null | undefined) => {
@@ -314,23 +316,27 @@ export default function LeadDetailPage() {
   const handleStatusSave = (leadId: string, newStatus: 'Hot' | 'Warm' | 'Cold', note: string) => {
     if (!lead || lead.id !== leadId) return;
 
-    handleStatusChange(newStatus);
+    callLeadApi('edit_lead', { lead_id: leadId, status: newStatus, note }).then(() => {
+        handleStatusChange(newStatus);
 
-    if (currentNote.content.trim()) {
-        setNotes(prev => [currentNote, ...prev]);
-    }
-    const newCurrentNote: Note = {
-        id: `note-${Date.now()}`,
-        content: note,
-        date: new Date().toISOString(),
-    };
-    setCurrentNote(newCurrentNote);
-    
-    toast({
-        title: "Status updated",
-        description: `Lead status changed to ${newStatus} and note added.`,
+        if (currentNote.content.trim()) {
+            setNotes(prev => [currentNote, ...prev]);
+        }
+        const newCurrentNote: Note = {
+            id: `note-${Date.now()}`,
+            content: note,
+            date: new Date().toISOString(),
+        };
+        setCurrentNote(newCurrentNote);
+        
+        toast({
+            title: "Status updated",
+            description: `Lead status changed to ${newStatus} and note added.`,
+        });
+        setIsStatusDialogOpen(false);
+    }).catch(() => {
+        toast({ variant: 'destructive', title: 'Error', description: 'Could not update status.' });
     });
-    setIsStatusDialogOpen(false);
   };
   
   const formatValue = (field: string, value: any) => {
@@ -672,7 +678,7 @@ function ActionButton({ icon: Icon, label, onClick }: { icon: React.ElementType;
 type LeadNotesSheetProps = {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  lead: typeof allLeadsData[0];
+  lead: LeadData;
   notes: Note[];
   currentNote: Note;
   setNotes: React.Dispatch<React.SetStateAction<Note[]>>;
@@ -868,7 +874,7 @@ type HistoryItem = {
 type LeadHistorySheetProps = {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  lead: typeof allLeadsData[0];
+  lead: LeadData;
   history: HistoryItem[];
 };
 
@@ -917,11 +923,3 @@ function LeadHistorySheet({ open, onOpenChange, lead, history }: LeadHistoryShee
         </Sheet>
     );
 }
-
-    
-    
-
-    
-
-    
-

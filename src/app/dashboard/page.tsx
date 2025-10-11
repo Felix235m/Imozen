@@ -24,7 +24,7 @@ import { allLeadsData, type LeadData } from '@/lib/leads-data';
 import { cn } from '@/lib/utils';
 import { useRouter } from 'next/navigation';
 import { useToast } from '@/hooks/use-toast';
-import { callAuthApi } from '@/lib/auth-api';
+import { callAuthApi, callLeadApi } from '@/lib/auth-api';
 
 const stats = [
   { title: 'Leads for Follow-up', value: '23', icon: Users },
@@ -114,6 +114,7 @@ export default function AgentDashboardPage() {
   const [selectedLead, setSelectedLead] = useState<LeadData | null>(null);
   const [isCheckingSession, setIsCheckingSession] = useState(false);
   const [agentName, setAgentName] = useState('');
+  const [dashboardData, setDashboardData] = useState<any>(null);
   const router = useRouter();
   const { toast } = useToast();
 
@@ -128,7 +129,21 @@ export default function AgentDashboardPage() {
         setAgentName('Agent');
       }
     }
-  }, []);
+    
+    const fetchDashboardData = async () => {
+        try {
+            const data = await callLeadApi('get_dashboard');
+            setDashboardData(data);
+        } catch (error) {
+            toast({
+                variant: "destructive",
+                title: "Error",
+                description: "Could not load dashboard data.",
+            });
+        }
+    };
+    fetchDashboardData();
+  }, [toast]);
 
   const handleTaskClick = (leadId: string, icon: React.ElementType) => {
     if (icon === MessageSquare) {
@@ -161,7 +176,7 @@ export default function AgentDashboardPage() {
       if (sessionData && sessionData.session_id && sessionData.lead_id) {
         sessionStorage.setItem('lead_creation_session_id', sessionData.session_id);
         sessionStorage.setItem('lead_id', sessionData.lead_id);
-        router.push('/leads/new');
+        router.push('/leads/new/step-1');
       } else {
         throw new Error('Invalid session. Please log in again.');
       }
@@ -180,6 +195,16 @@ export default function AgentDashboardPage() {
     }
   };
 
+  const dynamicStats = useMemo(() => {
+    if (!dashboardData) return stats;
+    return [
+      { title: 'Leads for Follow-up', value: dashboardData.follow_up_leads_count || '0', icon: Users },
+      { title: 'New Leads This Week', value: dashboardData.new_leads_this_week_count || '0', icon: ClipboardList },
+      { title: 'Hot Leads', value: dashboardData.hot_leads_count || '0', icon: Flame, color: "text-red-500" },
+      { title: 'Conversion Rate', value: `${dashboardData.conversion_rate || 0}%`, icon: TrendingUp, color: "text-green-500" },
+    ]
+  },[dashboardData]);
+
   return (
     <div className="p-4 pb-20">
       <section className="py-4">
@@ -187,7 +212,7 @@ export default function AgentDashboardPage() {
       </section>
 
       <section className="grid grid-cols-2 gap-4 mb-6">
-        {stats.map((stat) => (
+        {dynamicStats.map((stat) => (
           <Card key={stat.title} className="shadow-sm">
             <CardContent className="p-4">
               <stat.icon className={`h-6 w-6 mb-2 text-gray-400 ${stat.color || ''}`} />
