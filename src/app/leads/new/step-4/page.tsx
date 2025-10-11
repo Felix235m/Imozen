@@ -129,53 +129,50 @@ export default function NewLeadStep4Page() {
   }
 
   return (
-    <div className="flex-1 overflow-y-auto">
-      <div className="p-4">
-        <Card className="border-none shadow-none">
-          <CardHeader>
-            <CardTitle>Initial Note</CardTitle>
-            <CardDescription>Add any additional information about this lead for future reference.</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <Form {...form}>
-              <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8">
-                <FormField
-                  control={form.control}
-                  name="initialNote"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Note</FormLabel>
-                      <FormControl>
-                        <Textarea
-                          placeholder="e.g., Client is very interested in properties with a backyard for their dog. Prefers modern architecture..."
-                          className="min-h-[200px]"
-                          {...field}
-                        />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-                 <div className="pt-6">
-                    <div className="grid grid-cols-3 gap-4 max-w-md mx-auto">
-                        <Button variant="outline" type="button" size="lg" onClick={() => router.back()}>
-                            Previous
-                        </Button>
-                        <Button variant="secondary" type="button" size="lg" onClick={handleSaveAsDraft}>
-                            Save as Draft
-                        </Button>
-                        <Button type="submit" size="lg" className="bg-primary" disabled={isSubmitting}>
-                            {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                            Create New Lead
-                        </Button>
-                    </div>
+    <div className="p-4">
+      <Card className="border-none shadow-none">
+        <CardHeader>
+          <CardTitle>Initial Note</CardTitle>
+          <CardDescription>Add any additional information about this lead for future reference.</CardDescription>
+        </CardHeader>
+        <CardContent>
+          <Form {...form}>
+            <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8">
+              <FormField
+                control={form.control}
+                name="initialNote"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Note</FormLabel>
+                    <FormControl>
+                      <Textarea
+                        placeholder="e.g., Client is very interested in properties with a backyard for their dog. Prefers modern architecture..."
+                        className="min-h-[200px]"
+                        {...field}
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <div className="pt-6">
+                 <div className="grid grid-cols-3 gap-4 max-w-md mx-auto">
+                    <Button variant="outline" type="button" size="lg" onClick={() => router.back()}>
+                        Previous
+                    </Button>
+                    <Button variant="secondary" type="button" size="lg" onClick={handleSaveAsDraft}>
+                        Save as Draft
+                    </Button>
+                    <Button type="submit" size="lg" className="bg-primary" disabled={isSubmitting}>
+                        {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                        Create New Lead
+                    </Button>
                 </div>
-              </form>
-            </Form>
-          </CardContent>
-        </Card>
-      </div>
+              </div>
+            </form>
+          </Form>
+        </CardContent>
+      </Card>
     </div>
   );
 }
-
