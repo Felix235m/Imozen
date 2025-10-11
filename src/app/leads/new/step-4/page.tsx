@@ -17,7 +17,8 @@ import { Textarea } from "@/components/ui/textarea";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { useRouter } from "next/navigation";
 import { useToast } from "@/hooks/use-toast";
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
+import { Loader2 } from "lucide-react";
 
 const formSchema = z.object({
   initialNote: z.string().optional(),
@@ -26,6 +27,7 @@ const formSchema = z.object({
 export default function NewLeadStep4Page() {
   const router = useRouter();
   const { toast } = useToast();
+  const [isSubmitting, setIsSubmitting] = useState(false);
   
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
@@ -46,24 +48,45 @@ export default function NewLeadStep4Page() {
     }
   }, [form]);
 
-  const onSubmit = (values: z.infer<typeof formSchema>) => {
-    const storedData = sessionStorage.getItem('leadFormData');
-    const leadFormData = storedData ? JSON.parse(storedData) : {};
-    leadFormData.step4 = values;
-    sessionStorage.setItem('leadFormData', JSON.stringify(leadFormData));
-    
-    // In a real app, you would compile all data from previous steps and create the lead
-    console.log("Final lead data:", leadFormData);
-    
-    toast({
-        title: "Lead Created!",
-        description: "The new lead has been successfully added to your list.",
-    });
+  const onSubmit = async (values: z.infer<typeof formSchema>) => {
+    setIsSubmitting(true);
+    try {
+        const storedData = sessionStorage.getItem('leadFormData');
+        const leadFormData = storedData ? JSON.parse(storedData) : {};
+        leadFormData.step4 = values;
+        
+        const token = localStorage.getItem('auth_token');
 
-    // Clear session storage after submission
-    sessionStorage.removeItem('leadFormData');
+        const response = await fetch("https://eurekagathr.app.n8n.cloud/webhook-test/New-Lead", {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${token}`
+            },
+            body: JSON.stringify(leadFormData)
+        });
 
-    router.push("/leads");
+        if (!response.ok) {
+            throw new Error("Failed to create lead. Please try again.");
+        }
+        
+        toast({
+            title: "Lead Created!",
+            description: "The new lead has been successfully added to your list.",
+        });
+
+        sessionStorage.removeItem('leadFormData');
+        router.push("/leads");
+
+    } catch (error: any) {
+        toast({
+            variant: "destructive",
+            title: "Error",
+            description: error.message || "Could not create the lead.",
+        });
+    } finally {
+        setIsSubmitting(false);
+    }
   };
 
   const handleSaveAsDraft = () => {
@@ -119,7 +142,8 @@ export default function NewLeadStep4Page() {
                     <Button variant="secondary" type="button" size="lg" onClick={handleSaveAsDraft}>
                         Save as Draft
                     </Button>
-                    <Button type="submit" size="lg" className="bg-primary">
+                    <Button type="submit" size="lg" className="bg-primary" disabled={isSubmitting}>
+                        {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                         Create New Lead
                     </Button>
                 </div>
