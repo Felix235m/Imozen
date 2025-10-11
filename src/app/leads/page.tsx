@@ -58,13 +58,14 @@ export default function LeadsPage() {
     setIsLoading(true);
     try {
         const data = await callLeadApi('get_all_leads');
-        setLeads(data);
+        setLeads(Array.isArray(data) ? data : []);
     } catch (error) {
         toast({
             variant: "destructive",
             title: "Error",
             description: "Could not load leads.",
         });
+        setLeads([]);
     } finally {
         setIsLoading(false);
     }
@@ -397,3 +398,5 @@ export default function LeadsPage() {
     </div>
   );
 }
+
+    
