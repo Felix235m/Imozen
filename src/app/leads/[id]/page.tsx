@@ -92,7 +92,17 @@ export default function LeadDetailPage() {
       setLead(currentLeadData);
       setOriginalLead(currentLeadData);
       setAvatarPreview(currentLeadData.image_url);
-      setNotes(currentLeadData.management.agent_notes ? [{id: 'initial', content: currentLeadData.management.agent_notes, date: currentLeadData.created_at}] : []);
+      
+      // Initialize notes history, excluding the current agent_notes
+      const history = (currentLeadData.communication_history || [])
+        .filter((item: any) => item.type === 'note' && item.description !== currentLeadData.management.agent_notes)
+        .map((item: any) => ({
+            id: item.id,
+            content: item.description,
+            date: item.date,
+        }));
+      setNotes(history);
+
 
       if (isEditMode) {
         setIsEditing(true);
@@ -314,7 +324,7 @@ export default function LeadDetailPage() {
   const handleStatusSave = (leadId: string, newStatus: 'Hot' | 'Warm' | 'Cold', note: string) => {
     if (!lead || lead.lead_id !== leadId) return;
 
-    callLeadApi('edit_lead', { lead_id: leadId, temperature: newStatus, note }).then(() => {
+    callLeadApi('edit_lead', { lead_id: leadId, temperature: newStatus, note: note }).then(() => {
         handleTemperatureChange(newStatus);
 
         const newNote: Note = {
@@ -680,8 +690,17 @@ type LeadNotesSheetProps = {
 function LeadNotesSheet({ open, onOpenChange, lead, notes, setNotes }: LeadNotesSheetProps) {
     const { toast } = useToast();
     const [noteContent, setNoteContent] = useState('');
+    const [originalNoteContent, setOriginalNoteContent] = useState('');
     const textareaRef = useRef<HTMLTextAreaElement>(null);
     const [isSaving, setIsSaving] = useState(false);
+
+    useEffect(() => {
+        if (open && lead) {
+            const currentNote = lead.management.agent_notes || '';
+            setNoteContent(currentNote);
+            setOriginalNoteContent(currentNote);
+        }
+    }, [open, lead]);
 
     const handleCopy = (text: string) => {
         navigator.clipboard.writeText(text);
@@ -692,7 +711,7 @@ function LeadNotesSheet({ open, onOpenChange, lead, notes, setNotes }: LeadNotes
 
     const handleSaveNote = async () => {
         const trimmedContent = noteContent.trim();
-        if (!trimmedContent) {
+        if (!trimmedContent || trimmedContent === originalNoteContent) {
             return;
         }
         setIsSaving(true);
@@ -700,24 +719,22 @@ function LeadNotesSheet({ open, onOpenChange, lead, notes, setNotes }: LeadNotes
             await callLeadApi('edit_lead', { lead_id: lead.lead_id, note: trimmedContent });
             const newNote: Note = {
                 id: `note-${Date.now()}`,
-                content: trimmedContent,
+                content: originalNoteContent, // The old note becomes history
                 date: new Date().toISOString(),
             };
-            setNotes(prev => [newNote, ...prev]);
-            setNoteContent('');
+             if (originalNoteContent) {
+                setNotes(prev => [newNote, ...prev]);
+             }
+            lead.management.agent_notes = trimmedContent; // Update lead object in memory
+            setOriginalNoteContent(trimmedContent);
             toast({ title: "Note saved successfully" });
         } catch (error) {
             toast({ variant: 'destructive', title: 'Error', description: 'Could not save note.' });
+            setNoteContent(originalNoteContent); // Revert on failure
         } finally {
             setIsSaving(false);
         }
     };
-
-    useEffect(() => {
-        if (open) {
-            setNoteContent('');
-        }
-    }, [open]);
 
     useEffect(() => {
         if (textareaRef.current) {
@@ -734,6 +751,8 @@ function LeadNotesSheet({ open, onOpenChange, lead, notes, setNotes }: LeadNotes
             default: return 'bg-gray-100 text-gray-700';
         }
     };
+    
+    const isSaveDisabled = noteContent === originalNoteContent || isSaving;
 
     return (
         <Sheet open={open} onOpenChange={onOpenChange}>
@@ -769,7 +788,7 @@ function LeadNotesSheet({ open, onOpenChange, lead, notes, setNotes }: LeadNotes
 
                     <Card>
                         <CardHeader>
-                            <CardTitle className="text-lg">New Note</CardTitle>
+                            <CardTitle className="text-lg">Current Note</CardTitle>
                         </CardHeader>
                         <CardContent>
                             <Textarea
@@ -783,7 +802,7 @@ function LeadNotesSheet({ open, onOpenChange, lead, notes, setNotes }: LeadNotes
                                 <Button variant="ghost" size="icon">
                                     <Mic className="h-5 w-5 text-gray-500" />
                                 </Button>
-                                <Button onClick={handleSaveNote} disabled={isSaving || !noteContent.trim()}>
+                                <Button onClick={handleSaveNote} disabled={isSaveDisabled}>
                                     {isSaving ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : "Save Note"}
                                 </Button>
                             </div>
