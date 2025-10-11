@@ -23,6 +23,7 @@ import {
 } from "@/components/ui/select";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { useRouter } from "next/navigation";
+import { Textarea } from "@/components/ui/textarea";
 
 const formSchema = z.object({
   firstName: z.string().min(1, "First name is required"),
@@ -30,6 +31,7 @@ const formSchema = z.object({
   phoneNumber: z.string().min(1, "Phone number is required"),
   email: z.string().email("Invalid email address").optional().or(z.literal('')),
   leadSource: z.string().optional(),
+  initialMessage: z.string().optional(),
 });
 
 export default function NewLeadStep1Page() {
@@ -42,6 +44,7 @@ export default function NewLeadStep1Page() {
       phoneNumber: "",
       email: "",
       leadSource: "",
+      initialMessage: "",
     },
   });
 
@@ -139,6 +142,23 @@ export default function NewLeadStep1Page() {
                         <SelectItem value="social-media-campaign">Social Media Campaign</SelectItem>
                       </SelectContent>
                     </Select>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+               <FormField
+                control={form.control}
+                name="initialMessage"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Initial Message</FormLabel>
+                    <FormControl>
+                      <Textarea
+                        placeholder="Enter the initial message from the buyer..."
+                        className="min-h-[100px]"
+                        {...field}
+                      />
+                    </FormControl>
                     <FormMessage />
                   </FormItem>
                 )}
