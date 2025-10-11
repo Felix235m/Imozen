@@ -33,6 +33,7 @@ const formSchema = z.object({
   lastName: z.string().min(1, "Last name is required"),
   phoneNumber: z.string().min(1, "Phone number is required"),
   email: z.string().email("Invalid email address").optional().or(z.literal('')),
+  language: z.string().optional(),
   leadSource: z.string().optional(),
   initialMessage: z.string().optional(),
 });
@@ -49,6 +50,7 @@ export default function NewLeadStep1Page() {
       lastName: "",
       phoneNumber: "",
       email: "",
+      language: "English",
       leadSource: "",
       initialMessage: "",
     },
@@ -152,6 +154,28 @@ export default function NewLeadStep1Page() {
                     <FormControl>
                       <Input type="email" placeholder="Enter email address" {...field} />
                     </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={form.control}
+                name="language"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Language</FormLabel>
+                    <Select onValueChange={field.onChange} defaultValue={field.value}>
+                      <FormControl>
+                        <SelectTrigger>
+                          <SelectValue placeholder="Select a language" />
+                        </SelectTrigger>
+                      </FormControl>
+                      <SelectContent>
+                        <SelectItem value="English">English</SelectItem>
+                        <SelectItem value="Portuguese">Portuguese</SelectItem>
+                        <SelectItem value="French">French</SelectItem>
+                      </SelectContent>
+                    </Select>
                     <FormMessage />
                   </FormItem>
                 )}
