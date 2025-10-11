@@ -1,4 +1,5 @@
 
+
 "use client";
 
 import * as React from 'react';
@@ -76,7 +77,6 @@ export default function LeadDetailPage() {
   const [suggestedStatus, setSuggestedStatus] = useState<LeadData['temperature'] | null>(null);
 
   const [notes, setNotes] = useState<Note[]>([]);
-  const [currentNote, setCurrentNote] = useState<Note>({ id: '', content: '', date: '' });
   
   const communicationHistory = useMemo(() => lead?.communication_history || [], [lead]);
 
@@ -93,7 +93,6 @@ export default function LeadDetailPage() {
       setOriginalLead(currentLeadData);
       setAvatarPreview(currentLeadData.image_url);
       setNotes(currentLeadData.management.agent_notes ? [{id: 'initial', content: currentLeadData.management.agent_notes, date: currentLeadData.created_at}] : []);
-      setCurrentNote({ id: '', content: '', date: '' });
 
       if (isEditMode) {
         setIsEditing(true);
@@ -694,11 +693,6 @@ function LeadNotesSheet({ open, onOpenChange, lead, notes, setNotes }: LeadNotes
     const handleSaveNote = async () => {
         const trimmedContent = noteContent.trim();
         if (!trimmedContent) {
-            toast({
-                variant: 'destructive',
-                title: 'Note is empty',
-                description: 'Please write a note before saving.',
-            });
             return;
         }
         setIsSaving(true);
@@ -768,7 +762,10 @@ function LeadNotesSheet({ open, onOpenChange, lead, notes, setNotes }: LeadNotes
                     </div>
 
                     <Card>
-                        <CardContent className="p-4">
+                        <CardHeader>
+                            <CardTitle className="text-lg">Current Note</CardTitle>
+                        </CardHeader>
+                        <CardContent>
                             <Textarea
                                 ref={textareaRef}
                                 placeholder="Start typing your note..."
@@ -780,7 +777,7 @@ function LeadNotesSheet({ open, onOpenChange, lead, notes, setNotes }: LeadNotes
                                 <Button variant="ghost" size="icon">
                                     <Mic className="h-5 w-5 text-gray-500" />
                                 </Button>
-                                <Button onClick={handleSaveNote} disabled={isSaving}>
+                                <Button onClick={handleSaveNote} disabled={isSaving || !noteContent.trim()}>
                                     {isSaving ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : "Save Note"}
                                 </Button>
                             </div>
@@ -806,6 +803,11 @@ function LeadNotesSheet({ open, onOpenChange, lead, notes, setNotes }: LeadNotes
                                     </CardContent>
                                 </Card>
                             ))}
+                             {notes.length === 0 && (
+                                <div className="text-center text-gray-500 py-8">
+                                    No past notes for this lead.
+                                </div>
+                            )}
                         </div>
                     </div>
                 </div>
@@ -877,5 +879,7 @@ function LeadHistorySheet({ open, onOpenChange, lead, history }: LeadHistoryShee
         </Sheet>
     );
 }
+
+    
 
     
