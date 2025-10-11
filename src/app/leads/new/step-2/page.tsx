@@ -80,9 +80,13 @@ export default function NewLeadStep2Page() {
     if (typeof window !== 'undefined') {
       const storedData = sessionStorage.getItem('leadFormData');
       if (storedData) {
-        const data = JSON.parse(storedData);
-        if (data.step2) {
-          form.reset(data.step2);
+        try {
+            const data = JSON.parse(storedData);
+            if (data.step2) {
+            form.reset(data.step2);
+            }
+        } catch (e) {
+            console.error("Failed to parse lead form data from session storage", e);
         }
       }
     }
@@ -224,8 +228,10 @@ export default function NewLeadStep2Page() {
                                             {allLocations.map((location) => (
                                                 <CommandItem
                                                     key={location.value}
-                                                    value={location.label}
-                                                    onSelect={() => handleLocationSelect(location.value)}
+                                                    value={location.value}
+                                                    onSelect={(currentValue) => {
+                                                        handleLocationSelect(currentValue);
+                                                    }}
                                                     disabled={locations.includes(location.value)}
                                                 >
                                                     {location.label}
@@ -333,3 +339,5 @@ export default function NewLeadStep2Page() {
     </div>
   );
 }
+
+    
