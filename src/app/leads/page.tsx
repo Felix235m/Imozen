@@ -60,10 +60,11 @@ export default function LeadsPage() {
     setIsLoading(true);
     try {
         const response = await callLeadApi('get_all_leads');
-        const data = Array.isArray(response) && response.length > 0 ? response[0] : null;
-        if (data && Array.isArray(data.leads)) {
-            setLeads(data.leads);
+        // The response is an array with one object: [{ success: true, leads: [...] }]
+        if (Array.isArray(response) && response.length > 0 && response[0].leads) {
+            setLeads(response[0].leads);
         } else {
+            console.error("API response is not in the expected format:", response);
             setLeads([]);
         }
     } catch (error) {
@@ -414,5 +415,3 @@ export default function LeadsPage() {
     </div>
   );
 }
-
-    
