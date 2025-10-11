@@ -229,7 +229,9 @@ export default function NewLeadStep2Page() {
                                                 <CommandItem
                                                     key={location.value}
                                                     value={location.value}
-                                                    onSelect={handleLocationSelect}
+                                                    onSelect={(currentValue) => {
+                                                      handleLocationSelect(currentValue);
+                                                    }}
                                                     disabled={locations.includes(location.value)}
                                                 >
                                                     {location.label}
@@ -337,5 +339,3 @@ export default function NewLeadStep2Page() {
     </div>
   );
 }
-
-    
