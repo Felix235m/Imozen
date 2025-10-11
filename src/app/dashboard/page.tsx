@@ -1,7 +1,7 @@
 
 "use client";
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import {
   Mail,
   Phone,
@@ -26,11 +26,11 @@ import { useRouter } from 'next/navigation';
 import { useToast } from '@/hooks/use-toast';
 import { callAuthApi, callLeadApi } from '@/lib/auth-api';
 
-const stats = [
-  { title: 'Leads for Follow-up', value: '23', icon: Users },
-  { title: 'New Leads This Week', value: '12', icon: ClipboardList },
-  { title: 'Hot Leads', value: '5', icon: Flame, color: "text-red-500" },
-  { title: 'Conversion Rate', value: '15%', icon: TrendingUp, color: "text-green-500" },
+const initialStats = [
+  { title: 'Leads for Follow-up', value: '0', icon: Users },
+  { title: 'New Leads This Week', value: '0', icon: ClipboardList },
+  { title: 'Hot Leads', value: '0', icon: Flame, color: "text-red-500" },
+  { title: 'Conversion Rate', value: '0%', icon: TrendingUp, color: "text-green-500" },
 ];
 
 const tasks = [
@@ -132,8 +132,17 @@ export default function AgentDashboardPage() {
     
     const fetchDashboardData = async () => {
         try {
-            const data = await callLeadApi('get_dashboard');
-            setDashboardData(data);
+            const response = await callLeadApi('get_dashboard');
+            const data = Array.isArray(response) && response.length > 0 ? response[0] : null;
+            if (data && data.success) {
+                setDashboardData(data);
+            } else {
+                 toast({
+                    variant: "destructive",
+                    title: "Error",
+                    description: "Could not load dashboard data.",
+                });
+            }
         } catch (error) {
             toast({
                 variant: "destructive",
@@ -196,11 +205,12 @@ export default function AgentDashboardPage() {
   };
 
   const dynamicStats = useMemo(() => {
-    if (!dashboardData) return stats;
+    if (!dashboardData) return initialStats;
+    const counts = dashboardData.counts || {};
     return [
-      { title: 'Leads for Follow-up', value: dashboardData.follow_up_leads_count || '0', icon: Users },
-      { title: 'New Leads This Week', value: dashboardData.new_leads_this_week_count || '0', icon: ClipboardList },
-      { title: 'Hot Leads', value: dashboardData.hot_leads_count || '0', icon: Flame, color: "text-red-500" },
+      { title: 'Leads for Follow-up', value: counts.all?.toString() || '0', icon: Users },
+      { title: 'New Leads This Week', value: '0', icon: ClipboardList }, // This data is not in the response yet
+      { title: 'Hot Leads', value: counts.hot?.toString() || '0', icon: Flame, color: "text-red-500" },
       { title: 'Conversion Rate', value: `${dashboardData.conversion_rate || 0}%`, icon: TrendingUp, color: "text-green-500" },
     ]
   },[dashboardData]);
@@ -269,3 +279,5 @@ export default function AgentDashboardPage() {
     </div>
   );
 }
+
+    
