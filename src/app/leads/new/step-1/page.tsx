@@ -24,6 +24,10 @@ import {
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { useRouter } from "next/navigation";
 import { Textarea } from "@/components/ui/textarea";
+import { useToast } from "@/hooks/use-toast";
+import { callLeadCreationApi } from "@/lib/auth-api";
+import { useState } from "react";
+import { Loader2 } from "lucide-react";
 
 const formSchema = z.object({
   firstName: z.string().min(1, "First name is required"),
@@ -36,6 +40,9 @@ const formSchema = z.object({
 
 export default function NewLeadStep1Page() {
   const router = useRouter();
+  const { toast } = useToast();
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
     defaultValues: {
@@ -48,9 +55,39 @@ export default function NewLeadStep1Page() {
     },
   });
 
-  const onSubmit = (values: z.infer<typeof formSchema>) => {
-    console.log(values);
-    router.push("/leads/new/step-2");
+  const onSubmit = async (values: z.infer<typeof formSchema>) => {
+    setIsSubmitting(true);
+    try {
+        const sessionId = sessionStorage.getItem('lead_creation_session_id');
+        if (!sessionId) {
+            throw new Error("Session not found. Please start over.");
+        }
+
+        const payload = {
+            buyer_first_name: values.firstName,
+            buyer_last_name: values.lastName,
+            buyer_phone: `+351${values.phoneNumber}`,
+            buyer_email: values.email,
+            lead_source: values.leadSource,
+            initial_message: values.initialMessage,
+        };
+
+        await callLeadCreationApi(sessionId, 'update_lead_creation', payload);
+        
+        router.push("/leads/new/step-2");
+
+    } catch (error: any) {
+        toast({
+            variant: "destructive",
+            title: "Error",
+            description: error.message || "Could not submit lead information.",
+        });
+        if (error.message === "Session not found. Please start over.") {
+            router.push('/dashboard');
+        }
+    } finally {
+        setIsSubmitting(false);
+    }
   };
 
   return (
@@ -168,7 +205,8 @@ export default function NewLeadStep1Page() {
                     <Button variant="outline" type="button" size="lg" onClick={() => router.push('/leads')}>
                         Cancel
                     </Button>
-                    <Button type="submit" size="lg" className="bg-primary">
+                    <Button type="submit" size="lg" className="bg-primary" disabled={isSubmitting}>
+                        {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                         Next
                     </Button>
                 </div>

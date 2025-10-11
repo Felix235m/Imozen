@@ -157,6 +157,7 @@ export default function AgentDashboardPage() {
       });
 
       if (response && response.session_id && response.lead_id) {
+        sessionStorage.setItem('lead_creation_session_id', response.session_id);
         router.push('/leads/new');
       } else {
         throw new Error('Invalid session. Please log in again.');
