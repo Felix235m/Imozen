@@ -228,9 +228,9 @@ export default function NewLeadStep2Page() {
                                             {allLocations.map((location) => (
                                                 <CommandItem
                                                     key={location.value}
-                                                    value={location.value}
-                                                    onSelect={(currentValue) => {
-                                                      handleLocationSelect(currentValue);
+                                                    value={location.label}
+                                                    onPointerUp={() => {
+                                                      handleLocationSelect(location.value);
                                                     }}
                                                     disabled={locations.includes(location.value)}
                                                 >
