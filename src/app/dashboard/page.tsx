@@ -151,12 +151,16 @@ export default function AgentDashboardPage() {
       }
       const agentData = JSON.parse(agentDataString);
 
-      await callAuthApi('validate_session', {
+      const response = await callAuthApi('validate_session', {
         agent: agentData,
         agent_id: agentData.agent_id,
       });
-      
-      router.push('/leads/new');
+
+      if (response && response.session_id && response.lead_id) {
+        router.push('/leads/new');
+      } else {
+        throw new Error('Invalid session. Please log in again.');
+      }
 
     } catch (error: any) {
       toast({
