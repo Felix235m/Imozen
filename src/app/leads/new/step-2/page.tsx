@@ -83,7 +83,7 @@ export default function NewLeadStep2Page() {
         try {
             const data = JSON.parse(storedData);
             if (data.step2) {
-            form.reset(data.step2);
+              form.reset(data.step2);
             }
         } catch (e) {
             console.error("Failed to parse lead form data from session storage", e);
@@ -229,9 +229,7 @@ export default function NewLeadStep2Page() {
                                                 <CommandItem
                                                     key={location.value}
                                                     value={location.value}
-                                                    onSelect={(currentValue) => {
-                                                        handleLocationSelect(currentValue);
-                                                    }}
+                                                    onSelect={handleLocationSelect}
                                                     disabled={locations.includes(location.value)}
                                                 >
                                                     {location.label}
