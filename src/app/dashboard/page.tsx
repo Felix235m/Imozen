@@ -25,6 +25,7 @@ import { cn } from '@/lib/utils';
 import { useRouter } from 'next/navigation';
 import { useToast } from '@/hooks/use-toast';
 import { callAuthApi, callLeadApi } from '@/lib/auth-api';
+import { format, isToday, isTomorrow, formatRelative } from 'date-fns';
 
 const initialStats = [
   { title: 'Leads for Follow-up', value: '0', icon: Users },
@@ -33,81 +34,15 @@ const initialStats = [
   { title: 'Conversion Rate', value: '0%', icon: TrendingUp, color: "text-green-500" },
 ];
 
-const tasks = [
-  {
-    date: 'Today - July 20, 2023',
-    items: [
-      {
-        name: 'Olivia Rhye',
-        description: 'Send follow-up email about 123 Main St.',
-        icon: Mail,
-        leadId: 'olivia-bennett-2',
-      },
-      {
-        name: 'Liam Smith',
-        description: 'Call to confirm viewing appointment.',
-        icon: Phone,
-        leadId: 'liam-harper-5',
-      },
-    ],
-  },
-  {
-    date: 'Tomorrow - July 21, 2023',
-    items: [
-      {
-        name: 'Ava Johnson',
-        description: 'Schedule meeting to discuss offer.',
-        icon: Calendar,
-        leadId: 'ava-rodriguez-4',
-      },
-       {
-        name: 'James Brown',
-        description: 'Send WhatsApp message with new listings.',
-        icon: MessageSquare,
-        leadId: 'd2c5e5f3-a2f2-4f9c-9b0d-7d5b4a3a3c21',
-      },
-    ],
-  },
-  {
-    date: 'Saturday - July 22, 2023',
-    items: [
-      {
-        name: 'Noah Williams',
-        description: 'Prepare for property visit at 456 Oak Ave.',
-        icon: Home,
-        leadId: 'noah-thompson-3',
-      },
-    ],
-  },
-  {
-    date: 'Monday - July 24, 2023',
-    items: [
-      {
-        name: 'Emma Garcia',
-        description: 'Follow up on contract paperwork.',
-        icon: Briefcase,
-        leadId: 'isabella-hayes-6',
-      },
-      {
-        name: 'Benjamin Martinez',
-        description: 'Call to discuss feedback from showing.',
-        icon: Phone,
-        leadId: 'lucas-foster-7',
-      },
-    ],
-  },
-    {
-    date: 'Tuesday - July 25, 2023',
-    items: [
-      {
-        name: 'Mia Rodriguez',
-        description: 'Send updated market analysis.',
-        icon: Mail,
-        leadId: 'mia-coleman-8',
-      },
-    ],
-  },
-];
+const iconMap: { [key: string]: React.ElementType } = {
+  email: Mail,
+  phone: Phone,
+  calendar: Calendar,
+  home: Home,
+  whatsapp: MessageSquare,
+  briefcase: Briefcase,
+  default: ClipboardList,
+};
 
 export default function AgentDashboardPage() {
   const [isFollowUpOpen, setIsFollowUpOpen] = useState(false);
@@ -209,11 +144,27 @@ export default function AgentDashboardPage() {
     const counts = dashboardData.counts || {};
     return [
       { title: 'Leads for Follow-up', value: counts.all?.toString() || '0', icon: Users },
-      { title: 'New Leads This Week', value: '0', icon: ClipboardList }, // This data is not in the response yet
+      { title: 'New Leads This Week', value: counts.new_this_week?.toString() || '0', icon: ClipboardList },
       { title: 'Hot Leads', value: counts.hot?.toString() || '0', icon: Flame, color: "text-red-500" },
       { title: 'Conversion Rate', value: `${dashboardData.conversion_rate || 0}%`, icon: TrendingUp, color: "text-green-500" },
     ]
   },[dashboardData]);
+
+  const formattedTasks = useMemo(() => {
+    if (!dashboardData || !dashboardData.tasks) return [];
+    
+    const formatTaskDate = (dateStr: string) => {
+        const date = new Date(dateStr);
+        if (isToday(date)) return `Today - ${format(date, 'MMMM d, yyyy')}`;
+        if (isTomorrow(date)) return `Tomorrow - ${format(date, 'MMMM d, yyyy')}`;
+        return format(date, 'eeee - MMMM d, yyyy');
+    }
+
+    return dashboardData.tasks.map((taskGroup: any) => ({
+      ...taskGroup,
+      formattedDate: formatTaskDate(taskGroup.date)
+    }));
+  }, [dashboardData]);
 
   return (
     <div className="p-4 pb-20">
@@ -243,31 +194,39 @@ export default function AgentDashboardPage() {
       <section>
         <h3 className="text-xl font-semibold mb-4">Upcoming Follow-up Tasks</h3>
         <div className="space-y-6">
-          {tasks.map((group) => (
+          {formattedTasks.map((group: any) => (
             <div key={group.date}>
-              <h4 className="font-semibold text-gray-600 mb-2">{group.date}</h4>
+              <h4 className="font-semibold text-gray-600 mb-2">{group.formattedDate}</h4>
               <div className="space-y-3">
-                {group.items.map((task) => (
-                  <Card 
-                    key={task.name} 
-                    className={cn("shadow-sm hover:shadow-md transition-shadow cursor-pointer")}
-                    onClick={() => handleTaskClick(task.leadId, task.icon)}
-                  >
-                    <CardContent className="flex items-center gap-4 p-4">
-                      <div className="bg-blue-100 p-3 rounded-full">
-                         <task.icon className="h-5 w-5 text-primary" />
-                      </div>
-                      <div className="flex-1">
-                        <p className="font-semibold">{task.name}</p>
-                        <p className="text-sm text-gray-500">{task.description}</p>
-                      </div>
-                      <ChevronRight className="h-5 w-5 text-gray-400" />
-                    </CardContent>
-                  </Card>
-                ))}
+                {group.items.map((task: any) => {
+                  const Icon = iconMap[task.type] || iconMap.default;
+                  return (
+                    <Card 
+                      key={task.id} 
+                      className={cn("shadow-sm hover:shadow-md transition-shadow cursor-pointer")}
+                      onClick={() => handleTaskClick(task.leadId, Icon)}
+                    >
+                      <CardContent className="flex items-center gap-4 p-4">
+                        <div className="bg-blue-100 p-3 rounded-full">
+                           <Icon className="h-5 w-5 text-primary" />
+                        </div>
+                        <div className="flex-1">
+                          <p className="font-semibold">{task.name}</p>
+                          <p className="text-sm text-gray-500">{task.description}</p>
+                        </div>
+                        <ChevronRight className="h-5 w-5 text-gray-400" />
+                      </CardContent>
+                    </Card>
+                  )
+                })}
               </div>
             </div>
           ))}
+          {formattedTasks.length === 0 && (
+            <div className="text-center text-gray-500 py-8">
+                No upcoming tasks.
+            </div>
+          )}
         </div>
       </section>
 
@@ -279,5 +238,3 @@ export default function AgentDashboardPage() {
     </div>
   );
 }
-
-    
