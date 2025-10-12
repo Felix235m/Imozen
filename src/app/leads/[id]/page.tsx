@@ -106,6 +106,7 @@ export default function LeadDetailPage() {
   const [imgSrc, setImgSrc] = useState('');
   const imgRef = useRef<HTMLImageElement>(null);
   const [isCropModalOpen, setIsCropModalOpen] = useState(false);
+  const [statusChangeInfo, setStatusChangeInfo] = useState<{ newStatus: 'Active' | 'Inactive' } | null>(null);
 
   const communicationHistory = useMemo(() => lead?.communication_history || [], [lead]);
 
@@ -371,9 +372,9 @@ export default function LeadDetailPage() {
     setIsEditing(false);
   };
 
-  const toggleActiveStatus = async () => {
-    if (!lead) return;
-    const newStatus = lead.status === 'Active' ? 'Inactive' : 'Active';
+  const executeToggleActiveStatus = async () => {
+    if (!lead || !statusChangeInfo) return;
+    const { newStatus } = statusChangeInfo;
     try {
         await callLeadApi('edit_lead', { lead_id: id, status: newStatus });
         setLead(prev => prev ? ({ ...prev, status: newStatus }) : null);
@@ -383,7 +384,15 @@ export default function LeadDetailPage() {
         });
     } catch(error) {
         toast({ variant: 'destructive', title: 'Error', description: 'Could not update status.' });
+    } finally {
+        setStatusChangeInfo(null);
     }
+  };
+
+  const confirmToggleActiveStatus = () => {
+    if (!lead) return;
+    const newStatus = lead.status === 'Active' ? 'Inactive' : 'Active';
+    setStatusChangeInfo({ newStatus });
   };
   
   const handleDeleteLead = async () => {
@@ -490,7 +499,7 @@ export default function LeadDetailPage() {
                 <Zap className="mr-2 h-4 w-4" />
                 <span>Priority (hot/warm/cold)</span>
               </DropdownMenuItem>
-              <DropdownMenuItem onSelect={toggleActiveStatus}>
+              <DropdownMenuItem onSelect={confirmToggleActiveStatus}>
                 {lead.status === 'Active' ? (
                   <UserX className="mr-2 h-4 w-4" />
                 ) : (
@@ -627,6 +636,22 @@ export default function LeadDetailPage() {
               Delete
             </AlertDialogAction>
           </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+      <AlertDialog open={!!statusChangeInfo} onOpenChange={() => setStatusChangeInfo(null)}>
+        <AlertDialogContent>
+            <AlertDialogHeader>
+                <AlertDialogTitle>Are you sure?</AlertDialogTitle>
+                <AlertDialogDescription>
+                    This will mark the lead as {statusChangeInfo?.newStatus.toLowerCase()}.
+                </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+                <AlertDialogCancel onClick={() => setStatusChangeInfo(null)}>Cancel</AlertDialogCancel>
+                <AlertDialogAction onClick={executeToggleActiveStatus}>
+                    Confirm
+                </AlertDialogAction>
+            </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
       <AlertDialog open={isConfirmSaveOpen} onOpenChange={setIsConfirmSaveOpen}>

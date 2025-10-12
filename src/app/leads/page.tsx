@@ -57,6 +57,9 @@ export default function LeadsPage() {
   const [leadToDelete, setLeadToDelete] = useState<string | null>(null);
   const [leadsToDelete, setLeadsToDelete] = useState<string[] | null>(null);
 
+  const [statusChangeInfo, setStatusChangeInfo] = useState<{ leadId: string; newStatus: LeadStatus } | null>(null);
+
+
   const fetchLeads = useCallback(async () => {
     setIsLoading(true);
     try {
@@ -137,8 +140,15 @@ export default function LeadsPage() {
       setSelectedLeads([]);
   }
 
-  const handleLeadAction = async (leadId: string, action: 'setActive' | 'setInactive') => {
+  const confirmLeadAction = (leadId: string, action: 'setActive' | 'setInactive') => {
     const newStatus = action === 'setActive' ? 'Active' : 'Inactive';
+    setStatusChangeInfo({ leadId, newStatus });
+  };
+
+  const executeLeadAction = async () => {
+    if (!statusChangeInfo) return;
+    const { leadId, newStatus } = statusChangeInfo;
+
     try {
       await callLeadApi('edit_lead', { lead_id: leadId, status: newStatus });
       setLeads(leads.map(lead => 
@@ -150,6 +160,8 @@ export default function LeadsPage() {
       });
     } catch (error) {
        toast({ variant: "destructive", title: "Error", description: "Could not update lead status." });
+    } finally {
+      setStatusChangeInfo(null);
     }
   };
 
@@ -373,7 +385,7 @@ export default function LeadsPage() {
                         <Zap className="mr-2 h-4 w-4" />
                         <span>Priority (hot/warm/cold)</span>
                     </DropdownMenuItem>
-                    <DropdownMenuItem onSelect={() => handleLeadAction(lead.lead_id, lead.status === 'Active' ? 'setInactive' : 'setActive')}>
+                    <DropdownMenuItem onSelect={() => confirmLeadAction(lead.lead_id, lead.status === 'Active' ? 'setInactive' : 'setActive')}>
                       {lead.status === 'Active' ? (
                         <UserX className="mr-2 h-4 w-4" />
                       ) : (
@@ -401,6 +413,23 @@ export default function LeadsPage() {
           onSave={handleStatusSave as any}
         />
       )}
+
+      <AlertDialog open={!!statusChangeInfo} onOpenChange={() => setStatusChangeInfo(null)}>
+        <AlertDialogContent>
+            <AlertDialogHeader>
+                <AlertDialogTitle>Are you sure?</AlertDialogTitle>
+                <AlertDialogDescription>
+                    This will mark the lead as {statusChangeInfo?.newStatus.toLowerCase()}.
+                </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+                <AlertDialogCancel onClick={() => setStatusChangeInfo(null)}>Cancel</AlertDialogCancel>
+                <AlertDialogAction onClick={executeLeadAction}>
+                    Confirm
+                </AlertDialogAction>
+            </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
 
       <AlertDialog open={!!leadToDelete} onOpenChange={() => setLeadToDelete(null)}>
         <AlertDialogContent>
