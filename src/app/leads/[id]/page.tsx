@@ -505,7 +505,7 @@ export default function LeadDetailPage() {
                 <EditableInfoItem label="Property Type" name="property.type" value={lead.property.type} isEditing={isEditing} onSelectChange={handleSelectChange} selectOptions={['Condo', 'Apartment', 'House', 'Commercial', 'Land']} />
                 <EditableInfoItem label="Budget" name="property.budget" value={lead.property.budget_formatted} isEditing={isEditing} onChange={handleInputChange} type="number" displayValue={lead.property.budget.toString()} />
                 <EditableInfoItem label="Bedrooms" name="property.bedrooms" value={lead.property.bedrooms} isEditing={isEditing} onChange={handleInputChange} type="number" />
-                <EditableInfoItem label="Locations" name="property.locations" value={lead.property.locations.join(', ')} isEditing={isEditing} onSelectChange={handleSelectChange} className="col-span-2" multiSelect locations={lead.property.locations} />
+                <EditableInfoItem label="Locations" name="property.locations" value={lead.property.locations} isEditing={isEditing} onSelectChange={handleSelectChange} className="col-span-2" multiSelect />
               </div>
             </CardContent>
           </Card>
@@ -633,7 +633,6 @@ function EditableInfoItem({
   displayValue,
   selectOptions,
   multiSelect,
-  locations,
 }: { 
   label: string; 
   name?: string; 
@@ -646,23 +645,20 @@ function EditableInfoItem({
   displayValue?: string;
   selectOptions?: string[];
   multiSelect?: boolean;
-  locations?: string[];
 }) {
   if (isEditing && name) {
-    if (multiSelect && onSelectChange && locations) {
+    if (multiSelect && onSelectChange && Array.isArray(value)) {
        const handleLocationSelect = (locationValue: string) => {
         if (!name) return;
-        const currentLocations = locations || [];
-        const newLocations = currentLocations.includes(locationValue)
-            ? currentLocations.filter(loc => loc !== locationValue)
-            : [...currentLocations, locationValue];
+        const newLocations = value.includes(locationValue)
+            ? value.filter(loc => loc !== locationValue)
+            : [...value, locationValue];
         onSelectChange(name, newLocations);
     }
 
     const handleLocationRemove = (locationValue: string) => {
       if (!name) return;
-        const currentLocations = locations || [];
-        onSelectChange(name, currentLocations.filter(loc => loc !== locationValue));
+        onSelectChange(name, value.filter(loc => loc !== locationValue));
     }
 
     return (
@@ -675,8 +671,8 @@ function EditableInfoItem({
                         className="w-full justify-between h-auto min-h-10 text-sm font-normal"
                     >
                         <div className="flex gap-1 flex-wrap items-center">
-                        {locations.length > 0 ? (
-                            locations.map(locValue => {
+                        {value.length > 0 ? (
+                            value.map(locValue => {
                                 const location = allLocations.find(l => l.value === locValue);
                                 return (
                                     <Badge
@@ -688,7 +684,7 @@ function EditableInfoItem({
                                             handleLocationRemove(locValue);
                                         }}
                                     >
-                                        {location?.label}
+                                        {location?.label || locValue}
                                         <X className="ml-1 h-3 w-3" />
                                     </Badge>
                                 )
@@ -704,7 +700,7 @@ function EditableInfoItem({
                     {allLocations.map((location) => (
                         <DropdownMenuCheckboxItem
                             key={location.value}
-                            checked={locations.includes(location.value)}
+                            checked={value.includes(location.value)}
                             onSelect={(e) => e.preventDefault()}
                             onClick={() => handleLocationSelect(location.value)}
                         >
@@ -805,7 +801,7 @@ function LeadNotesSheet({ open, onOpenChange, lead, notes, setNotes }: LeadNotes
 
     const handleSaveNote = async () => {
         const trimmedContent = noteContent.trim();
-        if (trimmedContent === originalNoteContent) {
+        if (trimmedContent === originalNoteContent.trim()) {
             return;
         }
         setIsSaving(true);
@@ -1004,6 +1000,7 @@ function LeadHistorySheet({ open, onOpenChange, lead, history }: LeadHistoryShee
     
 
     
+
 
 
 
