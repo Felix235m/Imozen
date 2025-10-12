@@ -164,6 +164,15 @@ export default function LeadDetailPage() {
      }
   };
 
+  const handleLocationRemove = (e: React.MouseEvent, locationValue: string) => {
+      e.preventDefault();
+      e.stopPropagation();
+      if (lead) {
+          const newLocations = lead.property.locations.filter(loc => loc !== locationValue);
+          handleSelectChange('property.locations', newLocations);
+      }
+  };
+
   const handleTemperatureChange = (value: 'Hot' | 'Warm' | 'Cold') => {
     if (lead) {
         setLead(prev => prev ? ({ ...prev, temperature: value }) : null);
@@ -504,7 +513,7 @@ export default function LeadDetailPage() {
                 <EditableInfoItem label="Property Type" name="property.type" value={lead.property.type} isEditing={isEditing} onSelectChange={handleSelectChange} selectOptions={['Condo', 'Apartment', 'House', 'Commercial', 'Land']} />
                 <EditableInfoItem label="Budget" name="property.budget" value={lead.property.budget_formatted} isEditing={isEditing} onChange={handleInputChange} type="number" displayValue={lead.property.budget.toString()} />
                 <EditableInfoItem label="Bedrooms" name="property.bedrooms" value={lead.property.bedrooms} isEditing={isEditing} onChange={handleInputChange} type="number" />
-                <EditableInfoItem label="Locations" name="property.locations" value={lead.property.locations} isEditing={isEditing} onSelectChange={handleSelectChange} className="col-span-2" multiSelect />
+                <EditableInfoItem label="Locations" name="property.locations" value={lead.property.locations} isEditing={isEditing} onSelectChange={handleSelectChange} onLocationRemove={handleLocationRemove} className="col-span-2" multiSelect />
               </div>
             </CardContent>
           </Card>
@@ -626,7 +635,8 @@ function EditableInfoItem({
   value, 
   isEditing, 
   onChange, 
-  onSelectChange, 
+  onSelectChange,
+  onLocationRemove,
   className, 
   type = 'text', 
   displayValue,
@@ -639,6 +649,7 @@ function EditableInfoItem({
   isEditing: boolean; 
   onChange?: (e: React.ChangeEvent<HTMLInputElement>) => void; 
   onSelectChange?: (name: string, value: string | string[]) => void;
+  onLocationRemove?: (e: React.MouseEvent, locationValue: string) => void;
   className?: string; 
   type?: string; 
   displayValue?: string;
@@ -653,13 +664,6 @@ function EditableInfoItem({
             ? value.filter(loc => loc !== locationValue)
             : [...value, locationValue];
         onSelectChange(name, newLocations);
-    }
-
-    const handleLocationRemove = (e: React.MouseEvent, locationValue: string) => {
-        e.preventDefault();
-        e.stopPropagation();
-        if (!name) return;
-        onSelectChange(name, value.filter(loc => loc !== locationValue));
     }
 
     return (
@@ -682,7 +686,7 @@ function EditableInfoItem({
                                         className="mr-1"
                                     >
                                         {location?.label || locValue}
-                                        <span role="button" aria-label={`Remove ${location?.label}`} className="ml-1 rounded-full outline-none ring-offset-background focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2" onMouseDown={(e) => e.preventDefault()} onClick={(e) => handleLocationRemove(e, locValue)}><X className="h-3 w-3" /></span>
+                                        <span role="button" aria-label={`Remove ${location?.label}`} className="ml-1 rounded-full outline-none ring-offset-background focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2" onMouseDown={(e) => e.preventDefault()} onClick={(e) => onLocationRemove?.(e, locValue)}><X className="h-3 w-3" /></span>
                                     </Badge>
                                 )
                             })
@@ -997,6 +1001,7 @@ function LeadHistorySheet({ open, onOpenChange, lead, history }: LeadHistoryShee
     
 
     
+
 
 
 
