@@ -49,7 +49,7 @@ import ReactCrop, { type Crop, centerCrop, makeAspectCrop } from 'react-image-cr
 import 'react-image-crop/dist/ReactCrop.css'
 import { type LeadData } from '@/lib/leads-data';
 import { LeadFollowUpSheet } from '@/components/leads/lead-follow-up-sheet';
-import { callLeadApi } from '@/lib/auth-api';
+import { callLeadApi, callLeadStatusApi } from '@/lib/auth-api';
 
 type Note = {
     id: string;
@@ -376,7 +376,7 @@ export default function LeadDetailPage() {
     if (!lead || !statusChangeInfo) return;
     const { newStatus } = statusChangeInfo;
     try {
-        await callLeadApi('edit_lead', { lead_id: id, status: newStatus });
+        await callLeadStatusApi(id, newStatus.toLowerCase() as 'active' | 'inactive');
         setLead(prev => prev ? ({ ...prev, status: newStatus }) : null);
         toast({
           title: "Status Updated",

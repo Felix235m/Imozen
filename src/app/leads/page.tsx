@@ -25,7 +25,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog"
-import { callLeadApi } from '@/lib/auth-api';
+import { callLeadApi, callLeadStatusApi } from '@/lib/auth-api';
 
 
 type LeadTemperature = 'Hot' | 'Warm' | 'Cold';
@@ -150,7 +150,7 @@ export default function LeadsPage() {
     const { leadId, newStatus } = statusChangeInfo;
 
     try {
-      await callLeadApi('edit_lead', { lead_id: leadId, status: newStatus });
+      await callLeadStatusApi(leadId, newStatus.toLowerCase() as 'active' | 'inactive');
       setLeads(leads.map(lead => 
         lead.lead_id === leadId ? { ...lead, status: newStatus } : lead
       ));
@@ -207,7 +207,7 @@ export default function LeadsPage() {
   const handleBulkAction = async (action: 'setActive' | 'setInactive') => {
     const newStatus = action === 'setActive' ? 'Active' : 'Inactive';
     try {
-        await Promise.all(selectedLeads.map(id => callLeadApi('edit_lead', { lead_id: id, status: newStatus })));
+        await Promise.all(selectedLeads.map(id => callLeadStatusApi(id, newStatus.toLowerCase() as 'active' | 'inactive')));
         setLeads(leads.map(lead => 
           selectedLeads.includes(lead.lead_id) ? { ...lead, status: newStatus } : lead
         ));
