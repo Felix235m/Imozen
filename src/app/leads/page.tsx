@@ -85,14 +85,17 @@ export default function LeadsPage() {
 
   const filteredLeads = useMemo(() => {
     if (!Array.isArray(leads)) return [];
-    return leads.filter(lead => {
-      const matchesSearch = lead.name.toLowerCase().includes(searchTerm.toLowerCase());
-      if (activeTab === 'All Leads') {
-        return matchesSearch;
-      }
-      const matchesTab = lead.temperature === activeTab.replace(' Leads', '');
-      return matchesSearch && matchesTab;
-    });
+    
+    let results = leads.filter(lead => 
+        lead.name.toLowerCase().includes(searchTerm.toLowerCase())
+    );
+
+    if (activeTab !== 'All Leads') {
+      const temperature = activeTab.replace(' Leads', '') as LeadTemperature;
+      results = results.filter(lead => lead.temperature === temperature);
+    }
+
+    return results;
   }, [searchTerm, activeTab, leads]);
 
   const handleNavigateToLead = async (leadId: string) => {
@@ -254,12 +257,14 @@ export default function LeadsPage() {
               onClick={(e) => e.stopPropagation()}
           />
           <div className="grid gap-0.5">
-            <span className={cn("font-semibold", isBulkEditing && 'cursor-pointer')}>{lead.name}</span>
-            <div className="flex items-center gap-2 flex-wrap">
-              <Badge variant="outline" className={cn("text-xs", getStatusBadgeClass(lead.temperature))}>{lead.temperature}</Badge>
+            <div className='flex items-center gap-2'>
+              <span className={cn("font-semibold", isBulkEditing && 'cursor-pointer')}>{lead.name}</span>
               {lead.status === 'Inactive' && (
                   <Badge variant="secondary">Inactive</Badge>
               )}
+            </div>
+            <div className="flex items-center gap-2 flex-wrap">
+              <Badge variant="outline" className={cn("text-xs", getStatusBadgeClass(lead.temperature))}>{lead.temperature}</Badge>
               <p className="text-sm text-gray-500">
                 Next follow-up:
                 <span className={cn(lead.next_follow_up.status === 'Overdue' && "text-red-500 font-medium ml-1")}>

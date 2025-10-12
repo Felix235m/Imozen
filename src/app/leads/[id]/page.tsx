@@ -539,7 +539,7 @@ export default function LeadDetailPage() {
             <h2 className="text-2xl font-bold">{lead.name}</h2>
             <Badge variant="outline" className={cn("text-sm", getStatusBadgeClass(lead.temperature))}>{lead.temperature}</Badge>
           </div>
-           {lead.status === 'Inactive' && !isEditing && (
+           {lead.status === 'Inactive' && (
               <Badge variant="secondary" className="mt-2">Inactive</Badge>
            )}
           <div className='flex items-center gap-2 text-sm text-gray-500 mt-1'>
