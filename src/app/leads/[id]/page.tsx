@@ -558,7 +558,7 @@ export default function LeadDetailPage() {
               <div className="grid grid-cols-2 gap-y-4 gap-x-8 text-sm">
                 <EditableInfoItem label="Name" name="name" value={lead.name} isEditing={isEditing} onChange={handleInputChange} className="col-span-2" />
                 <EditableInfoItem label="Email" name="contact.email" value={lead.contact.email} isEditing={isEditing} onChange={handleInputChange} className="col-span-2" />
-                <EditableInfoItem label="Phone Number" name="contact.phone" value={lead.contact.phone.toString()} isEditing={isEditing} onChange={handleInputChange} className="col-span-2" />
+                <EditableInfoItem label="Phone Number" name="contact.phone" value={String(lead.contact.phone || '')} isEditing={isEditing} onChange={handleInputChange} className="col-span-2" />
                 <EditableInfoItem label="Language" name="contact.language" value={lead.contact.language} isEditing={isEditing} onSelectChange={handleSelectChange} selectOptions={['English', 'Portuguese', 'French']} />
               </div>
             </CardContent>
@@ -1093,5 +1093,7 @@ function LeadHistorySheet({ open, onOpenChange, lead, history }: LeadHistoryShee
 
 
 
+
+    
 
     
