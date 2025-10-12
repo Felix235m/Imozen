@@ -38,6 +38,15 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog"
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter
+} from '@/components/ui/dialog';
+import ReactCrop, { type Crop, centerCrop, makeAspectCrop } from 'react-image-crop'
+import 'react-image-crop/dist/ReactCrop.css'
 import { type LeadData } from '@/lib/leads-data';
 import { LeadFollowUpSheet } from '@/components/leads/lead-follow-up-sheet';
 import { callLeadApi } from '@/lib/auth-api';
@@ -92,6 +101,12 @@ export default function LeadDetailPage() {
 
   const [notes, setNotes] = useState<Note[]>([]);
   
+  const [crop, setCrop] = useState<Crop>();
+  const [completedCrop, setCompletedCrop] = useState<Crop>();
+  const [imgSrc, setImgSrc] = useState('');
+  const imgRef = useRef<HTMLImageElement>(null);
+  const [isCropModalOpen, setIsCropModalOpen] = useState(false);
+
   const communicationHistory = useMemo(() => lead?.communication_history || [], [lead]);
 
   const fetchLeadDetails = useCallback(async () => {
@@ -173,27 +188,83 @@ export default function LeadDetailPage() {
       }
   };
 
-  const handleTemperatureChange = (value: 'Hot' | 'Warm' | 'Cold') => {
-    if (lead) {
-        setLead(prev => prev ? ({ ...prev, temperature: value }) : null);
+  function getCroppedImg(image: HTMLImageElement, crop: Crop): Promise<string> {
+    const canvas = document.createElement('canvas');
+    const scaleX = image.naturalWidth / image.width;
+    const scaleY = image.naturalHeight / image.height;
+    canvas.width = crop.width;
+    canvas.height = crop.height;
+    const ctx = canvas.getContext('2d');
+
+    if (!ctx) {
+        return Promise.reject(new Error('Failed to get canvas context'));
+    }
+
+    ctx.drawImage(
+        image,
+        crop.x * scaleX,
+        crop.y * scaleY,
+        crop.width * scaleX,
+        crop.height * scaleY,
+        0,
+        0,
+        crop.width,
+        crop.height
+    );
+    return new Promise((resolve) => {
+        resolve(canvas.toDataURL('image/jpeg'));
+    });
+  }
+
+  const handleAvatarChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files && e.target.files.length > 0) {
+      setCrop(undefined) // Makes crop preview update between images.
+      const reader = new FileReader()
+      reader.addEventListener('load', () => setImgSrc(reader.result?.toString() || ''))
+      reader.readAsDataURL(e.target.files[0]);
+      setIsCropModalOpen(true);
+      e.target.value = ''; // Reset file input
+    }
+  };
+  
+  const handleSaveCrop = async () => {
+    if (!completedCrop || !imgRef.current) {
+        return;
+    }
+    const croppedImageUrl = await getCroppedImg(imgRef.current, completedCrop);
+    setAvatarPreview(croppedImageUrl);
+    setIsCropModalOpen(false);
+    setImgSrc('');
+
+    try {
+        await callLeadApi('upload_lead_image', { lead_id: id, image: croppedImageUrl });
+        toast({ title: "Avatar updated successfully" });
+    } catch (error) {
+        toast({ variant: "destructive", title: "Error", description: "Could not upload avatar." });
+        // Revert preview if upload fails
+        setAvatarPreview(originalLead?.image_url || null);
     }
   };
 
-  const handleAvatarChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (file) {
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        const result = reader.result as string;
-        setAvatarPreview(result);
-        
-        callLeadApi('upload_lead_image', { lead_id: id, image: result })
-            .then(() => toast({ title: "Avatar updated" }))
-            .catch(() => toast({ variant: "destructive", title: "Error", description: "Could not upload avatar." }));
-      };
-      reader.readAsDataURL(file);
-    }
-  };
+  function onImageLoad(e: React.SyntheticEvent<HTMLImageElement>) {
+    const { width, height } = e.currentTarget;
+    const crop = centerCrop(
+      makeAspectCrop(
+        {
+          unit: '%',
+          width: 90,
+        },
+        1, // aspect ratio 1:1
+        width,
+        height
+      ),
+      width,
+      height
+    );
+    setCrop(crop);
+    setCompletedCrop(crop);
+  }
+
 
   const getQualificationScore = (leadData: LeadData) => {
     let score = 0;
@@ -237,7 +308,7 @@ export default function LeadDetailPage() {
     compareObjects(tempLeadForComparison, tempOriginalLeadForComparison);
 
 
-    if (changes.length === 0 && avatarPreview === originalLead.image_url) {
+    if (changes.length === 0) {
       setIsEditing(false);
       return;
     }
@@ -296,7 +367,6 @@ export default function LeadDetailPage() {
   const handleCancel = () => {
     if (originalLead) {
       setLead({ ...originalLead });
-      setAvatarPreview(originalLead.image_url);
     }
     setIsEditing(false);
   };
@@ -353,7 +423,7 @@ export default function LeadDetailPage() {
     if (!lead || lead.lead_id !== leadId) return;
 
     callLeadApi('edit_lead', { lead_id: leadId, temperature: newStatus, note: note }).then(() => {
-        handleTemperatureChange(newStatus);
+        setLead(prev => prev ? ({ ...prev, temperature: newStatus }) : null);
 
         const newNote: Note = {
             id: `note-${Date.now()}`,
@@ -445,6 +515,25 @@ export default function LeadDetailPage() {
               <AvatarImage src={avatarPreview || undefined} alt={lead.name} />
               <AvatarFallback>{lead.name.split(' ').map(n => n[0]).join('')}</AvatarFallback>
             </Avatar>
+             {!isEditing && (
+              <>
+                <Button 
+                  variant="outline" 
+                  size="icon" 
+                  className="absolute bottom-0 right-0 h-8 w-8 rounded-full bg-white shadow-md"
+                  onClick={() => fileInputRef.current?.click()}
+                >
+                  <Upload className="h-4 w-4" />
+                </Button>
+                <Input 
+                  type="file" 
+                  ref={fileInputRef} 
+                  className="hidden" 
+                  accept="image/*" 
+                  onChange={handleAvatarChange}
+                />
+              </>
+            )}
           </div>
           <div className='flex items-center gap-2'>
             <h2 className="text-2xl font-bold">{lead.name}</h2>
@@ -557,7 +646,6 @@ export default function LeadDetailPage() {
                             <span className="font-medium">{change.field}:</span> {formatValue(change.field, change.oldValue)} &rarr; {formatValue(change.field, change.newValue)}
                         </li>
                     ))}
-                    {avatarPreview !== originalLead?.image_url && <li>Avatar updated</li>}
                 </ul>
             </div>
             {suggestedStatus && (
@@ -578,6 +666,36 @@ export default function LeadDetailPage() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+       <Dialog open={isCropModalOpen} onOpenChange={setIsCropModalOpen}>
+        <DialogContent>
+            <DialogHeader>
+                <DialogTitle>Crop Image</DialogTitle>
+            </DialogHeader>
+            <div className="flex items-center justify-center">
+              {imgSrc && (
+                 <ReactCrop
+                    crop={crop}
+                    onChange={c => setCrop(c)}
+                    onComplete={c => setCompletedCrop(c)}
+                    aspect={1}
+                    circularCrop
+                  >
+                    <img
+                        ref={imgRef}
+                        alt="Crop me"
+                        src={imgSrc}
+                        onLoad={onImageLoad}
+                        style={{ maxHeight: '70vh' }}
+                    />
+                 </ReactCrop>
+              )}
+            </div>
+            <DialogFooter>
+                <Button variant="outline" onClick={() => setIsCropModalOpen(false)}>Cancel</Button>
+                <Button onClick={handleSaveCrop}>Save</Button>
+            </DialogFooter>
+        </DialogContent>
+       </Dialog>
     </div>
   );
 }
