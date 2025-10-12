@@ -420,6 +420,11 @@ export default function LeadDetailPage() {
     }
   };
 
+  const leadToDeleteName = useMemo(() => {
+    if (!lead) return '';
+    return lead.name;
+  }, [lead]);
+
   if (!lead) {
       return (
           <div className="flex items-center justify-center h-screen">
@@ -627,7 +632,7 @@ export default function LeadDetailPage() {
             <AlertDialogTitle>Are you sure?</AlertDialogTitle>
             <AlertDialogDescription>
               This action cannot be undone. This will permanently delete the lead
-              for {lead.name}.
+              for {leadToDeleteName}.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
@@ -847,7 +852,7 @@ function EditableInfoItem({
           <Input 
             name={name} 
             type={type}
-            value={displayValue ?? value} 
+            value={displayValue ?? String(value ?? '')} 
             onChange={onChange} 
             className="h-8 text-sm" 
             placeholder={label}
@@ -1104,4 +1109,3 @@ function LeadHistorySheet({ open, onOpenChange, lead, history }: LeadHistoryShee
         </Sheet>
     );
 }
-
