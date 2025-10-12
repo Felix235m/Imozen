@@ -505,7 +505,7 @@ export default function LeadDetailPage() {
                 <EditableInfoItem label="Property Type" name="property.type" value={lead.property.type} isEditing={isEditing} onSelectChange={handleSelectChange} selectOptions={['Condo', 'Apartment', 'House', 'Commercial', 'Land']} />
                 <EditableInfoItem label="Budget" name="property.budget" value={lead.property.budget_formatted} isEditing={isEditing} onChange={handleInputChange} type="number" displayValue={lead.property.budget.toString()} />
                 <EditableInfoItem label="Bedrooms" name="property.bedrooms" value={lead.property.bedrooms} isEditing={isEditing} onChange={handleInputChange} type="number" />
-                <EditableInfoItem label="Locations" name="property.locations" value={lead.property.locations.join(', ')} isEditing={isEditing} onSelectChange={handleSelectChange} className="col-span-2" selectOptions={allLocations.map(l => l.value)} multiSelect locations={lead.property.locations} />
+                <EditableInfoItem label="Locations" name="property.locations" value={lead.property.locations.join(', ')} isEditing={isEditing} onSelectChange={handleSelectChange} className="col-span-2" multiSelect locations={lead.property.locations} />
               </div>
             </CardContent>
           </Card>
@@ -1004,5 +1004,6 @@ function LeadHistorySheet({ open, onOpenChange, lead, history }: LeadHistoryShee
     
 
     
+
 
 
