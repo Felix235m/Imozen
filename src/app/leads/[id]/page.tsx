@@ -299,6 +299,7 @@ export default function LeadDetailPage() {
       setAvatarPreview(originalLead.image_url);
     }
     setIsEditing(false);
+    router.push('/leads');
   };
 
   const toggleActiveStatus = async () => {
@@ -374,7 +375,7 @@ export default function LeadDetailPage() {
   
   const formatValue = (field: string, value: any) => {
     if (Array.isArray(value)) {
-        return value.join(', ');
+        return value.map(v => allLocations.find(l=>l.value === v)?.label || v).join(', ');
     }
     if (field.toLowerCase().includes('budget')) {
       return `€${Number(value).toLocaleString()}`;
@@ -1001,6 +1002,7 @@ function LeadHistorySheet({ open, onOpenChange, lead, history }: LeadHistoryShee
     
 
     
+
 
 
 
