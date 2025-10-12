@@ -109,6 +109,12 @@ export default function LeadDetailPage() {
   const [statusChangeInfo, setStatusChangeInfo] = useState<{ newStatus: 'Active' | 'Inactive' } | null>(null);
 
   const communicationHistory = useMemo(() => lead?.communication_history || [], [lead]);
+  
+  const leadToDeleteName = useMemo(() => {
+    if (!lead) return '';
+    return lead.name;
+  }, [lead]);
+
 
   const fetchLeadDetails = useCallback(async () => {
     try {
@@ -420,10 +426,6 @@ export default function LeadDetailPage() {
     }
   };
 
-  const leadToDeleteName = useMemo(() => {
-    if (!lead) return '';
-    return lead.name;
-  }, [lead]);
 
   if (!lead) {
       return (
@@ -551,7 +553,7 @@ export default function LeadDetailPage() {
           </div>
           <div className='flex items-center gap-2'>
             <h2 className="text-2xl font-bold">{lead.name}</h2>
-            <Badge variant="outline" className={cn("text-sm", getStatusBadgeClass(lead.temperature))}>{lead.temperature}</Badge>
+            {!isEditing && <Badge variant="outline" className={cn("text-sm", getStatusBadgeClass(lead.temperature))}>{lead.temperature}</Badge>}
           </div>
            {lead.status === 'Inactive' && (
               <Badge variant="secondary" className="mt-2">Inactive</Badge>
@@ -584,7 +586,7 @@ export default function LeadDetailPage() {
             </CardHeader>
             <CardContent>
               <div className="grid grid-cols-2 gap-y-4 gap-x-8 text-sm">
-                <EditableInfoItem label="Property Type" name="property.type" value={lead.property.type} isEditing={isEditing} onSelectChange={handleSelectChange} selectOptions={['Condo', 'Apartment', 'House', 'Commercial', 'Land']} />
+                <EditableInfoItem label="Property Type" name="property.type" value={lead.property.type} isEditing={isEditing} onSelectChange={handleSelectChange} selectOptions={['Apartment', 'House', 'Commercial', 'Land']} />
                 <EditableInfoItem label="Budget" name="property.budget" value={lead.property.budget_formatted} isEditing={isEditing} onChange={handleInputChange} type="number" displayValue={String(lead.property.budget || '')} />
                 <EditableInfoItem label="Bedrooms" name="property.bedrooms" value={lead.property.bedrooms} isEditing={isEditing} onChange={handleInputChange} type="number" />
                 <EditableInfoItem label="Locations" name="property.locations" value={lead.property.locations} isEditing={isEditing} onSelectChange={handleSelectChange} onLocationRemove={handleLocationRemove} className="col-span-2" multiSelect />
@@ -755,7 +757,7 @@ function EditableInfoItem({
 }: { 
   label: string; 
   name?: string; 
-  value: string | number | string[]; 
+  value: string | number | string[] | null; 
   isEditing: boolean; 
   onChange?: (e: React.ChangeEvent<HTMLInputElement>) => void; 
   onSelectChange?: (name: string, value: string | string[]) => void;
@@ -768,7 +770,7 @@ function EditableInfoItem({
 }) {
   if (isEditing && name) {
     if (label === 'Temperature') {
-        return <InfoItem label={label} value={<Badge variant="outline" className={cn("text-sm", getStatusBadgeClass(value as any))}>{value as any}</Badge>} className={className} />
+        return null
     }
 
     if (multiSelect && onSelectChange && Array.isArray(value)) {
