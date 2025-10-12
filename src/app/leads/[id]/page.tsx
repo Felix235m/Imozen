@@ -5,7 +5,7 @@
 import * as React from 'react';
 import { useState, useRef, useEffect, useMemo, useCallback } from 'react';
 import { useParams, useRouter, useSearchParams } from 'next/navigation';
-import { ArrowLeft, MoreVertical, Upload, History, FileText, Send, Edit, UserX, UserCheck, Save, X, Mic, Copy, RefreshCw, MessageSquare, Phone, Mail, Trash2, Zap } from 'lucide-react';
+import { ArrowLeft, MoreVertical, Upload, History, FileText, Send, Edit, UserX, UserCheck, Save, X, Mic, Copy, RefreshCw, MessageSquare, Phone, Mail, Trash2, Zap, ChevronsUpDown } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
@@ -19,6 +19,7 @@ import {
   DropdownMenuItem,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
+  DropdownMenuCheckboxItem,
 } from '@/components/ui/dropdown-menu';
 import { useToast } from '@/hooks/use-toast';
 import { Loader2 } from 'lucide-react';
@@ -52,6 +53,19 @@ type ChangeSummary = {
   oldValue: any;
   newValue: any;
 };
+
+const allLocations = [
+    { value: "lisbon", label: "Lisbon" },
+    { value: "porto", label: "Porto" },
+    { value: "faro", label: "Faro" },
+    { value: "coimbra", label: "Coimbra" },
+    { value: "braga", label: "Braga" },
+    { value: "aveiro", label: "Aveiro" },
+    { value: "sintra", label: "Sintra" },
+    { value: "cascais", label: "Cascais" },
+    { value: "funchal", label: "Funchal" },
+    { value: "guimaraes", label: "Guimarães" }
+];
 
 export default function LeadDetailPage() {
   const params = useParams();
@@ -135,7 +149,7 @@ export default function LeadDetailPage() {
     }
   };
 
-  const handleSelectChange = (name: string, value: string) => {
+  const handleSelectChange = (name: string, value: string | string[]) => {
      if (lead) {
         const keys = name.split('.');
         setLead(prev => {
@@ -222,7 +236,7 @@ export default function LeadDetailPage() {
     
     setChangeSummary(changes);
     
-    const propertyRequirementsChanged = changes.some(c => ['Property.Type', 'Property.Budget', 'Property.Bedrooms'].includes(c.field));
+    const propertyRequirementsChanged = changes.some(c => ['Property.Type', 'Property.Budget', 'Property.Bedrooms', 'Property.Locations'].includes(c.field));
 
     if (propertyRequirementsChanged) {
         const oldScore = getQualificationScore(originalLead);
@@ -351,6 +365,9 @@ export default function LeadDetailPage() {
   };
   
   const formatValue = (field: string, value: any) => {
+    if (Array.isArray(value)) {
+        return value.join(', ');
+    }
     if (field.toLowerCase().includes('budget')) {
       return `€${Number(value).toLocaleString()}`;
     }
@@ -488,7 +505,7 @@ export default function LeadDetailPage() {
                 <EditableInfoItem label="Property Type" name="property.type" value={lead.property.type} isEditing={isEditing} onSelectChange={handleSelectChange} selectOptions={['Condo', 'Apartment', 'House', 'Commercial', 'Land']} />
                 <EditableInfoItem label="Budget" name="property.budget" value={lead.property.budget_formatted} isEditing={isEditing} onChange={handleInputChange} type="number" displayValue={lead.property.budget.toString()} />
                 <EditableInfoItem label="Bedrooms" name="property.bedrooms" value={lead.property.bedrooms} isEditing={isEditing} onChange={handleInputChange} type="number" />
-                 <InfoItem label="Locations" value={lead.property.locations.join(', ')} className="col-span-2" />
+                <EditableInfoItem label="Locations" name="property.locations" value={lead.property.locations.join(', ')} isEditing={isEditing} onSelectChange={handleSelectChange} className="col-span-2" selectOptions={allLocations.map(l => l.value)} multiSelect locations={lead.property.locations} />
               </div>
             </CardContent>
           </Card>
@@ -614,20 +631,91 @@ function EditableInfoItem({
   className, 
   type = 'text', 
   displayValue,
-  selectOptions
+  selectOptions,
+  multiSelect,
+  locations,
 }: { 
   label: string; 
   name?: string; 
-  value: string | number; 
+  value: string | number | string[]; 
   isEditing: boolean; 
   onChange?: (e: React.ChangeEvent<HTMLInputElement>) => void; 
-  onSelectChange?: (name: string, value: string) => void;
+  onSelectChange?: (name: string, value: string | string[]) => void;
   className?: string; 
   type?: string; 
   displayValue?: string;
   selectOptions?: string[];
+  multiSelect?: boolean;
+  locations?: string[];
 }) {
   if (isEditing && name) {
+    if (multiSelect && onSelectChange && locations) {
+       const handleLocationSelect = (locationValue: string) => {
+        if (!name) return;
+        const currentLocations = locations || [];
+        const newLocations = currentLocations.includes(locationValue)
+            ? currentLocations.filter(loc => loc !== locationValue)
+            : [...currentLocations, locationValue];
+        onSelectChange(name, newLocations);
+    }
+
+    const handleLocationRemove = (locationValue: string) => {
+      if (!name) return;
+        const currentLocations = locations || [];
+        onSelectChange(name, currentLocations.filter(loc => loc !== locationValue));
+    }
+
+    return (
+        <div className={cn("grid gap-1", className)}>
+            <p className="text-gray-500">{label}</p>
+            <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                    <Button
+                        variant="outline"
+                        className="w-full justify-between h-auto min-h-10 text-sm font-normal"
+                    >
+                        <div className="flex gap-1 flex-wrap items-center">
+                        {locations.length > 0 ? (
+                            locations.map(locValue => {
+                                const location = allLocations.find(l => l.value === locValue);
+                                return (
+                                    <Badge
+                                        key={locValue}
+                                        variant="secondary"
+                                        className="mr-1"
+                                        onClick={(e) => {
+                                            e.stopPropagation();
+                                            handleLocationRemove(locValue);
+                                        }}
+                                    >
+                                        {location?.label}
+                                        <X className="ml-1 h-3 w-3" />
+                                    </Badge>
+                                )
+                            })
+                        ) : (
+                            <span className="text-muted-foreground">Select locations...</span>
+                        )}
+                        </div>
+                        <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                    </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent className="w-[--radix-dropdown-menu-trigger-width]">
+                    {allLocations.map((location) => (
+                        <DropdownMenuCheckboxItem
+                            key={location.value}
+                            checked={locations.includes(location.value)}
+                            onSelect={(e) => e.preventDefault()}
+                            onClick={() => handleLocationSelect(location.value)}
+                        >
+                            {location.label}
+                        </DropdownMenuCheckboxItem>
+                    ))}
+                </DropdownMenuContent>
+            </DropdownMenu>
+        </div>
+    );
+    }
     if (selectOptions && onSelectChange) {
       return (
         <div className={cn("grid gap-1", className)}>
@@ -662,7 +750,7 @@ function EditableInfoItem({
       )
     }
   }
-  return <InfoItem label={label} value={value} className={className} />
+  return <InfoItem label={label} value={Array.isArray(value) ? value.map(v => allLocations.find(l=>l.value === v)?.label || v).join(', ') : value} className={className} />
 }
 
 
@@ -916,4 +1004,5 @@ function LeadHistorySheet({ open, onOpenChange, lead, history }: LeadHistoryShee
     
 
     
+
 
