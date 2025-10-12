@@ -299,7 +299,6 @@ export default function LeadDetailPage() {
       setAvatarPreview(originalLead.image_url);
     }
     setIsEditing(false);
-    router.push('/leads');
   };
 
   const toggleActiveStatus = async () => {
@@ -996,6 +995,7 @@ function LeadHistorySheet({ open, onOpenChange, lead, history }: LeadHistoryShee
     
 
     
+
 
 
 
