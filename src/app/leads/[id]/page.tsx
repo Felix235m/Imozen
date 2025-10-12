@@ -571,7 +571,7 @@ export default function LeadDetailPage() {
             <CardContent>
               <div className="grid grid-cols-2 gap-y-4 gap-x-8 text-sm">
                 <EditableInfoItem label="Property Type" name="property.type" value={lead.property.type} isEditing={isEditing} onSelectChange={handleSelectChange} selectOptions={['Condo', 'Apartment', 'House', 'Commercial', 'Land']} />
-                <EditableInfoItem label="Budget" name="property.budget" value={lead.property.budget_formatted} isEditing={isEditing} onChange={handleInputChange} type="number" displayValue={lead.property.budget.toString()} />
+                <EditableInfoItem label="Budget" name="property.budget" value={lead.property.budget_formatted} isEditing={isEditing} onChange={handleInputChange} type="number" displayValue={String(lead.property.budget || '')} />
                 <EditableInfoItem label="Bedrooms" name="property.bedrooms" value={lead.property.bedrooms} isEditing={isEditing} onChange={handleInputChange} type="number" />
                 <EditableInfoItem label="Locations" name="property.locations" value={lead.property.locations} isEditing={isEditing} onSelectChange={handleSelectChange} onLocationRemove={handleLocationRemove} className="col-span-2" multiSelect />
               </div>
