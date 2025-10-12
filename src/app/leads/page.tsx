@@ -222,12 +222,12 @@ export default function LeadsPage() {
           )
         );
         toast({
-          title: 'Status Updated',
-          description: `Lead status changed to ${newStatus} and note was added.`,
+          title: 'Priority Updated',
+          description: `Lead priority changed to ${newStatus} and note was added.`,
         });
         setIsStatusDialogOpen(false);
     }).catch(() => {
-         toast({ variant: "destructive", title: "Error", description: "Could not update lead status." });
+         toast({ variant: "destructive", title: "Error", description: "Could not update lead priority." });
     })
   };
 
@@ -371,7 +371,7 @@ export default function LeadsPage() {
                     </DropdownMenuItem>
                     <DropdownMenuItem onSelect={() => openStatusDialog(lead)}>
                         <Zap className="mr-2 h-4 w-4" />
-                        <span>Change Status</span>
+                        <span>Priority (hot/warm/cold)</span>
                     </DropdownMenuItem>
                     <DropdownMenuItem onSelect={() => handleLeadAction(lead.lead_id, lead.status === 'Active' ? 'setInactive' : 'setActive')}>
                       {lead.status === 'Active' ? (

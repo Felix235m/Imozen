@@ -40,7 +40,7 @@ export function LeadStatusDialog({ open, onOpenChange, lead, onSave }: LeadStatu
 
   const handleSaveClick = () => {
     if (note.trim() === '') {
-      alert('Note is required to change status.');
+      alert('Note is required to change priority.');
       return;
     }
     setIsSaving(true);
@@ -63,14 +63,14 @@ export function LeadStatusDialog({ open, onOpenChange, lead, onSave }: LeadStatu
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent>
         <DialogHeader>
-          <DialogTitle>Change Status for {lead.name}</DialogTitle>
+          <DialogTitle>Change Priority for {lead.name}</DialogTitle>
           <DialogDescription>
-            Select a new status and provide a reason for the change. This will be added as a new note.
+            Select a new priority and provide a reason for the change. This will be added as a new note.
           </DialogDescription>
         </DialogHeader>
         <div className="grid gap-4 py-4">
           <div className="grid gap-2">
-            <Label>New Status</Label>
+            <Label>New Priority</Label>
             <RadioGroup
               value={newStatus}
               onValueChange={(value: LeadTemperature) => setNewStatus(value)}

@@ -433,12 +433,12 @@ export default function LeadDetailPage() {
         setNotes(prev => [newNote, ...prev]);
         
         toast({
-            title: "Status updated",
-            description: `Lead status changed to ${newStatus} and note added.`,
+            title: "Priority updated",
+            description: `Lead priority changed to ${newStatus} and note added.`,
         });
         setIsStatusDialogOpen(false);
     }).catch(() => {
-        toast({ variant: 'destructive', title: 'Error', description: 'Could not update status.' });
+        toast({ variant: 'destructive', title: 'Error', description: 'Could not update priority.' });
     });
   };
   
@@ -488,7 +488,7 @@ export default function LeadDetailPage() {
               </DropdownMenuItem>
               <DropdownMenuItem onSelect={() => setIsStatusDialogOpen(true)}>
                 <Zap className="mr-2 h-4 w-4" />
-                <span>Change Status</span>
+                <span>Priority (hot/warm/cold)</span>
               </DropdownMenuItem>
               <DropdownMenuItem onSelect={toggleActiveStatus}>
                 {lead.status === 'Active' ? (
@@ -650,7 +650,7 @@ export default function LeadDetailPage() {
             </div>
             {suggestedStatus && (
                 <div className="p-3 bg-yellow-50 border border-yellow-200 rounded-md">
-                    <p className="text-yellow-800">Based on the updated property requirements, we suggest changing the lead status from 
+                    <p className="text-yellow-800">Based on the updated property requirements, we suggest changing the lead priority from 
                     <Badge variant="outline" className={cn("mx-1.5", getStatusBadgeClass(lead.temperature))}>{lead.temperature}</Badge> 
                     to 
                     <Badge variant="outline" className={cn("mx-1.5", getStatusBadgeClass(suggestedStatus))}>{suggestedStatus}</Badge>.</p>
@@ -737,6 +737,10 @@ function EditableInfoItem({
   multiSelect?: boolean;
 }) {
   if (isEditing && name) {
+    if (label === 'Temperature') {
+        return <InfoItem label={label} value={<Badge variant="outline" className={cn("text-sm", getStatusBadgeClass(value as any))}>{value as any}</Badge>} className={className} />
+    }
+
     if (multiSelect && onSelectChange && Array.isArray(value)) {
        const handleLocationSelect = (locationValue: string) => {
         if (!name) return;
