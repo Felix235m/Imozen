@@ -190,7 +190,7 @@ export default function LeadDetailPage() {
     return 'Cold';
   }
 
-  const handleSave = async () => {
+  const prepareSaveChanges = () => {
     if (!lead || !originalLead) return;
 
     const changes: ChangeSummary[] = [];
@@ -244,7 +244,7 @@ export default function LeadDetailPage() {
     setIsConfirmSaveOpen(true);
   };
 
-  const confirmSave = async () => {
+  const confirmAndSaveChanges = async () => {
     if (!lead) return;
     setIsSaving(true);
     setIsConfirmSaveOpen(false);
@@ -372,7 +372,7 @@ export default function LeadDetailPage() {
           <h1 className="ml-4 text-xl font-semibold">Lead Details</h1>
         </div>
         {isEditing ? (
-          <Button size="sm" onClick={handleSave} disabled={isSaving}>
+          <Button size="sm" onClick={prepareSaveChanges} disabled={isSaving}>
             {isSaving ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Save className="mr-2 h-4 w-4" />}
             Save
           </Button>
@@ -506,7 +506,7 @@ export default function LeadDetailPage() {
       {isEditing && (
          <footer className="fixed bottom-0 left-0 right-0 grid grid-cols-2 gap-4 border-t bg-white p-4">
             <Button variant="outline" size="lg" onClick={handleCancel} disabled={isSaving}>Cancel</Button>
-            <Button variant="default" size="lg" className="bg-primary" onClick={handleSave} disabled={isSaving}>
+            <Button variant="default" size="lg" className="bg-primary" onClick={prepareSaveChanges} disabled={isSaving}>
                 {isSaving ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Save className="mr-2 h-4 w-4" />}
                 Save Changes
             </Button>
@@ -584,7 +584,7 @@ export default function LeadDetailPage() {
           </div>
           <AlertDialogFooter className="mt-4">
             <AlertDialogCancel onClick={() => setIsConfirmSaveOpen(false)}>Cancel</AlertDialogCancel>
-            <AlertDialogAction onClick={confirmSave}>
+            <AlertDialogAction onClick={confirmAndSaveChanges}>
               {isSaving ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
               Confirm & Save
             </AlertDialogAction>
@@ -758,7 +758,7 @@ function LeadNotesSheet({ open, onOpenChange, lead, notes, setNotes }: LeadNotes
         }
     };
     
-    const isSaveDisabled = noteContent === originalNoteContent || isSaving;
+    const isSaveDisabled = noteContent.trim() === originalNoteContent.trim() || isSaving;
 
     return (
         <Sheet open={open} onOpenChange={onOpenChange}>
@@ -916,3 +916,4 @@ function LeadHistorySheet({ open, onOpenChange, lead, history }: LeadHistoryShee
     
 
     
+
