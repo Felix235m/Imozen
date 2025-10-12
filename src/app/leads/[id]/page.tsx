@@ -625,7 +625,7 @@ function InfoItem({ label, value, className }: { label: string; value: React.Rea
   return (
     <div className={cn("grid gap-1", className)}>
       <p className="text-gray-500">{label}</p>
-      <p className="font-medium break-all">{Array.isArray(value) ? value.map(v => allLocations.find(l=>l.value === v)?.label || v).join(', ') : value}</p>
+      <div className="font-medium break-all">{Array.isArray(value) ? value.map(v => allLocations.find(l=>l.value === v)?.label || v).join(', ') : value}</div>
     </div>
   );
 }
@@ -1002,6 +1002,7 @@ function LeadHistorySheet({ open, onOpenChange, lead, history }: LeadHistoryShee
     
 
     
+
 
 
 
