@@ -445,42 +445,10 @@ export default function LeadDetailPage() {
               <AvatarImage src={avatarPreview || undefined} alt={lead.name} />
               <AvatarFallback>{lead.name.split(' ').map(n => n[0]).join('')}</AvatarFallback>
             </Avatar>
-            {isEditing && (
-                <>
-                <Button 
-                  variant="outline" 
-                  size="icon" 
-                  className="absolute bottom-0 right-0 h-8 w-8 rounded-full bg-white shadow-md"
-                  onClick={() => fileInputRef.current?.click()}
-                >
-                  <Upload className="h-4 w-4" />
-                </Button>
-                <Input 
-                  type="file" 
-                  ref={fileInputRef} 
-                  className="hidden" 
-                  accept="image/*" 
-                  onChange={handleAvatarChange}
-                />
-              </>
-            )}
           </div>
           <div className='flex items-center gap-2'>
             <h2 className="text-2xl font-bold">{lead.name}</h2>
-            {isEditing ? (
-              <Select value={lead.temperature} onValueChange={handleTemperatureChange}>
-                <SelectTrigger className={cn("text-sm w-28", getStatusBadgeClass(lead.temperature))}>
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="Hot">Hot</SelectItem>
-                  <SelectItem value="Warm">Warm</SelectItem>
-                  <SelectItem value="Cold">Cold</SelectItem>
-                </SelectContent>
-              </Select>
-            ) : (
-              <Badge variant="outline" className={cn("text-sm", getStatusBadgeClass(lead.temperature))}>{lead.temperature}</Badge>
-            )}
+            <Badge variant="outline" className={cn("text-sm", getStatusBadgeClass(lead.temperature))}>{lead.temperature}</Badge>
           </div>
            {lead.status === 'Inactive' && !isEditing && (
               <Badge variant="secondary" className="mt-2">Inactive</Badge>
@@ -1006,3 +974,6 @@ function LeadHistorySheet({ open, onOpenChange, lead, history }: LeadHistoryShee
 
 
 
+
+
+    
