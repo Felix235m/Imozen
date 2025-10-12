@@ -398,10 +398,13 @@ export default function LeadDetailPage() {
           <h1 className="ml-4 text-xl font-semibold">Lead Details</h1>
         </div>
         {isEditing ? (
-          <Button size="sm" onClick={prepareSaveChanges} disabled={isSaving}>
-            {isSaving ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Save className="mr-2 h-4 w-4" />}
-            Save
-          </Button>
+          <div className="flex items-center gap-2">
+            <Button variant="outline" size="sm" onClick={handleCancel} disabled={isSaving}>Cancel</Button>
+            <Button size="sm" onClick={prepareSaveChanges} disabled={isSaving}>
+              {isSaving ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Save className="mr-2 h-4 w-4" />}
+              Save
+            </Button>
+          </div>
         ) : (
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
@@ -529,15 +532,6 @@ export default function LeadDetailPage() {
         </div>
       )}
 
-      {isEditing && (
-         <footer className="fixed bottom-0 left-0 right-0 grid grid-cols-2 gap-4 border-t bg-white p-4">
-            <Button variant="outline" size="lg" onClick={handleCancel} disabled={isSaving}>Cancel</Button>
-            <Button variant="default" size="lg" className="bg-primary" onClick={prepareSaveChanges} disabled={isSaving}>
-                {isSaving ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Save className="mr-2 h-4 w-4" />}
-                Save Changes
-            </Button>
-        </footer>
-      )}
       <LeadNotesSheet 
         open={isNotesOpen}
         onOpenChange={setIsNotesOpen}
@@ -1002,6 +996,7 @@ function LeadHistorySheet({ open, onOpenChange, lead, history }: LeadHistoryShee
     
 
     
+
 
 
 
