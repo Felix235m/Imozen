@@ -199,7 +199,7 @@ export default function LeadDetailPage() {
         for (const key in obj1) {
             if (typeof obj1[key] === 'object' && obj1[key] !== null && !Array.isArray(obj1[key])) {
                  compareObjects(obj1[key], obj2[key], `${prefix}${key}.`);
-            } else if (obj1[key] !== obj2[key]) {
+            } else if (JSON.stringify(obj1[key]) !== JSON.stringify(obj2[key])) {
                 changes.push({
                     field: (prefix + key).replace(/([A-Z])/g, ' $1').replace(/^./, str => str.toUpperCase()),
                     oldValue: obj2[key],
@@ -208,7 +208,12 @@ export default function LeadDetailPage() {
             }
         }
     }
-    compareObjects(lead, originalLead);
+    
+    const tempLeadForComparison = JSON.parse(JSON.stringify(lead));
+    const tempOriginalLeadForComparison = JSON.parse(JSON.stringify(originalLead));
+
+    compareObjects(tempLeadForComparison, tempOriginalLeadForComparison);
+
 
     if (changes.length === 0 && avatarPreview === originalLead.image_url) {
       setIsEditing(false);
@@ -242,23 +247,24 @@ export default function LeadDetailPage() {
   const confirmSave = async () => {
     if (!lead) return;
     setIsSaving(true);
+    setIsConfirmSaveOpen(false);
     
     const finalLead = suggestedStatus ? { ...lead, temperature: suggestedStatus } : lead;
 
     try {
-        await callLeadApi('edit_lead', { lead_id: id, ...finalLead });
+        await callLeadApi('edit_lead', finalLead);
+        
         toast({
           title: "Success",
           description: "Lead details saved successfully.",
         });
         setOriginalLead(finalLead);
         setLead(finalLead);
-    } catch (error) {
-        toast({ variant: 'destructive', title: 'Error', description: 'Could not save lead details.' });
-    } finally {
         setIsEditing(false);
+    } catch (error: any) {
+        toast({ variant: 'destructive', title: 'Error', description: error.message || 'Could not save lead details.' });
+    } finally {
         setIsSaving(false);
-        setIsConfirmSaveOpen(false);
         setChangeSummary([]);
         setSuggestedStatus(null);
     }
@@ -711,18 +717,18 @@ function LeadNotesSheet({ open, onOpenChange, lead, notes, setNotes }: LeadNotes
 
     const handleSaveNote = async () => {
         const trimmedContent = noteContent.trim();
-        if (!trimmedContent || trimmedContent === originalNoteContent) {
+        if (trimmedContent === originalNoteContent) {
             return;
         }
         setIsSaving(true);
         try {
-            await callLeadApi('edit_lead', { lead_id: lead.lead_id, note: trimmedContent });
-            const newNote: Note = {
-                id: `note-${Date.now()}`,
-                content: originalNoteContent, // The old note becomes history
-                date: new Date().toISOString(),
-            };
+            await callLeadApi('edit_lead', { lead_id: lead.lead_id, management: {...lead.management, agent_notes: trimmedContent} });
              if (originalNoteContent) {
+                const newNote: Note = {
+                    id: `note-${Date.now()}`,
+                    content: originalNoteContent,
+                    date: new Date().toISOString(),
+                };
                 setNotes(prev => [newNote, ...prev]);
              }
             lead.management.agent_notes = trimmedContent; // Update lead object in memory
