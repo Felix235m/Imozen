@@ -299,6 +299,12 @@ export default function LeadsPage() {
       )
   }
 
+  const leadToDeleteName = useMemo(() => {
+    if (!leadToDelete) return '';
+    return leads.find(lead => lead.lead_id === leadToDelete)?.name || '';
+  }, [leadToDelete, leads]);
+
+
   return (
     <div className="flex h-full flex-col bg-gray-50 p-4 pb-20">
        <div className="flex items-center justify-between py-4">
@@ -436,7 +442,7 @@ export default function LeadsPage() {
           <AlertDialogHeader>
             <AlertDialogTitle>Are you sure?</AlertDialogTitle>
             <AlertDialogDescription>
-              This action cannot be undone. This will permanently delete the lead.
+              This action cannot be undone. This will permanently delete the lead for {leadToDeleteName}.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
