@@ -107,7 +107,6 @@ export default function LeadDetailPage() {
       setOriginalLead(currentLeadData);
       setAvatarPreview(currentLeadData.image_url);
       
-      // Initialize notes history, excluding the current agent_notes
       const history = (currentLeadData.communication_history || [])
         .filter((item: any) => item.type === 'note' && item.description !== currentLeadData.management.agent_notes)
         .map((item: any) => ({
@@ -616,7 +615,7 @@ function InfoItem({ label, value, className }: { label: string; value: React.Rea
   return (
     <div className={cn("grid gap-1", className)}>
       <p className="text-gray-500">{label}</p>
-      <p className="font-medium">{value}</p>
+      <p className="font-medium break-all">{Array.isArray(value) ? value.map(v => allLocations.find(l=>l.value === v)?.label || v).join(', ') : value}</p>
     </div>
   );
 }
@@ -656,8 +655,10 @@ function EditableInfoItem({
         onSelectChange(name, newLocations);
     }
 
-    const handleLocationRemove = (locationValue: string) => {
-      if (!name) return;
+    const handleLocationRemove = (e: React.MouseEvent, locationValue: string) => {
+        e.preventDefault();
+        e.stopPropagation();
+        if (!name) return;
         onSelectChange(name, value.filter(loc => loc !== locationValue));
     }
 
@@ -679,13 +680,9 @@ function EditableInfoItem({
                                         key={locValue}
                                         variant="secondary"
                                         className="mr-1"
-                                        onClick={(e) => {
-                                            e.stopPropagation();
-                                            handleLocationRemove(locValue);
-                                        }}
                                     >
                                         {location?.label || locValue}
-                                        <X className="ml-1 h-3 w-3" />
+                                        <button className="ml-1 rounded-full outline-none ring-offset-background focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2" onMouseDown={(e) => e.preventDefault()} onClick={(e) => handleLocationRemove(e, locValue)}><X className="h-3 w-3" /></button>
                                     </Badge>
                                 )
                             })
@@ -746,7 +743,7 @@ function EditableInfoItem({
       )
     }
   }
-  return <InfoItem label={label} value={Array.isArray(value) ? value.map(v => allLocations.find(l=>l.value === v)?.label || v).join(', ') : value} className={className} />
+  return <InfoItem label={label} value={value} className={className} />
 }
 
 
@@ -1000,6 +997,7 @@ function LeadHistorySheet({ open, onOpenChange, lead, history }: LeadHistoryShee
     
 
     
+
 
 
 
