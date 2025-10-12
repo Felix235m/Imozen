@@ -682,7 +682,7 @@ function EditableInfoItem({
                                         className="mr-1"
                                     >
                                         {location?.label || locValue}
-                                        <button className="ml-1 rounded-full outline-none ring-offset-background focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2" onMouseDown={(e) => e.preventDefault()} onClick={(e) => handleLocationRemove(e, locValue)}><X className="h-3 w-3" /></button>
+                                        <span role="button" aria-label={`Remove ${location?.label}`} className="ml-1 rounded-full outline-none ring-offset-background focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2" onMouseDown={(e) => e.preventDefault()} onClick={(e) => handleLocationRemove(e, locValue)}><X className="h-3 w-3" /></span>
                                     </Badge>
                                 )
                             })
@@ -997,6 +997,7 @@ function LeadHistorySheet({ open, onOpenChange, lead, history }: LeadHistoryShee
     
 
     
+
 
 
 
