@@ -63,16 +63,34 @@ export async function callLeadApi(operation: LeadOperation, payload: any = {}) {
     return callApi(LEAD_OPERATIONS_URL, body);
 }
 
-export async function callLeadStatusApi(leadId: string, status: LeadStatus) {
+export async function callLeadStatusApi(leadId: string, status: LeadStatus | "change_priority", details?: { new_priority?: 'Hot' | 'Warm' | 'Cold', note?: string }) {
     const token = localStorage.getItem('auth_token');
-    const body = {
-        token,
-        lead_id: leadId,
-        operation: 'change_status',
-        status: status,
-    };
+    let body: any;
+
+    if (status === 'change_priority' && details) {
+        body = {
+            token,
+            lead_id: leadId,
+            operation: 'change_priority',
+            new_priority: details.new_priority,
+            note: details.note,
+        };
+    } else if (status === 'active' || status === 'inactive') {
+        body = {
+            token,
+            lead_id: leadId,
+            operation: 'change_status',
+            status: status,
+        };
+    } else {
+        throw new Error("Invalid parameters for callLeadStatusApi");
+    }
+    
     await callApi(LEAD_STATUS_URL, body);
     
-    // Also call the original API to update the status in the main system
-    return callLeadApi('edit_lead', { lead_id: leadId, status: status === 'active' ? 'Active' : 'Inactive' });
+    if (status === 'active' || status === 'inactive') {
+        return callLeadApi('edit_lead', { lead_id: leadId, status: status === 'active' ? 'Active' : 'Inactive' });
+    } else if (status === 'change_priority' && details) {
+        return callLeadApi('edit_lead', { lead_id: leadId, temperature: details.new_priority, note: details.note });
+    }
 }

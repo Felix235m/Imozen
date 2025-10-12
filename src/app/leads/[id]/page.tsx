@@ -431,7 +431,7 @@ export default function LeadDetailPage() {
   const handleStatusSave = (leadId: string, newStatus: 'Hot' | 'Warm' | 'Cold', note: string) => {
     if (!lead || lead.lead_id !== leadId) return;
 
-    callLeadApi('edit_lead', { lead_id: leadId, temperature: newStatus, note: note }).then(() => {
+    callLeadStatusApi(leadId, "change_priority", { new_priority: newStatus, note }).then(() => {
         setLead(prev => prev ? ({ ...prev, temperature: newStatus }) : null);
 
         const newNote: Note = {

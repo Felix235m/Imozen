@@ -227,7 +227,7 @@ export default function LeadsPage() {
   };
 
   const handleStatusSave = (leadId: string, newStatus: LeadTemperature, note: string) => {
-    callLeadApi('edit_lead', { lead_id: leadId, temperature: newStatus, note: note }).then(() => {
+    callLeadStatusApi(leadId, "change_priority", { new_priority: newStatus, note }).then(() => {
         setLeads(prevLeads =>
           prevLeads.map(lead =>
             lead.lead_id === leadId ? { ...lead, temperature: newStatus } : lead
