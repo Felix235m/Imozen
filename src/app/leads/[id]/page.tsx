@@ -53,8 +53,8 @@ import { LeadFollowUpSheet } from '@/components/leads/lead-follow-up-sheet';
 import { callLeadApi, callLeadStatusApi } from '@/lib/auth-api';
 
 type Note = {
-    id: string;
-    content: string;
+    id?: string;
+    content?: string;
     date: string;
     created_at_formatted?: string;
     note_id?: string;
@@ -1059,7 +1059,7 @@ function LeadNotesSheet({ open, onOpenChange, lead, notes, setNotes }: LeadNotes
 
     const handleCancelNewNote = () => {
         setNoteContent(tempNoteHolder);
-        setNotes(prev => prev.filter(n => !n.id.startsWith('temp-')));
+        setNotes(prev => prev.filter(n => !(n.id || n.note_id)?.startsWith('temp-')));
         setTempNoteHolder('');
         setIsAddingNewNote(false);
     };
@@ -1164,7 +1164,7 @@ function LeadNotesSheet({ open, onOpenChange, lead, notes, setNotes }: LeadNotes
                         <h4 className="text-lg font-semibold mb-4">Note History</h4>
                         <div className="space-y-4">
                             {notes.map(note => (
-                                <Card key={note.note_id || note.id} className={cn("bg-gray-50", note.id.startsWith('temp-') && "border-primary")}>
+                                <Card key={note.note_id || note.id} className={cn("bg-gray-50", (note.id || note.note_id)?.startsWith('temp-') && "border-primary")}>
                                     <CardContent className="p-4 relative">
                                         <p className="text-sm text-gray-700 mb-2 whitespace-pre-wrap">{note.note || note.content}</p>
                                         <p className="text-xs text-gray-400">{note.created_at_formatted || format(new Date(note.date), "MMMM d, yyyy - h:mm a")}</p>
@@ -1172,7 +1172,7 @@ function LeadNotesSheet({ open, onOpenChange, lead, notes, setNotes }: LeadNotes
                                             variant="ghost" 
                                             size="icon" 
                                             className="absolute bottom-2 right-2 h-8 w-8"
-                                            onClick={() => handleCopy(note.note || note.content)}
+                                            onClick={() => handleCopy(note.note || note.content || '')}
                                         >
                                             <Copy className="h-4 w-4 text-gray-500" />
                                         </Button>
@@ -1272,3 +1272,4 @@ function LeadHistorySheet({ open, onOpenChange, lead, history }: LeadHistoryShee
     
 
     
+
