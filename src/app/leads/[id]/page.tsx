@@ -1024,6 +1024,7 @@ function LeadNotesSheet({ open, onOpenChange, lead, currentNote, setCurrentNote,
     const textareaRef = useRef<HTMLTextAreaElement>(null);
     const [isSaving, setIsSaving] = useState(false);
     const [isAddingNewNote, setIsAddingNewNote] = useState(false);
+    const [movedNoteId, setMovedNoteId] = useState<string | null>(null);
     
     useEffect(() => {
         if (open && currentNote) {
@@ -1065,6 +1066,7 @@ function LeadNotesSheet({ open, onOpenChange, lead, currentNote, setCurrentNote,
             // Ensure no duplicates are added to history before adding the new one.
             const filteredNotes = notes.filter(n => n.note_id !== currentNote.note_id);
             setNotes([currentNote, ...filteredNotes]);
+            setMovedNoteId(currentNote.note_id);
             setCurrentNote(null);
         }
         setIsAddingNewNote(true);
@@ -1073,14 +1075,13 @@ function LeadNotesSheet({ open, onOpenChange, lead, currentNote, setCurrentNote,
 
     const handleCancelNewNote = () => {
         setIsAddingNewNote(false);
-        // Find the note that was moved and restore it
-        const movedNote = notes.find(n => n.note_id === originalNoteContent);
-        if (movedNote) {
-            setCurrentNote(movedNote as CurrentNote);
-            setNotes(notes.filter(n => n.note_id !== originalNoteContent));
-        } else {
-            // fallback if something went wrong
-            setNoteContent(originalNoteContent);
+        if (movedNoteId) {
+            const movedNote = notes.find(n => n.note_id === movedNoteId);
+            if (movedNote) {
+                setCurrentNote(movedNote as CurrentNote);
+                setNotes(notes.filter(n => n.note_id !== movedNoteId));
+            }
+            setMovedNoteId(null);
         }
     };
     
