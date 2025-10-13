@@ -1,4 +1,5 @@
 
+
 "use client";
 
 import * as React from 'react';
@@ -998,13 +999,10 @@ function LeadNotesSheet({ open, onOpenChange, lead, notes, setNotes }: LeadNotes
 
     const handleSaveNote = async () => {
         const trimmedContent = noteContent.trim();
-        if (trimmedContent === originalNoteContent.trim()) {
-            return;
-        }
         setIsSaving(true);
         try {
             await callLeadApi('edit_lead', { lead_id: lead.lead_id, management: {...lead.management, agent_notes: trimmedContent} });
-             if (originalNoteContent) {
+             if (originalNoteContent && originalNoteContent.trim() !== trimmedContent) {
                 const newNote: Note = {
                     id: `note-${Date.now()}`,
                     content: originalNoteContent,
@@ -1040,7 +1038,7 @@ function LeadNotesSheet({ open, onOpenChange, lead, notes, setNotes }: LeadNotes
     };
     
     const isNoteChanged = noteContent.trim() !== originalNoteContent.trim();
-    const isSaveDisabled = !isNoteChanged || isSaving;
+    const isSaveDisabled = isSaving;
 
     return (
         <Sheet open={open} onOpenChange={onOpenChange}>
@@ -1192,5 +1190,7 @@ function LeadHistorySheet({ open, onOpenChange, lead, history }: LeadHistoryShee
         </Sheet>
     );
 }
+
+    
 
     
