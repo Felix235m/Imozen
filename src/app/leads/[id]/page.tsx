@@ -1047,19 +1047,30 @@ function LeadNotesSheet({ open, onOpenChange, lead, currentNote, setCurrentNote,
                 current_note: noteContent,
                 session_token: token,
             };
-
+    
             if (operation === 'edit_note' && currentNote) {
                 payload.note_id = currentNote.note_id;
             }
-
-            const response = await callLeadApi(operation, payload);
+    
+            const response = await fetch('https://eurekagathr.app.n8n.cloud/webhook/domain/notes', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify(payload)
+            });
+    
+            const responseData = await response.json();
+    
+            if (!response.ok) {
+                throw new Error(responseData.message || `Failed to ${operation === 'edit_note' ? 'update' : 'add'} note`);
+            }
             
-            toast({ title: 'Success', description: 'Note saved successfully!' });
+            toast({ title: 'Success', description: `Note ${operation === 'edit_note' ? 'updated' : 'added'} successfully!` });
             
             if (operation === 'add_new_note') {
-                const newNote = Array.isArray(response) ? response[0] : response;
-                if (newNote && newNote.note_id) {
-                    setCurrentNote(newNote);
+                if (responseData && responseData.note_id) {
+                    setCurrentNote(responseData);
                 }
                 setIsAddingNewNote(false);
             } else if (operation === 'edit_note' && currentNote) {
@@ -1077,7 +1088,6 @@ function LeadNotesSheet({ open, onOpenChange, lead, currentNote, setCurrentNote,
 
     const handleNewNoteClick = () => {
         if (currentNote) {
-            // Ensure no duplicates are added to history before adding the new one.
             const filteredNotes = notes.filter(n => n.note_id !== currentNote.note_id);
             setNotes([currentNote, ...filteredNotes]);
             setMovedNoteId(currentNote.note_id);
@@ -1115,7 +1125,7 @@ function LeadNotesSheet({ open, onOpenChange, lead, currentNote, setCurrentNote,
         }
     };
     
-    const isNoteChanged = currentNote && noteContent.trim() !== currentNote.note.trim();
+    const isNoteChanged = currentNote && noteContent.trim() !== originalNoteContent.trim();
     
     const handleCopy = (text: string) => {
         navigator.clipboard.writeText(text);
@@ -1228,7 +1238,7 @@ function LeadNotesSheet({ open, onOpenChange, lead, currentNote, setCurrentNote,
                                         <p className="text-sm text-gray-700 mb-2 whitespace-pre-wrap">{note.note || note.content}</p>
                                          <div className="flex justify-between items-center">
                                             <p className="text-xs text-gray-400">{displayDate}</p>
-                                            {note.created_by && <p className="text-xs text-gray-400 hidden">By: {note.created_by}</p>}
+                                            <p className="text-xs text-gray-400 hidden">By: {note.created_by}</p>
                                         </div>
                                         <Button 
                                             variant="ghost" 
@@ -1345,5 +1355,6 @@ function LeadHistorySheet({ open, onOpenChange, lead, history }: LeadHistoryShee
 
 
     
+
 
 
