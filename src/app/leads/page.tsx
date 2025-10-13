@@ -1,4 +1,5 @@
 
+
 "use client";
 
 import React, { useState, useMemo, useEffect, useCallback } from 'react';
@@ -38,6 +39,7 @@ type Lead = {
   status: LeadStatus;
   next_follow_up: {
     status: string;
+    date: string | null;
   };
 };
 
@@ -106,6 +108,14 @@ export default function LeadsPage() {
     return leads.find(lead => lead.lead_id === leadToDelete)?.name || '';
   }, [leadToDelete, leads]);
 
+
+  if (isLoading) {
+      return (
+        <div className="flex items-center justify-center h-full">
+            <Loader2 className="h-8 w-8 animate-spin" />
+        </div>
+      )
+  }
   const handleNavigateToLead = async (leadId: string) => {
     if (isBulkEditing) {
         handleSelectLead(leadId);
@@ -284,9 +294,13 @@ export default function LeadsPage() {
               <Badge variant="outline" className={cn("text-xs", getStatusBadgeClass(lead.temperature))}>{lead.temperature}</Badge>
               <p className="text-sm text-gray-500">
                 Next follow-up:
-                <span className={cn(lead.next_follow_up.status === 'Overdue' && "text-red-500 font-medium ml-1")}>
-                  {lead.next_follow_up.status}
-                </span>
+                {lead.next_follow_up.date ? (
+                  <span className="text-red-500 font-medium ml-1">_</span>
+                ) : (
+                  <span className={cn(lead.next_follow_up.status === 'Overdue' && "text-red-500 font-medium ml-1")}>
+                    {' '}{lead.next_follow_up.status}
+                  </span>
+                )}
               </p>
             </div>
           </div>
@@ -295,14 +309,6 @@ export default function LeadsPage() {
       </CardContent>
     </Card>
   )
-
-  if (isLoading) {
-      return (
-        <div className="flex items-center justify-center h-full">
-            <Loader2 className="h-8 w-8 animate-spin" />
-        </div>
-      )
-  }
 
   return (
     <div className="flex h-full flex-col bg-gray-50 p-4 pb-20">
@@ -474,3 +480,5 @@ export default function LeadsPage() {
     </div>
   );
 }
+
+    
