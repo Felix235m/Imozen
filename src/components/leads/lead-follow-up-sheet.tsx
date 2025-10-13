@@ -51,8 +51,10 @@ export function LeadFollowUpSheet({ open, onOpenChange, lead }: LeadFollowUpShee
         setIsRegenerating(true);
         try {
             const response = await callFollowUpApi('regenerate_follow-up_message', { lead_id: lead.lead_id });
-            if (response.ai_message && response.lead_id === lead.lead_id) {
-                setAiMessage(response.ai_message);
+            const responseData = Array.isArray(response) ? response[0] : null;
+
+            if (responseData && responseData["AI-Generated Message"] && responseData.lead_id === lead.lead_id) {
+                setAiMessage(responseData["AI-Generated Message"]);
                 toast({ title: 'Message regenerated successfully!' });
             } else {
                 throw new Error('Invalid response from server.');
