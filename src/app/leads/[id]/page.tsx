@@ -59,7 +59,16 @@ type Note = {
     date: string;
     created_at_formatted?: string;
     note?: string;
+    created_by?: string;
 };
+
+type CurrentNote = {
+    note_id: string;
+    note: string;
+    created_at_formatted: string;
+    created_by: string;
+} | null;
+
 
 type ChangeSummary = {
   field: string;
@@ -104,6 +113,7 @@ export default function LeadDetailPage() {
   const [suggestedStatus, setSuggestedStatus] = useState<LeadData['temperature'] | null>(null);
 
   const [notes, setNotes] = useState<Note[]>([]);
+  const [currentNote, setCurrentNote] = useState<CurrentNote>(null);
   
   const [crop, setCrop] = useState<Crop>();
   const [completedCrop, setCompletedCrop] = useState<Crop>();
@@ -535,15 +545,8 @@ export default function LeadDetailPage() {
       const notesData = Array.isArray(response) && response.length > 0 ? response[0] : null;
 
       if (notesData && notesData.success) {
-        if (lead) {
-            const updatedLead = {
-                ...lead,
-                management: {
-                    ...lead.management,
-                    agent_notes: notesData.current_note?.note || '',
-                }
-            };
-            setLead(updatedLead);
+        if (notesData.current_note) {
+            setCurrentNote(notesData.current_note);
         }
         setNotes(notesData.notes || []);
         setIsNotesOpen(true);
@@ -694,6 +697,7 @@ export default function LeadDetailPage() {
         open={isNotesOpen}
         onOpenChange={setIsNotesOpen}
         lead={lead}
+        currentNote={currentNote}
         notes={notes}
         setNotes={setNotes}
       />
@@ -1006,32 +1010,46 @@ type LeadNotesSheetProps = {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   lead: LeadData;
+  currentNote: CurrentNote;
   notes: Note[];
   setNotes: React.Dispatch<React.SetStateAction<Note[]>>;
 };
 
-function LeadNotesSheet({ open, onOpenChange, lead, notes, setNotes }: LeadNotesSheetProps) {
+function LeadNotesSheet({ open, onOpenChange, lead, currentNote, notes, setNotes }: LeadNotesSheetProps) {
     const { toast } = useToast();
     const [noteContent, setNoteContent] = useState('');
     const [originalNoteContent, setOriginalNoteContent] = useState('');
     const textareaRef = useRef<HTMLTextAreaElement>(null);
     const [isSaving, setIsSaving] = useState(false);
     const [isAddingNewNote, setIsAddingNewNote] = useState(false);
-    const [tempNoteHolder, setTempNoteHolder] = useState('');
     
     useEffect(() => {
-        if (open && lead) {
-            const currentNote = lead.management.agent_notes || '';
-            setNoteContent(currentNote);
-            setOriginalNoteContent(currentNote);
+        if (open && currentNote) {
+            setNoteContent(currentNote.note || '');
+            setOriginalNoteContent(currentNote.note || '');
             setIsAddingNewNote(false);
+        } else if (open) {
+            setNoteContent('');
+            setOriginalNoteContent('');
         }
-    }, [open, lead]);
+    }, [open, currentNote]);
 
     const handleSaveNote = async (operation: 'add_new_note' | 'edit_note') => {
         setIsSaving(true);
         try {
-            await callLeadApi(operation, { lead_id: lead.lead_id, current_note: noteContent });
+            const token = localStorage.getItem('auth_token');
+            const payload: any = {
+                operation,
+                lead_id: lead.lead_id,
+                current_note: noteContent,
+                session_token: token,
+            };
+
+            if (operation === 'edit_note' && currentNote) {
+                payload.note_id = currentNote.note_id;
+            }
+
+            await callLeadApi(operation, payload);
             window.location.reload();
         } catch (error: any) {
             toast({ variant: 'destructive', title: 'Error', description: error.message || 'An unexpected error occurred.' });
@@ -1041,31 +1059,15 @@ function LeadNotesSheet({ open, onOpenChange, lead, notes, setNotes }: LeadNotes
     };
 
     const handleNewNoteClick = () => {
-        if (noteContent.trim() !== '') {
-            setTempNoteHolder(noteContent);
-            const tempNote: Note = {
-                id: `temp-${Date.now()}`,
-                content: noteContent,
-                date: new Date().toISOString(),
-                created_at_formatted: format(new Date(), "MMMM d, yyyy - h:mm a"),
-            };
-            setNotes(prev => [tempNote, ...prev]);
-        } else {
-             setTempNoteHolder('');
-        }
-        setNoteContent('');
         setIsAddingNewNote(true);
+        // We keep the old content in originalNoteContent and clear the editing area
+        setOriginalNoteContent(noteContent); 
+        setNoteContent(''); 
     };
 
     const handleCancelNewNote = () => {
-        setNoteContent(tempNoteHolder);
-        setNotes(prev => prev.filter(n => !(n.note_id || n.id)?.startsWith('temp-')));
-        setTempNoteHolder('');
         setIsAddingNewNote(false);
-    };
-
-    const handleCancelEdit = () => {
-        setNoteContent(originalNoteContent);
+        setNoteContent(originalNoteContent); // Restore previous note content
     };
     
     useEffect(() => {
@@ -1093,6 +1095,13 @@ function LeadNotesSheet({ open, onOpenChange, lead, notes, setNotes }: LeadNotes
           description: "Note copied to clipboard.",
         });
     };
+
+    const formattedDate = (dateStr: string) => {
+        if (!dateStr || isNaN(new Date(dateStr).getTime())) {
+            return '';
+        }
+        return format(new Date(dateStr), "MMMM d, yyyy - h:mm a");
+    }
 
     return (
         <Sheet open={open} onOpenChange={onOpenChange}>
@@ -1128,7 +1137,15 @@ function LeadNotesSheet({ open, onOpenChange, lead, notes, setNotes }: LeadNotes
 
                     <Card>
                         <CardHeader>
-                            <CardTitle className="text-lg">Current Note</CardTitle>
+                             <div className="flex justify-between items-center">
+                                <CardTitle className="text-lg">Current Note</CardTitle>
+                                {currentNote && (
+                                    <div className="text-xs text-gray-500 text-right">
+                                        <p>Last updated: {currentNote.created_at_formatted}</p>
+                                        <p>By: {currentNote.created_by}</p>
+                                    </div>
+                                )}
+                            </div>
                         </CardHeader>
                         <CardContent>
                              <Textarea
@@ -1138,30 +1155,30 @@ function LeadNotesSheet({ open, onOpenChange, lead, notes, setNotes }: LeadNotes
                                 value={noteContent}
                                 onChange={(e) => setNoteContent(e.target.value)}
                             />
-                            <div className="flex gap-2 justify-end mt-2">
+                             <div className="flex gap-2 justify-end mt-2">
                                 {isAddingNewNote ? (
                                     <>
-                                        <Button variant="outline" onClick={handleCancelNewNote}>
+                                        <Button variant="outline" size="sm" onClick={handleCancelNewNote}>
                                             Cancel
                                         </Button>
-                                        <Button onClick={() => handleSaveNote('add_new_note')} disabled={isSaving || noteContent.trim() === ''}>
-                                            {isSaving ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
-                                            Add New Note
-                                        </Button>
-                                    </>
-                                ) : isNoteChanged ? (
-                                     <>
-                                        <Button variant="outline" onClick={handleCancelEdit}>
-                                            Cancel
-                                        </Button>
-                                        <Button onClick={() => handleSaveNote('edit_note')} disabled={isSaving}>
+                                        <Button size="sm" onClick={() => handleSaveNote('add_new_note')} disabled={isSaving || noteContent.trim() === ''}>
                                             {isSaving ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
                                             Save Note
                                         </Button>
                                     </>
+                                ) : isNoteChanged ? (
+                                     <>
+                                        <Button variant="outline" size="sm" onClick={() => setNoteContent(originalNoteContent)}>
+                                            Cancel
+                                        </Button>
+                                        <Button size="sm" onClick={() => handleSaveNote('edit_note')} disabled={isSaving}>
+                                            {isSaving ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
+                                            Save Changes
+                                        </Button>
+                                    </>
                                 ) : (
-                                    <Button onClick={handleNewNoteClick}>
-                                        New Note
+                                    <Button size="sm" onClick={handleNewNoteClick}>
+                                        Add New Note
                                     </Button>
                                 )}
                             </div>
@@ -1171,11 +1188,18 @@ function LeadNotesSheet({ open, onOpenChange, lead, notes, setNotes }: LeadNotes
                     <div>
                         <h4 className="text-lg font-semibold mb-4">Note History</h4>
                         <div className="space-y-4">
-                            {notes.map(note => (
-                                <Card key={note.note_id || note.id} className={cn("bg-gray-50", (note.note_id || note.id)?.startsWith('temp-') && "border-primary")}>
+                            {notes.map((note, index) => {
+                                const key = note.note_id || `${note.date}-${index}`;
+                                const displayDate = note.created_at_formatted || formattedDate(note.date);
+                                
+                                return (
+                                <Card key={key} className="bg-gray-50">
                                     <CardContent className="p-4 relative">
                                         <p className="text-sm text-gray-700 mb-2 whitespace-pre-wrap">{note.note || note.content}</p>
-                                        <p className="text-xs text-gray-400">{note.created_at_formatted || format(new Date(note.date), "MMMM d, yyyy - h:mm a")}</p>
+                                         <div className="flex justify-between items-center">
+                                            <p className="text-xs text-gray-400">{displayDate}</p>
+                                            {note.created_by && <p className="text-xs text-gray-400">By: {note.created_by}</p>}
+                                        </div>
                                         <Button 
                                             variant="ghost" 
                                             size="icon" 
@@ -1186,7 +1210,7 @@ function LeadNotesSheet({ open, onOpenChange, lead, notes, setNotes }: LeadNotes
                                         </Button>
                                     </CardContent>
                                 </Card>
-                            ))}
+                            )})}
                              {notes.length === 0 && (
                                 <div className="text-center text-gray-500 py-8">
                                     No past notes for this lead.
@@ -1283,3 +1307,6 @@ function LeadHistorySheet({ open, onOpenChange, lead, history }: LeadHistoryShee
 
 
 
+
+
+      
