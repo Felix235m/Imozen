@@ -36,6 +36,14 @@ export function LeadFollowUpSheet({ open, onOpenChange, lead }: LeadFollowUpShee
 
     const aiMessage = lead.management.ai_message || `Hi ${lead.name.split(' ')[0]}, thanks for your interest. I'd love to schedule a quick call to discuss your requirements and see how I can help you find your perfect home. Are you available for a brief chat sometime this week?`;
 
+    const handleSendToWhatsApp = () => {
+        if (!lead.contact.phone) return;
+        const phoneNumber = String(lead.contact.phone).replace(/\D/g, ''); // Remove non-digit characters
+        const message = encodeURIComponent(aiMessage);
+        const whatsappUrl = `https://wa.me/${phoneNumber}?text=${message}`;
+        window.open(whatsappUrl, '_blank');
+    };
+
     return (
         <Sheet open={open} onOpenChange={onOpenChange}>
             <SheetContent side="bottom" className="h-[90vh] flex flex-col p-0">
@@ -96,7 +104,7 @@ export function LeadFollowUpSheet({ open, onOpenChange, lead }: LeadFollowUpShee
                             <RefreshCw className="mr-2 h-5 w-5" />
                             Regenerate Message
                         </Button>
-                         <Button className="w-full h-12 bg-green-500 hover:bg-green-600 text-white">
+                         <Button className="w-full h-12 bg-green-500 hover:bg-green-600 text-white" onClick={handleSendToWhatsApp}>
                             <MessageSquare className="mr-2 h-5 w-5" />
                             Send to WhatsApp
                         </Button>
