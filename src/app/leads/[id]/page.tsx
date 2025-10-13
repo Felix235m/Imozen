@@ -1,5 +1,4 @@
 
-
 "use client";
 
 import * as React from 'react';
@@ -1040,7 +1039,8 @@ function LeadNotesSheet({ open, onOpenChange, lead, notes, setNotes }: LeadNotes
         }
     };
     
-    const isSaveDisabled = noteContent.trim() === originalNoteContent.trim() || isSaving;
+    const isNoteChanged = noteContent.trim() !== originalNoteContent.trim();
+    const isSaveDisabled = !isNoteChanged || isSaving;
 
     return (
         <Sheet open={open} onOpenChange={onOpenChange}>
@@ -1091,7 +1091,7 @@ function LeadNotesSheet({ open, onOpenChange, lead, notes, setNotes }: LeadNotes
                                     <Mic className="h-5 w-5 text-gray-500" />
                                 </Button>
                                 <Button onClick={handleSaveNote} disabled={isSaveDisabled}>
-                                    {isSaving ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : "Save Note"}
+                                    {isSaving ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : (isNoteChanged ? 'Save Note' : 'Add New Note')}
                                 </Button>
                             </div>
                         </CardContent>
@@ -1192,3 +1192,5 @@ function LeadHistorySheet({ open, onOpenChange, lead, history }: LeadHistoryShee
         </Sheet>
     );
 }
+
+    
