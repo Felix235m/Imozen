@@ -1198,7 +1198,7 @@ function LeadNotesSheet({ open, onOpenChange, lead, currentNote, notes, setNotes
                                         <p className="text-sm text-gray-700 mb-2 whitespace-pre-wrap">{note.note || note.content}</p>
                                          <div className="flex justify-between items-center">
                                             <p className="text-xs text-gray-400">{displayDate}</p>
-                                            {note.created_by && <p className="text-xs text-gray-400">By: {note.created_by}</p>}
+                                            {note.created_by && <p className="text-xs text-gray-400 hidden">By: {note.created_by}</p>}
                                         </div>
                                         <Button 
                                             variant="ghost" 
@@ -1310,3 +1310,4 @@ function LeadHistorySheet({ open, onOpenChange, lead, history }: LeadHistoryShee
 
 
       
+
