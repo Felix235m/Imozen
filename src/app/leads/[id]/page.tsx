@@ -1014,7 +1014,7 @@ function LeadNotesSheet({ open, onOpenChange, lead, notes, setNotes }: LeadNotes
             const responseData = Array.isArray(response) ? response[0] : null;
 
             if (responseData && responseData.success) {
-                if (responseData.current_note) {
+                if (responseData.current_note && responseData.current_note.note) {
                     lead.management.agent_notes = responseData.current_note.note;
                     setNoteContent(responseData.current_note.note);
                     setOriginalNoteContent(responseData.current_note.note);
@@ -1300,5 +1300,6 @@ function LeadHistorySheet({ open, onOpenChange, lead, history }: LeadHistoryShee
     
 
     
+
 
 
