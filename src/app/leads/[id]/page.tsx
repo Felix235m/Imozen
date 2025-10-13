@@ -1045,7 +1045,6 @@ function LeadNotesSheet({ open, onOpenChange, lead, currentNote, setCurrentNote,
                 operation,
                 lead_id: lead.lead_id,
                 current_note: noteContent,
-                session_token: token,
             };
     
             if (operation === 'edit_note' && currentNote) {
@@ -1056,6 +1055,7 @@ function LeadNotesSheet({ open, onOpenChange, lead, currentNote, setCurrentNote,
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${token}`
                 },
                 body: JSON.stringify(payload)
             });
@@ -1355,6 +1355,7 @@ function LeadHistorySheet({ open, onOpenChange, lead, history }: LeadHistoryShee
 
 
     
+
 
 
 
