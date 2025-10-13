@@ -9,7 +9,7 @@ const LEAD_COMMUNICATION_URL = 'https://eurekagathr.app.n8n.cloud/webhook/domain
 
 
 type Operation = 'login' | 'password_reset_request' | 'password_reset_complete' | 'onboard_agent' | 'update_agent' | 'validate_session';
-type LeadOperation = 'get_dashboard' | 'get_all_leads' | 'get_lead_details' | 'edit_lead' | 'delete_lead' | 'upload_lead_image' | 'delete_lead_image' | 'add_new_note' | 'save_note';
+type LeadOperation = 'get_dashboard' | 'get_all_leads' | 'get_lead_details' | 'edit_lead' | 'delete_lead' | 'upload_lead_image' | 'delete_lead_image' | 'add_new_note' | 'save_note' | 'get_notes';
 type LeadStatus = 'active' | 'inactive';
 type FollowUpOperation = 'regenerate_follow-up_message';
 
@@ -66,7 +66,7 @@ export async function callLeadApi(operation: LeadOperation, payload: any = {}) {
     const body = { operation, ...payload };
     let url = LEAD_OPERATIONS_URL;
 
-    if (operation === 'add_new_note' || operation === 'save_note') {
+    if (operation === 'add_new_note' || operation === 'save_note' || operation === 'get_notes') {
         url = LEAD_COMMUNICATION_URL;
         const token = localStorage.getItem('auth_token');
         body.session_token = token;

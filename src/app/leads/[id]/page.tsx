@@ -113,6 +113,7 @@ export default function LeadDetailPage() {
   const [statusChangeInfo, setStatusChangeInfo] = useState<{ newStatus: 'Active' | 'Inactive' } | null>(null);
   const [phoneCountryCode, setPhoneCountryCode] = useState('');
   const [phoneNumber, setPhoneNumber] = useState('');
+  const [isFetchingNotes, setIsFetchingNotes] = useState(false);
 
   const communicationHistory = useMemo(() => lead?.communication_history || [], [lead]);
   
@@ -152,7 +153,7 @@ export default function LeadDetailPage() {
       setPhoneCountryCode(code);
       setPhoneNumber(number);
       
-      const history = (currentLeadData.communication_history || [])
+      const history = (currentLeadData.notes || [])
         .filter((item: any) => item.type === 'note' && item.description !== currentLeadData.management.agent_notes)
         .map((item: any) => ({
             id: item.id,
@@ -527,6 +528,35 @@ export default function LeadDetailPage() {
     return String(value);
   }
 
+  const handleOpenNotes = async () => {
+    setIsFetchingNotes(true);
+    try {
+      const response = await callLeadApi('get_notes', { lead_id: id });
+      const notesData = Array.isArray(response) && response.length > 0 ? response[0] : null;
+
+      if (notesData && notesData.success) {
+        if (lead) {
+            const updatedLead = {
+                ...lead,
+                management: {
+                    ...lead.management,
+                    agent_notes: notesData.current_note?.note || '',
+                }
+            };
+            setLead(updatedLead);
+        }
+        setNotes(notesData.notes || []);
+        setIsNotesOpen(true);
+      } else {
+        throw new Error('Could not fetch notes.');
+      }
+    } catch (error) {
+      toast({ variant: 'destructive', title: 'Error', description: 'Could not load notes.' });
+    } finally {
+      setIsFetchingNotes(false);
+    }
+  };
+
   return (
     <div className="flex h-screen flex-col bg-gray-50">
       <header className="flex items-center justify-between border-b bg-white px-4 py-3 sticky top-0 z-10">
@@ -654,7 +684,7 @@ export default function LeadDetailPage() {
 
       {!isEditing && (
         <div className="fixed bottom-20 right-4 z-20 flex flex-col items-end gap-4">
-            <ActionButton icon={FileText} label="Notes" onClick={() => setIsNotesOpen(true)} />
+            <ActionButton icon={FileText} label="Notes" onClick={handleOpenNotes} isLoading={isFetchingNotes} />
             <ActionButton icon={Send} label="Follow-up" onClick={() => setIsFollowUpOpen(true)} />
             <ActionButton icon={History} label="History" onClick={() => setIsHistoryOpen(true)} />
         </div>
@@ -952,7 +982,7 @@ function EditableInfoItem({
 }
 
 
-function ActionButton({ icon: Icon, label, onClick }: { icon: React.ElementType; label: string, onClick?: () => void }) {
+function ActionButton({ icon: Icon, label, onClick, isLoading }: { icon: React.ElementType; label: string, onClick?: () => void, isLoading?: boolean }) {
   return (
     <div className="flex items-center gap-3">
         <div className="bg-card shadow-md rounded-lg px-3 py-2">
@@ -964,8 +994,9 @@ function ActionButton({ icon: Icon, label, onClick }: { icon: React.ElementType;
             className="h-12 w-12 rounded-full bg-primary shadow-lg hover:bg-primary/90"
             aria-label={label}
             onClick={onClick}
+            disabled={isLoading}
         >
-            <Icon className="h-6 w-6" />
+            {isLoading ? <Loader2 className="h-6 w-6 animate-spin" /> : <Icon className="h-6 w-6" />}
         </Button>
     </div>
   );
@@ -1021,7 +1052,8 @@ function LeadNotesSheet({ open, onOpenChange, lead, notes, setNotes }: LeadNotes
             window.location.reload();
         } catch (error: any) {
             toast({ variant: 'destructive', title: 'Error', description: error.message || 'An unexpected error occurred.' });
-            setIsSaving(false);
+        } finally {
+             setIsSaving(false);
         }
     };
 
@@ -1053,7 +1085,7 @@ function LeadNotesSheet({ open, onOpenChange, lead, notes, setNotes }: LeadNotes
     };
     
     const isNoteChanged = noteContent.trim() !== originalNoteContent.trim();
-    
+
     return (
         <Sheet open={open} onOpenChange={onOpenChange}>
             <SheetContent side="bottom" className="h-[90vh] flex flex-col p-0">
@@ -1091,14 +1123,14 @@ function LeadNotesSheet({ open, onOpenChange, lead, notes, setNotes }: LeadNotes
                             <CardTitle className="text-lg">Current Note</CardTitle>
                         </CardHeader>
                         <CardContent>
-                            <Textarea
+                             <Textarea
                                 ref={textareaRef}
                                 placeholder="Start typing your note..."
                                 className="border-0 focus-visible:ring-0 min-h-[100px] p-0 resize-none overflow-hidden"
                                 value={noteContent}
                                 onChange={(e) => setNoteContent(e.target.value)}
                             />
-                             <div className="flex gap-2 justify-end mt-2">
+                            <div className="flex gap-2 justify-end mt-2">
                                 {isAddingNewNote ? (
                                     <>
                                         <Button variant="outline" onClick={handleCancelNewNote}>
@@ -1110,7 +1142,7 @@ function LeadNotesSheet({ open, onOpenChange, lead, notes, setNotes }: LeadNotes
                                         </Button>
                                     </>
                                 ) : isNoteChanged ? (
-                                    <>
+                                     <>
                                         <Button variant="outline" onClick={handleCancelEdit}>
                                             Cancel
                                         </Button>
@@ -1127,7 +1159,7 @@ function LeadNotesSheet({ open, onOpenChange, lead, notes, setNotes }: LeadNotes
                             </div>
                         </CardContent>
                     </Card>
-
+                    
                     <div>
                         <h4 className="text-lg font-semibold mb-4">Note History</h4>
                         <div className="space-y-4">
