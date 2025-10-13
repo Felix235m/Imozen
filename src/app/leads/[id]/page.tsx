@@ -1045,7 +1045,7 @@ function LeadNotesSheet({ open, onOpenChange, lead, notes, setNotes }: LeadNotes
         setIsAddingNewNote(true);
     };
 
-    const handleSaveNote = async (operation: 'add_new_note' | 'save_note') => {
+    const handleSaveNote = async (operation: 'add_new_note' | 'edit_note' | 'save_note') => {
         setIsSaving(true);
         try {
             await callLeadApi(operation, { lead_id: lead.lead_id, current_note: noteContent });
@@ -1059,7 +1059,7 @@ function LeadNotesSheet({ open, onOpenChange, lead, notes, setNotes }: LeadNotes
 
     const handleCancelNewNote = () => {
         setNoteContent(tempNoteHolder);
-        setNotes(prev => prev.filter(n => !(n.id || n.note_id)?.startsWith('temp-')));
+        setNotes(prev => prev.filter(n => !(n.note_id || n.id)?.startsWith('temp-')));
         setTempNoteHolder('');
         setIsAddingNewNote(false);
     };
@@ -1085,6 +1085,14 @@ function LeadNotesSheet({ open, onOpenChange, lead, notes, setNotes }: LeadNotes
     };
     
     const isNoteChanged = noteContent.trim() !== originalNoteContent.trim();
+    
+    const handleCopy = (text: string) => {
+        navigator.clipboard.writeText(text);
+        toast({
+          title: "Copied!",
+          description: "Note copied to clipboard.",
+        });
+    };
 
     return (
         <Sheet open={open} onOpenChange={onOpenChange}>
@@ -1146,7 +1154,7 @@ function LeadNotesSheet({ open, onOpenChange, lead, notes, setNotes }: LeadNotes
                                         <Button variant="outline" onClick={handleCancelEdit}>
                                             Cancel
                                         </Button>
-                                        <Button onClick={() => handleSaveNote('save_note')} disabled={isSaving}>
+                                        <Button onClick={() => handleSaveNote('edit_note')} disabled={isSaving}>
                                             {isSaving ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
                                             Save Note
                                         </Button>
@@ -1272,4 +1280,5 @@ function LeadHistorySheet({ open, onOpenChange, lead, history }: LeadHistoryShee
     
 
     
+
 
