@@ -14,6 +14,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import type { LeadData } from '@/lib/leads-data';
 import { callFollowUpApi } from '@/lib/auth-api';
 import { useToast } from '@/hooks/use-toast';
+import { Input } from '../ui/input';
 
 type LeadFollowUpSheetProps = {
   open: boolean;
@@ -114,16 +115,7 @@ export function LeadFollowUpSheet({ open, onOpenChange, lead }: LeadFollowUpShee
                     
                     <div className="space-y-2">
                         <Label htmlFor="language">Message Language</Label>
-                        <Select value={language} onValueChange={setLanguage}>
-                            <SelectTrigger id="language">
-                                <SelectValue placeholder="Select language" />
-                            </SelectTrigger>
-                            <SelectContent>
-                                <SelectItem value="English">English</SelectItem>
-                                <SelectItem value="Portuguese">Portuguese</SelectItem>
-                                <SelectItem value="French">French</SelectItem>
-                            </SelectContent>
-                        </Select>
+                        <Input id="language" value={language} readOnly className="bg-gray-100" />
                     </div>
 
                     <div>
