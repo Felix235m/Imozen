@@ -1052,8 +1052,22 @@ function LeadNotesSheet({ open, onOpenChange, lead, currentNote, setCurrentNote,
                 payload.note_id = currentNote.note_id;
             }
 
-            await callLeadApi(operation, payload);
-            window.location.reload();
+            const response = await callLeadApi(operation, payload);
+            
+            toast({ title: 'Success', description: 'Note saved successfully!' });
+            
+            if (operation === 'add_new_note') {
+                const newNote = Array.isArray(response) ? response[0] : response;
+                if (newNote && newNote.note_id) {
+                    setCurrentNote(newNote);
+                }
+                setIsAddingNewNote(false);
+            } else if (operation === 'edit_note' && currentNote) {
+                const updatedNote = { ...currentNote, note: noteContent };
+                setCurrentNote(updatedNote);
+                setOriginalNoteContent(noteContent);
+            }
+            onOpenChange(false);
         } catch (error: any) {
             toast({ variant: 'destructive', title: 'Error', description: error.message || 'An unexpected error occurred.' });
         } finally {
@@ -1331,4 +1345,5 @@ function LeadHistorySheet({ open, onOpenChange, lead, history }: LeadHistoryShee
 
 
     
+
 
