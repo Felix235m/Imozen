@@ -985,56 +985,48 @@ function LeadNotesSheet({ open, onOpenChange, lead, notes, setNotes }: LeadNotes
     const [originalNoteContent, setOriginalNoteContent] = useState('');
     const textareaRef = useRef<HTMLTextAreaElement>(null);
     const [isSaving, setIsSaving] = useState(false);
+    const [isAddingNewNote, setIsAddingNewNote] = useState(false);
 
     useEffect(() => {
         if (open && lead) {
             const currentNote = lead.management.agent_notes || '';
             setNoteContent(currentNote);
             setOriginalNoteContent(currentNote);
+            setIsAddingNewNote(false);
         }
     }, [open, lead]);
 
-    const handleCopy = (text: string) => {
-        navigator.clipboard.writeText(text);
-        toast({
-            title: "Copied to clipboard",
-        });
-    }
+    const handleNewNoteClick = () => {
+        if (noteContent.trim() !== '' && !isAddingNewNote) {
+            // Move current content to history locally
+            const tempNote: Note = {
+                id: `temp-${Date.now()}`,
+                content: noteContent,
+                date: new Date().toISOString(),
+                created_at_formatted: format(new Date(), "MMMM d, yyyy - h:mm a"),
+            };
+            setNotes(prev => [tempNote, ...prev]);
+        }
+        // Clear the textarea for a new note
+        setNoteContent('');
+        setOriginalNoteContent(''); // So the new blank state is the "original" for this new note
+        setIsAddingNewNote(true); // Enter "add new note" mode
+        textareaRef.current?.focus();
+    };
 
-    const handleSaveNote = async (operation: 'save_note' | 'add_new_note') => {
+    const handleSaveNote = async () => {
         setIsSaving(true);
+        const operation = isAddingNewNote ? 'add_new_note' : 'save_note';
+        
         try {
             const response = await callLeadApi(operation, { lead_id: lead.lead_id, current_note: noteContent });
-            const responseData = Array.isArray(response) && response.length > 0 ? response[0] : null;
-
-            if (responseData && responseData.success) {
-                toast({ title: `Note ${operation === 'save_note' ? 'saved' : 'added'} successfully` });
-
-                if (operation === 'add_new_note') {
-                    setNoteContent('');
-                    setOriginalNoteContent('');
-                } else {
-                     if (responseData.current_note?.note) {
-                        setNoteContent(responseData.current_note.note);
-                        setOriginalNoteContent(responseData.current_note.note);
-                    }
-                }
-                
-                if (responseData.notes) {
-                    setNotes(responseData.notes);
-                }
-
-            } else {
-                 throw new Error(`Could not ${operation === 'save_note' ? 'save' : 'add'} note.`);
-            }
-
+            window.location.reload();
         } catch (error: any) {
             toast({ variant: 'destructive', title: 'Error', description: error.message || 'An unexpected error occurred.' });
-        } finally {
             setIsSaving(false);
         }
     };
-
+    
     useEffect(() => {
         if (textareaRef.current) {
             textareaRef.current.style.height = 'auto';
@@ -1052,7 +1044,7 @@ function LeadNotesSheet({ open, onOpenChange, lead, notes, setNotes }: LeadNotes
     };
     
     const isNoteChanged = noteContent.trim() !== originalNoteContent.trim();
-
+    
     return (
         <Sheet open={open} onOpenChange={onOpenChange}>
             <SheetContent side="bottom" className="h-[90vh] flex flex-col p-0">
@@ -1095,20 +1087,31 @@ function LeadNotesSheet({ open, onOpenChange, lead, notes, setNotes }: LeadNotes
                                 placeholder="Start typing your note..."
                                 className="border-0 focus-visible:ring-0 min-h-[100px] p-0 resize-none overflow-hidden"
                                 value={noteContent}
-                                onChange={(e) => setNoteContent(e.target.value)}
+                                onChange={(e) => {
+                                    setNoteContent(e.target.value);
+                                    if (isAddingNewNote) setIsAddingNewNote(false);
+                                }}
                             />
                              <div className="flex gap-2 justify-end mt-2">
                                 <Button variant="ghost" size="icon">
                                     <Mic className="h-5 w-5 text-gray-500" />
                                 </Button>
-                                <Button onClick={() => handleSaveNote('save_note')} disabled={!isNoteChanged || isSaving}>
-                                    {isSaving && !isNoteChanged ? null : isSaving ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
-                                    Save Note
-                                </Button>
-                                 <Button onClick={() => handleSaveNote('add_new_note')} disabled={isSaving}>
-                                    {isSaving ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
-                                    Add New Note
-                                </Button>
+                                {isAddingNewNote ? (
+                                    <Button onClick={handleSaveNote} disabled={isSaving || noteContent.trim() === ''}>
+                                        {isSaving ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
+                                        Add New Note
+                                    </Button>
+                                ) : (
+                                    <>
+                                        <Button onClick={handleNewNoteClick}>
+                                            New Note
+                                        </Button>
+                                        <Button onClick={handleSaveNote} disabled={!isNoteChanged || isSaving}>
+                                            {isSaving ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
+                                            Save Note
+                                        </Button>
+                                    </>
+                                )}
                             </div>
                         </CardContent>
                     </Card>
@@ -1220,3 +1223,8 @@ function LeadHistorySheet({ open, onOpenChange, lead, history }: LeadHistoryShee
 
 
 
+
+
+    
+
+    
