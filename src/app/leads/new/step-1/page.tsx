@@ -31,6 +31,7 @@ import { Loader2 } from "lucide-react";
 const formSchema = z.object({
   firstName: z.string().min(1, "First name is required"),
   lastName: z.string().min(1, "Last name is required"),
+  countryCode: z.string().min(1, "Country code is required"),
   phoneNumber: z.string().min(1, "Phone number is required"),
   email: z.string().email("Invalid email address").optional().or(z.literal('')),
   language: z.string().optional(),
@@ -48,6 +49,7 @@ export default function NewLeadStep1Page() {
     defaultValues: {
       firstName: "",
       lastName: "",
+      countryCode: "+351",
       phoneNumber: "",
       email: "",
       language: "English",
@@ -130,9 +132,19 @@ export default function NewLeadStep1Page() {
               <FormItem>
                 <FormLabel>Phone <span className="text-red-500">*</span></FormLabel>
                 <div className="flex items-center gap-2">
-                  <div className="flex h-10 w-fit items-center justify-center rounded-md border border-input bg-background px-3 py-2 text-sm">
-                    +351
-                  </div>
+                  <FormField
+                    control={form.control}
+                    name="countryCode"
+                    render={({ field }) => (
+                      <FormControl>
+                        <Input
+                          placeholder="+351"
+                          {...field}
+                          className="w-20"
+                        />
+                      </FormControl>
+                    )}
+                  />
                   <FormField
                     control={form.control}
                     name="phoneNumber"
