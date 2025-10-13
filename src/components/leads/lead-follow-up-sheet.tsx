@@ -1,8 +1,8 @@
 
 "use client"
 
-import { useState } from 'react';
-import { ArrowLeft, RefreshCw, MessageSquare } from 'lucide-react';
+import { useState, useEffect } from 'react';
+import { ArrowLeft, RefreshCw, MessageSquare, Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
@@ -12,6 +12,8 @@ import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription } from '
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import type { LeadData } from '@/lib/leads-data';
+import { callFollowUpApi } from '@/lib/auth-api';
+import { useToast } from '@/hooks/use-toast';
 
 type LeadFollowUpSheetProps = {
   open: boolean;
@@ -21,6 +23,17 @@ type LeadFollowUpSheetProps = {
 
 export function LeadFollowUpSheet({ open, onOpenChange, lead }: LeadFollowUpSheetProps) {
     const [language, setLanguage] = useState('English');
+    const [isRegenerating, setIsRegenerating] = useState(false);
+    const { toast } = useToast();
+    const [aiMessage, setAiMessage] = useState('');
+
+    useEffect(() => {
+        if (lead?.management.ai_message) {
+            setAiMessage(lead.management.ai_message);
+        } else if (lead) {
+            setAiMessage(`Hi ${lead.name.split(' ')[0]}, thanks for your interest. I'd love to schedule a quick call to discuss your requirements and see how I can help you find your perfect home. Are you available for a brief chat sometime this week?`);
+        }
+    }, [lead]);
     
     const getStatusBadgeClass = (status: 'Hot' | 'Warm' | 'Cold' | null | undefined) => {
         if (!status) return 'bg-gray-100 text-gray-700';
@@ -34,7 +47,26 @@ export function LeadFollowUpSheet({ open, onOpenChange, lead }: LeadFollowUpShee
     
     if (!lead) return null;
 
-    const aiMessage = lead.management.ai_message || `Hi ${lead.name.split(' ')[0]}, thanks for your interest. I'd love to schedule a quick call to discuss your requirements and see how I can help you find your perfect home. Are you available for a brief chat sometime this week?`;
+    const handleRegenerate = async () => {
+        setIsRegenerating(true);
+        try {
+            const response = await callFollowUpApi('regenerate_follow-up_message', { lead_id: lead.lead_id });
+            if (response.ai_message) {
+                setAiMessage(response.ai_message);
+                toast({ title: 'Message regenerated successfully!' });
+            } else {
+                throw new Error('Invalid response from server.');
+            }
+        } catch (error: any) {
+            toast({
+                variant: 'destructive',
+                title: 'Error',
+                description: error.message || 'Could not regenerate message.',
+            });
+        } finally {
+            setIsRegenerating(false);
+        }
+    };
 
     const handleSendToWhatsApp = () => {
         if (!lead.contact.phone) return;
@@ -70,7 +102,7 @@ export function LeadFollowUpSheet({ open, onOpenChange, lead }: LeadFollowUpShee
                                 <h3 className="text-lg font-bold">{lead.name}</h3>
                                 <Badge variant="outline" className={cn("text-sm", getStatusBadgeClass(lead.temperature))}>{lead.temperature}</Badge>
                             </div>
-                            <p className="text-sm text-gray-500">{lead.contact.phone}</p>
+                            <p className="text-sm text-gray-500">{String(lead.contact.phone || '')}</p>
                             <p className="text-sm text-gray-500">{lead.contact.email}</p>
                             <p className="text-xs text-gray-400 mt-1">Source: {lead.management.source} | Created: {lead.created_at_formatted}</p>
                         </div>
@@ -100,8 +132,8 @@ export function LeadFollowUpSheet({ open, onOpenChange, lead }: LeadFollowUpShee
                     </div>
 
                     <div className="space-y-3">
-                         <Button variant="outline" className="w-full h-12">
-                            <RefreshCw className="mr-2 h-5 w-5" />
+                         <Button variant="outline" className="w-full h-12" onClick={handleRegenerate} disabled={isRegenerating}>
+                            {isRegenerating ? <Loader2 className="mr-2 h-5 w-5 animate-spin" /> : <RefreshCw className="mr-2 h-5 w-5" />}
                             Regenerate Message
                         </Button>
                          <Button className="w-full h-12 bg-green-500 hover:bg-green-600 text-white" onClick={handleSendToWhatsApp}>
