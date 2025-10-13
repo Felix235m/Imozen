@@ -1088,8 +1088,10 @@ function LeadNotesSheet({ open, onOpenChange, lead, currentNote, setCurrentNote,
 
     const handleNewNoteClick = () => {
         if (currentNote) {
-            const filteredNotes = notes.filter(n => n.note_id !== currentNote.note_id);
-            setNotes([currentNote, ...filteredNotes]);
+            // Check if the note is already in the history to avoid duplicates
+            if (!notes.some(n => n.note_id === currentNote.note_id)) {
+                setNotes(prev => [currentNote, ...prev]);
+            }
             setMovedNoteId(currentNote.note_id);
             setCurrentNote(null);
         }
@@ -1355,6 +1357,7 @@ function LeadHistorySheet({ open, onOpenChange, lead, history }: LeadHistoryShee
 
 
     
+
 
 
 
