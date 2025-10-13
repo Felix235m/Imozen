@@ -998,11 +998,15 @@ function LeadNotesSheet({ open, onOpenChange, lead, notes, setNotes }: LeadNotes
     }
 
     const handleSaveNote = async () => {
-        const trimmedContent = noteContent.trim();
+        const isNoteChanged = noteContent.trim() !== originalNoteContent.trim();
+        const operation = isNoteChanged ? 'save_note' : 'add_new_note';
+        const content = noteContent.trim();
+
         setIsSaving(true);
         try {
-            await callLeadApi('edit_lead', { lead_id: lead.lead_id, management: {...lead.management, agent_notes: trimmedContent} });
-             if (originalNoteContent && originalNoteContent.trim() !== trimmedContent) {
+            await callLeadApi(operation, { lead_id: lead.lead_id, current_note: content });
+
+             if (isNoteChanged && originalNoteContent) {
                 const newNote: Note = {
                     id: `note-${Date.now()}`,
                     content: originalNoteContent,
@@ -1010,8 +1014,8 @@ function LeadNotesSheet({ open, onOpenChange, lead, notes, setNotes }: LeadNotes
                 };
                 setNotes(prev => [newNote, ...prev]);
              }
-            lead.management.agent_notes = trimmedContent; // Update lead object in memory
-            setOriginalNoteContent(trimmedContent);
+            lead.management.agent_notes = content; // Update lead object in memory
+            setOriginalNoteContent(content);
             toast({ title: "Note saved successfully" });
         } catch (error) {
             toast({ variant: 'destructive', title: 'Error', description: 'Could not save note.' });

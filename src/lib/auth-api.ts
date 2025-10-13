@@ -5,10 +5,11 @@ const LEAD_CREATION_URL = 'https://eurekagathr.app.n8n.cloud/webhook/domain/lead
 const LEAD_OPERATIONS_URL = 'https://eurekagathr.app.n8n.cloud/webhook/domain/lead-operations';
 const LEAD_STATUS_URL = 'https://eurekagathr.app.n8n.cloud/webhook/domain/lead-status';
 const FOLLOW_UP_URL = 'https://eurekagathr.app.n8n.cloud/webhook/follow-up_message';
+const LEAD_COMMUNICATION_URL = 'https://eurekagathr.app.n8n.cloud/webhook-test/domain/communication';
 
 
 type Operation = 'login' | 'password_reset_request' | 'password_reset_complete' | 'onboard_agent' | 'update_agent' | 'validate_session';
-type LeadOperation = 'get_dashboard' | 'get_all_leads' | 'get_lead_details' | 'edit_lead' | 'delete_lead' | 'upload_lead_image' | 'delete_lead_image';
+type LeadOperation = 'get_dashboard' | 'get_all_leads' | 'get_lead_details' | 'edit_lead' | 'delete_lead' | 'upload_lead_image' | 'delete_lead_image' | 'add_new_note' | 'save_note';
 type LeadStatus = 'active' | 'inactive';
 type FollowUpOperation = 'regenerate_follow-up_message';
 
@@ -63,7 +64,15 @@ export async function callAuthApi(operation: Operation, payload: any) {
 
 export async function callLeadApi(operation: LeadOperation, payload: any = {}) {
     const body = { operation, ...payload };
-    return callApi(LEAD_OPERATIONS_URL, body);
+    let url = LEAD_OPERATIONS_URL;
+
+    if (operation === 'add_new_note' || operation === 'save_note') {
+        url = LEAD_COMMUNICATION_URL;
+        const token = localStorage.getItem('auth_token');
+        body.session_token = token;
+    }
+
+    return callApi(url, body);
 }
 
 export async function callFollowUpApi(operation: FollowUpOperation, payload: any = {}) {
