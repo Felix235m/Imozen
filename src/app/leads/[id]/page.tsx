@@ -1014,10 +1014,8 @@ function LeadNotesSheet({ open, onOpenChange, lead, notes, setNotes }: LeadNotes
         setIsAddingNewNote(true);
     };
 
-    const handleSaveNote = async () => {
+    const handleSaveNote = async (operation: 'add_new_note' | 'save_note') => {
         setIsSaving(true);
-        const operation = isAddingNewNote ? 'add_new_note' : 'save_note';
-        
         try {
             await callLeadApi(operation, { lead_id: lead.lead_id, current_note: noteContent });
             window.location.reload();
@@ -1101,35 +1099,30 @@ function LeadNotesSheet({ open, onOpenChange, lead, notes, setNotes }: LeadNotes
                                 onChange={(e) => setNoteContent(e.target.value)}
                             />
                              <div className="flex gap-2 justify-end mt-2">
-                                <Button variant="ghost" size="icon">
-                                    <Mic className="h-5 w-5 text-gray-500" />
-                                </Button>
                                 {isAddingNewNote ? (
                                     <>
                                         <Button variant="outline" onClick={handleCancelNewNote}>
                                             Cancel
                                         </Button>
-                                        <Button onClick={handleSaveNote} disabled={isSaving || noteContent.trim() === ''}>
+                                        <Button onClick={() => handleSaveNote('add_new_note')} disabled={isSaving || noteContent.trim() === ''}>
                                             {isSaving ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
                                             Add New Note
                                         </Button>
                                     </>
-                                ) : (
+                                ) : isNoteChanged ? (
                                     <>
-                                       {isNoteChanged ? (
-                                            <Button variant="outline" onClick={handleCancelEdit}>
-                                                Cancel
-                                            </Button>
-                                        ) : (
-                                            <Button onClick={handleNewNoteClick}>
-                                                New Note
-                                            </Button>
-                                        )}
-                                        <Button onClick={handleSaveNote} disabled={!isNoteChanged || isSaving}>
+                                        <Button variant="outline" onClick={handleCancelEdit}>
+                                            Cancel
+                                        </Button>
+                                        <Button onClick={() => handleSaveNote('save_note')} disabled={isSaving}>
                                             {isSaving ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
                                             Save Note
                                         </Button>
                                     </>
+                                ) : (
+                                    <Button onClick={handleNewNoteClick}>
+                                        New Note
+                                    </Button>
                                 )}
                             </div>
                         </CardContent>
