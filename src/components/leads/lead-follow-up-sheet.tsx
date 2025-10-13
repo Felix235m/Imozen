@@ -34,7 +34,7 @@ export function LeadFollowUpSheet({ open, onOpenChange, lead }: LeadFollowUpShee
     
     if (!lead) return null;
 
-    const aiMessage = `Hi ${lead.name.split(' ')[0]}, thanks for your interest. I'd love to schedule a quick call to discuss your requirements and see how I can help you find your perfect home. Are you available for a brief chat sometime this week?`;
+    const aiMessage = lead.management.ai_message || `Hi ${lead.name.split(' ')[0]}, thanks for your interest. I'd love to schedule a quick call to discuss your requirements and see how I can help you find your perfect home. Are you available for a brief chat sometime this week?`;
 
     return (
         <Sheet open={open} onOpenChange={onOpenChange}>
