@@ -28,10 +28,9 @@ export function LeadFollowUpSheet({ open, onOpenChange, lead }: LeadFollowUpShee
     const [aiMessage, setAiMessage] = useState('');
 
     useEffect(() => {
-        if (lead?.management.ai_message) {
+        if (lead) {
+            setLanguage(lead.contact.language || 'English');
             setAiMessage(lead.management.ai_message);
-        } else if (lead) {
-            setAiMessage(`Hi ${lead.name.split(' ')[0]}, thanks for your interest. I'd love to schedule a quick call to discuss your requirements and see how I can help you find your perfect home. Are you available for a brief chat sometime this week?`);
         }
     }, [lead]);
     
@@ -50,7 +49,10 @@ export function LeadFollowUpSheet({ open, onOpenChange, lead }: LeadFollowUpShee
     const handleRegenerate = async () => {
         setIsRegenerating(true);
         try {
-            const response = await callFollowUpApi('regenerate_follow-up_message', { lead_id: lead.lead_id });
+            const response = await callFollowUpApi('regenerate_follow-up_message', { 
+                lead_id: lead.lead_id,
+                language: language 
+            });
             const responseData = Array.isArray(response) ? response[0] : null;
 
             if (responseData && responseData["AI-Generated Message"] && responseData.lead_id === lead.lead_id) {
