@@ -1061,7 +1061,7 @@ function LeadNotesSheet({ open, onOpenChange, lead, currentNote, notes, setNotes
     const handleNewNoteClick = () => {
         if (currentNote) {
             const newHistoryNote: Note = {
-                note_id: currentNote.note_id,
+                note_id: `temp-${Date.now()}`,
                 note: currentNote.note,
                 date: new Date().toISOString(), // This is a client-side date. The backend will have the real one.
                 created_at_formatted: currentNote.created_at_formatted,
@@ -1322,3 +1322,6 @@ function LeadHistorySheet({ open, onOpenChange, lead, history }: LeadHistoryShee
       
 
 
+
+
+    
