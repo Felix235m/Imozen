@@ -985,7 +985,6 @@ function LeadNotesSheet({ open, onOpenChange, lead, notes, setNotes }: LeadNotes
     const [originalNoteContent, setOriginalNoteContent] = useState('');
     const textareaRef = useRef<HTMLTextAreaElement>(null);
     const [isSaving, setIsSaving] = useState(false);
-    const [isAddNoteDialogOpen, setIsAddNoteDialogOpen] = useState(false);
 
     useEffect(() => {
         if (open && lead) {
@@ -1003,32 +1002,19 @@ function LeadNotesSheet({ open, onOpenChange, lead, notes, setNotes }: LeadNotes
     }
 
     const handleSaveNote = async () => {
-        if (noteContent.trim() === originalNoteContent.trim()) {
-            setIsAddNoteDialogOpen(true);
-            return;
-        }
-
+        const isNoteChanged = noteContent.trim() !== originalNoteContent.trim();
+        const operation = isNoteChanged ? 'save_note' : 'add_new_note';
+        
         setIsSaving(true);
         try {
-            const response = await callLeadApi('save_note', { lead_id: lead.lead_id, current_note: noteContent });
-            const responseData = Array.isArray(response) ? response[0] : null;
-
-            if (responseData && responseData.success) {
-                toast({ title: "Note saved successfully" });
-                window.location.reload();
-            } else {
-                throw new Error("Failed to save note");
-            }
+            await callLeadApi(operation, { lead_id: lead.lead_id, current_note: noteContent });
+            toast({ title: `Note ${isNoteChanged ? 'saved' : 'added'} successfully` });
+            window.location.reload();
         } catch (error) {
-            toast({ variant: 'destructive', title: 'Error', description: 'Could not save note.' });
-            setNoteContent(originalNoteContent); // Revert on failure
+            toast({ variant: 'destructive', title: 'Error', description: `Could not ${isNoteChanged ? 'save' : 'add'} note.` });
         } finally {
             setIsSaving(false);
         }
-    };
-    
-    const handleNoteAdded = (newNotes: any[]) => {
-      window.location.reload();
     };
 
     useEffect(() => {
@@ -1051,166 +1037,91 @@ function LeadNotesSheet({ open, onOpenChange, lead, notes, setNotes }: LeadNotes
     const isSaveDisabled = isSaving;
 
     return (
-        <>
-            <Sheet open={open} onOpenChange={onOpenChange}>
-                <SheetContent side="bottom" className="h-[90vh] flex flex-col p-0">
-                    <SheetHeader className="flex flex-row items-center justify-between border-b px-4 py-3 shrink-0">
-                         <div className='flex items-center'>
-                             <Button variant="ghost" size="icon" onClick={() => onOpenChange(false)} className="mr-2">
-                               <X className="h-6 w-6" />
-                             </Button>
-                            <SheetTitle>Lead Notes</SheetTitle>
-                         </div>
-                         <SheetDescription className="sr-only">
-                           Manage notes for {lead.name}.
-                        </SheetDescription>
-                    </SheetHeader>
+        <Sheet open={open} onOpenChange={onOpenChange}>
+            <SheetContent side="bottom" className="h-[90vh] flex flex-col p-0">
+                <SheetHeader className="flex flex-row items-center justify-between border-b px-4 py-3 shrink-0">
+                     <div className='flex items-center'>
+                         <Button variant="ghost" size="icon" onClick={() => onOpenChange(false)} className="mr-2">
+                           <X className="h-6 w-6" />
+                         </Button>
+                        <SheetTitle>Lead Notes</SheetTitle>
+                     </div>
+                     <SheetDescription className="sr-only">
+                       Manage notes for {lead.name}.
+                    </SheetDescription>
+                </SheetHeader>
 
-                    <div className="flex-1 overflow-y-auto p-4 space-y-6">
-                        <div className="flex items-start gap-4">
-                            <Avatar className="h-12 w-12">
-                                <AvatarImage src={lead.image_url} />
-                                <AvatarFallback>{lead.name.split(' ').map(n=>n[0]).join('')}</AvatarFallback>
-                            </Avatar>
-                            <div>
-                                <div className="flex items-center gap-2">
-                                    <h3 className="text-lg font-bold">{lead.name}</h3>
-                                    <Badge variant="outline" className={cn("text-sm", getStatusBadgeClass(lead.temperature))}>{lead.temperature}</Badge>
-                                </div>
-                                <p className="text-sm text-gray-500">{String(lead.contact.phone || '')}</p>
-                                <p className="text-sm text-gray-500">{lead.contact.email}</p>
-                                <p className="text-xs text-gray-400 mt-1">Source: {lead.management.source} | Created: {lead.created_at_formatted}</p>
-                            </div>
-                        </div>
-
-                        <Card>
-                            <CardHeader>
-                                <CardTitle className="text-lg">Current Note</CardTitle>
-                            </CardHeader>
-                            <CardContent>
-                                <Textarea
-                                    ref={textareaRef}
-                                    placeholder="Start typing your note..."
-                                    className="border-0 focus-visible:ring-0 min-h-[100px] p-0 resize-none overflow-hidden"
-                                    value={noteContent}
-                                    onChange={(e) => setNoteContent(e.target.value)}
-                                />
-                                 <div className="flex gap-2 justify-end mt-2">
-                                    <Button variant="ghost" size="icon">
-                                        <Mic className="h-5 w-5 text-gray-500" />
-                                    </Button>
-                                    <Button onClick={handleSaveNote} disabled={isSaveDisabled}>
-                                        {isSaving ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : (isNoteChanged ? 'Save Note' : 'Add New Note')}
-                                    </Button>
-                                </div>
-                            </CardContent>
-                        </Card>
-
+                <div className="flex-1 overflow-y-auto p-4 space-y-6">
+                    <div className="flex items-start gap-4">
+                        <Avatar className="h-12 w-12">
+                            <AvatarImage src={lead.image_url} />
+                            <AvatarFallback>{lead.name.split(' ').map(n=>n[0]).join('')}</AvatarFallback>
+                        </Avatar>
                         <div>
-                            <h4 className="text-lg font-semibold mb-4">Note History</h4>
-                            <div className="space-y-4">
-                                {notes.map(note => (
-                                    <Card key={note.note_id || note.id} className="bg-gray-50">
-                                        <CardContent className="p-4 relative">
-                                            <p className="text-sm text-gray-700 mb-2 whitespace-pre-wrap">{note.note || note.content}</p>
-                                            <p className="text-xs text-gray-400">{note.created_at_formatted || format(new Date(note.date), "MMMM d, yyyy - h:mm a")}</p>
-                                            <Button 
-                                                variant="ghost" 
-                                                size="icon" 
-                                                className="absolute bottom-2 right-2 h-8 w-8"
-                                                onClick={() => handleCopy(note.note || note.content)}
-                                            >
-                                                <Copy className="h-4 w-4 text-gray-500" />
-                                            </Button>
-                                        </CardContent>
-                                    </Card>
-                                ))}
-                                 {notes.length === 0 && (
-                                    <div className="text-center text-gray-500 py-8">
-                                        No past notes for this lead.
-                                    </div>
-                                )}
+                            <div className="flex items-center gap-2">
+                                <h3 className="text-lg font-bold">{lead.name}</h3>
+                                <Badge variant="outline" className={cn("text-sm", getStatusBadgeClass(lead.temperature))}>{lead.temperature}</Badge>
                             </div>
+                            <p className="text-sm text-gray-500">{String(lead.contact.phone || '')}</p>
+                            <p className="text-sm text-gray-500">{lead.contact.email}</p>
+                            <p className="text-xs text-gray-400 mt-1">Source: {lead.management.source} | Created: {lead.created_at_formatted}</p>
                         </div>
                     </div>
-                </SheetContent>
-            </Sheet>
-            <AddNewNoteDialog
-                open={isAddNoteDialogOpen}
-                onOpenChange={setIsAddNoteDialogOpen}
-                leadId={lead.lead_id}
-                onNoteAdded={handleNoteAdded}
-            />
-        </>
-    );
-}
 
-type AddNewNoteDialogProps = {
-    open: boolean;
-    onOpenChange: (open: boolean) => void;
-    leadId: string;
-    onNoteAdded: (notes: any[]) => void;
-};
+                    <Card>
+                        <CardHeader>
+                            <CardTitle className="text-lg">Current Note</CardTitle>
+                        </CardHeader>
+                        <CardContent>
+                            <Textarea
+                                ref={textareaRef}
+                                placeholder="Start typing your note..."
+                                className="border-0 focus-visible:ring-0 min-h-[100px] p-0 resize-none overflow-hidden"
+                                value={noteContent}
+                                onChange={(e) => setNoteContent(e.target.value)}
+                            />
+                             <div className="flex gap-2 justify-end mt-2">
+                                <Button variant="ghost" size="icon">
+                                    <Mic className="h-5 w-5 text-gray-500" />
+                                </Button>
+                                <Button onClick={handleSaveNote} disabled={isSaveDisabled}>
+                                    {isSaving ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : (isNoteChanged ? 'Save Note' : 'New Note')}
+                                </Button>
+                            </div>
+                        </CardContent>
+                    </Card>
 
-function AddNewNoteDialog({ open, onOpenChange, leadId, onNoteAdded }: AddNewNoteDialogProps) {
-    const { toast } = useToast();
-    const [newNoteContent, setNewNoteContent] = useState('');
-    const [isSaving, setIsSaving] = useState(false);
-
-    const handleAddNote = async () => {
-        if (!newNoteContent.trim()) {
-            toast({ variant: 'destructive', title: 'Error', description: 'Note content cannot be empty.' });
-            return;
-        }
-
-        setIsSaving(true);
-        try {
-            const response = await callLeadApi('add_new_note', { lead_id: leadId, current_note: newNoteContent });
-            const responseData = Array.isArray(response) ? response[0] : null;
-
-            if (responseData && responseData.success) {
-                onNoteAdded(responseData.notes || []);
-                toast({ title: "New note added successfully" });
-                setNewNoteContent('');
-                onOpenChange(false);
-            } else {
-                throw new Error("Failed to add note");
-            }
-        } catch (error) {
-            toast({ variant: 'destructive', title: 'Error', description: 'Could not add new note.' });
-        } finally {
-            setIsSaving(false);
-        }
-    };
-    
-    return (
-        <Dialog open={open} onOpenChange={onOpenChange}>
-            <DialogContent>
-                <DialogHeader>
-                    <DialogTitle>Add a New Note</DialogTitle>
-                    <DialogDescription>
-                        This will add a new, separate note to the lead's history.
-                    </DialogDescription>
-                </DialogHeader>
-                <div className="py-4">
-                     <Textarea
-                        placeholder="Type your new note here..."
-                        className="min-h-[150px]"
-                        value={newNoteContent}
-                        onChange={(e) => setNewNoteContent(e.target.value)}
-                    />
+                    <div>
+                        <h4 className="text-lg font-semibold mb-4">Note History</h4>
+                        <div className="space-y-4">
+                            {notes.map(note => (
+                                <Card key={note.note_id || note.id} className="bg-gray-50">
+                                    <CardContent className="p-4 relative">
+                                        <p className="text-sm text-gray-700 mb-2 whitespace-pre-wrap">{note.note || note.content}</p>
+                                        <p className="text-xs text-gray-400">{note.created_at_formatted || format(new Date(note.date), "MMMM d, yyyy - h:mm a")}</p>
+                                        <Button 
+                                            variant="ghost" 
+                                            size="icon" 
+                                            className="absolute bottom-2 right-2 h-8 w-8"
+                                            onClick={() => handleCopy(note.note || note.content)}
+                                        >
+                                            <Copy className="h-4 w-4 text-gray-500" />
+                                        </Button>
+                                    </CardContent>
+                                </Card>
+                            ))}
+                             {notes.length === 0 && (
+                                <div className="text-center text-gray-500 py-8">
+                                    No past notes for this lead.
+                                </div>
+                            )}
+                        </div>
+                    </div>
                 </div>
-                <DialogFooter>
-                    <Button variant="outline" onClick={() => onOpenChange(false)}>Cancel</Button>
-                    <Button onClick={handleAddNote} disabled={isSaving}>
-                        {isSaving ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : 'Add Note'}
-                    </Button>
-                </DialogFooter>
-            </DialogContent>
-        </Dialog>
+            </SheetContent>
+        </Sheet>
     );
 }
-
 
 type HistoryItem = {
     id: string;
@@ -1279,6 +1190,7 @@ function LeadHistorySheet({ open, onOpenChange, lead, history }: LeadHistoryShee
     
 
     
+
 
 
 
