@@ -1184,7 +1184,7 @@ function LeadNotesSheet({ open, onOpenChange, lead, currentNote, setCurrentNote,
                                     </>
                                 ) : isNoteChanged ? (
                                      <>
-                                        <Button variant="outline" size="sm" onClick={() => currentNote && setNoteContent(currentNote.note)}>
+                                        <Button variant="outline" size="sm" onClick={() => currentNote && setNoteContent(originalNoteContent)}>
                                             Cancel
                                         </Button>
                                         <Button size="sm" onClick={() => handleSaveNote('edit_note')} disabled={isSaving}>
@@ -1331,3 +1331,4 @@ function LeadHistorySheet({ open, onOpenChange, lead, history }: LeadHistoryShee
 
 
     
+
