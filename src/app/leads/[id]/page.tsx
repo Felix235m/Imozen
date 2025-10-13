@@ -1059,6 +1059,16 @@ function LeadNotesSheet({ open, onOpenChange, lead, currentNote, notes, setNotes
     };
 
     const handleNewNoteClick = () => {
+        if (currentNote) {
+            const newHistoryNote: Note = {
+                note_id: currentNote.note_id,
+                note: currentNote.note,
+                date: new Date().toISOString(), // This is a client-side date. The backend will have the real one.
+                created_at_formatted: currentNote.created_at_formatted,
+                created_by: currentNote.created_by,
+            };
+            setNotes(prev => [newHistoryNote, ...prev]);
+        }
         setIsAddingNewNote(true);
         // We keep the old content in originalNoteContent and clear the editing area
         setOriginalNoteContent(noteContent); 
@@ -1310,4 +1320,5 @@ function LeadHistorySheet({ open, onOpenChange, lead, history }: LeadHistoryShee
 
 
       
+
 
