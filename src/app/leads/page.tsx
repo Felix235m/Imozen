@@ -26,7 +26,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog"
-import { callLeadApi, callLeadStatusApi } from '@/lib/auth-api';
+import { callLeadApi, callLeadStatusApi, callAuthApi } from '@/lib/auth-api';
 
 
 type LeadTemperature = 'Hot' | 'Warm' | 'Cold';
@@ -60,6 +60,7 @@ export default function LeadsPage() {
   const [leadsToDelete, setLeadsToDelete] = useState<string[] | null>(null);
 
   const [statusChangeInfo, setStatusChangeInfo] = useState<{ leadId: string; newStatus: LeadStatus } | null>(null);
+  const [isCheckingSession, setIsCheckingSession] = useState(false);
 
 
   const fetchLeads = useCallback(async () => {
@@ -87,6 +88,44 @@ export default function LeadsPage() {
   useEffect(() => {
     fetchLeads();
   }, [fetchLeads]);
+
+  const handleAddNewLead = async () => {
+    setIsCheckingSession(true);
+    try {
+      const agentDataString = localStorage.getItem('agent_data');
+      if (!agentDataString) {
+        throw new Error('Agent data not found.');
+      }
+      const agentData = JSON.parse(agentDataString);
+
+      const response = await callAuthApi('validate_session', {
+        agent: agentData,
+        agent_id: agentData.agent_id,
+      });
+
+      const sessionData = Array.isArray(response) ? response[0] : response;
+
+      if (sessionData && sessionData.session_id && sessionData.lead_id) {
+        sessionStorage.setItem('lead_creation_session_id', sessionData.session_id);
+        sessionStorage.setItem('lead_id', sessionData.lead_id);
+        router.push('/leads/new/step-1');
+      } else {
+        throw new Error('Invalid session. Please log in again.');
+      }
+
+    } catch (error: any) {
+      toast({
+        variant: "destructive",
+        title: "Session Expired",
+        description: "Your session has expired. Please log in again.",
+      });
+      localStorage.removeItem('auth_token');
+      localStorage.removeItem('agent_data');
+      router.push('/');
+    } finally {
+      setIsCheckingSession(false);
+    }
+  };
 
   const filteredLeads = useMemo(() => {
     if (!Array.isArray(leads)) return [];
@@ -314,12 +353,10 @@ export default function LeadsPage() {
     <div className="flex h-full flex-col bg-gray-50 p-4 pb-20">
        <div className="flex items-center justify-between py-4">
         <h1 className="text-2xl font-bold">Leads</h1>
-        <Link href="/leads/new/step-1">
-          <Button variant="default" className="bg-primary">
-            <Plus className="mr-2 h-4 w-4" />
-            Add New Lead
-          </Button>
-        </Link>
+        <Button variant="default" className="bg-primary" onClick={handleAddNewLead} disabled={isCheckingSession}>
+          {isCheckingSession ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Plus className="mr-2 h-4 w-4" />}
+          Add New Lead
+        </Button>
       </div>
       <div className="flex gap-2 mb-4 items-center">
         {isBulkEditing ? (
@@ -480,5 +517,3 @@ export default function LeadsPage() {
     </div>
   );
 }
-
-    
