@@ -1001,17 +1001,35 @@ function LeadNotesSheet({ open, onOpenChange, lead, notes, setNotes }: LeadNotes
         });
     }
 
-    const handleSaveNote = async () => {
-        const isNoteChanged = noteContent.trim() !== originalNoteContent.trim();
-        const operation = isNoteChanged ? 'save_note' : 'add_new_note';
-        
+    const handleSaveNote = async (operation: 'save_note' | 'add_new_note') => {
         setIsSaving(true);
         try {
-            await callLeadApi(operation, { lead_id: lead.lead_id, current_note: noteContent });
-            toast({ title: `Note ${isNoteChanged ? 'saved' : 'added'} successfully` });
-            window.location.reload();
-        } catch (error) {
-            toast({ variant: 'destructive', title: 'Error', description: `Could not ${isNoteChanged ? 'save' : 'add'} note.` });
+            const response = await callLeadApi(operation, { lead_id: lead.lead_id, current_note: noteContent });
+            const responseData = Array.isArray(response) && response.length > 0 ? response[0] : null;
+
+            if (responseData && responseData.success) {
+                toast({ title: `Note ${operation === 'save_note' ? 'saved' : 'added'} successfully` });
+
+                if (operation === 'add_new_note') {
+                    setNoteContent('');
+                    setOriginalNoteContent('');
+                } else {
+                     if (responseData.current_note?.note) {
+                        setNoteContent(responseData.current_note.note);
+                        setOriginalNoteContent(responseData.current_note.note);
+                    }
+                }
+                
+                if (responseData.notes) {
+                    setNotes(responseData.notes);
+                }
+
+            } else {
+                 throw new Error(`Could not ${operation === 'save_note' ? 'save' : 'add'} note.`);
+            }
+
+        } catch (error: any) {
+            toast({ variant: 'destructive', title: 'Error', description: error.message || 'An unexpected error occurred.' });
         } finally {
             setIsSaving(false);
         }
@@ -1034,7 +1052,6 @@ function LeadNotesSheet({ open, onOpenChange, lead, notes, setNotes }: LeadNotes
     };
     
     const isNoteChanged = noteContent.trim() !== originalNoteContent.trim();
-    const isSaveDisabled = isSaving;
 
     return (
         <Sheet open={open} onOpenChange={onOpenChange}>
@@ -1084,8 +1101,13 @@ function LeadNotesSheet({ open, onOpenChange, lead, notes, setNotes }: LeadNotes
                                 <Button variant="ghost" size="icon">
                                     <Mic className="h-5 w-5 text-gray-500" />
                                 </Button>
-                                <Button onClick={handleSaveNote} disabled={isSaveDisabled}>
-                                    {isSaving ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : (isNoteChanged ? 'Save Note' : 'New Note')}
+                                <Button onClick={() => handleSaveNote('save_note')} disabled={!isNoteChanged || isSaving}>
+                                    {isSaving && !isNoteChanged ? null : isSaving ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
+                                    Save Note
+                                </Button>
+                                 <Button onClick={() => handleSaveNote('add_new_note')} disabled={isSaving}>
+                                    {isSaving ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
+                                    Add New Note
                                 </Button>
                             </div>
                         </CardContent>
@@ -1190,6 +1212,7 @@ function LeadHistorySheet({ open, onOpenChange, lead, history }: LeadHistoryShee
     
 
     
+
 
 
 
