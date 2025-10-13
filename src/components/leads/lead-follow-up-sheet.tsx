@@ -86,7 +86,7 @@ export function LeadFollowUpSheet({ open, onOpenChange, lead }: LeadFollowUpShee
                         <h4 className="text-lg font-semibold mb-2">AI-Generated Follow-up Message</h4>
                          <Card className="bg-blue-50 border-blue-200">
                             <CardContent className="p-4">
-                                <p className="text-blue-900">{aiMessage}</p>
+                                <p className="text-blue-900 whitespace-pre-wrap">{aiMessage}</p>
                             </CardContent>
                         </Card>
                     </div>
@@ -106,5 +106,3 @@ export function LeadFollowUpSheet({ open, onOpenChange, lead }: LeadFollowUpShee
         </Sheet>
     );
 }
-
-    
