@@ -1142,7 +1142,7 @@ function LeadNotesSheet({ open, onOpenChange, lead, currentNote, notes, setNotes
                                 {currentNote && (
                                     <div className="text-xs text-gray-500 text-right">
                                         <p>Last updated: {currentNote.created_at_formatted}</p>
-                                        <p>By: {currentNote.created_by}</p>
+                                        <p className="hidden">By: {currentNote.created_by}</p>
                                     </div>
                                 )}
                             </div>
