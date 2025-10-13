@@ -1,3 +1,4 @@
+
 "use client";
 
 import * as React from 'react';
@@ -9,7 +10,7 @@ export default function LoginPage() {
   const [loginType, setLoginType] = React.useState<'admin' | 'agent'>('agent');
   const router = useRouter();
 
-  const handleLoginSuccess = () => {
+  const handleLoginSuccess = async () => {
     if (loginType === 'agent') {
       router.push('/dashboard');
     } else if (loginType === 'admin') {

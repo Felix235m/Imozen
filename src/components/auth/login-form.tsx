@@ -40,7 +40,7 @@ export function LoginForm({
   onLoginSuccess,
 }: {
   loginType: 'admin' | 'agent';
-  onLoginSuccess: () => void;
+  onLoginSuccess: () => Promise<void> | void;
 }) {
   const [isLoading, setIsLoading] = React.useState(false);
   const [showPassword, setShowPassword] = React.useState(false);
@@ -83,7 +83,7 @@ export function LoginForm({
         description: "Welcome! You are now logged in.",
       });
       if (onLoginSuccess) {
-        onLoginSuccess();
+        await onLoginSuccess();
       }
 
     } catch (error: any) {
