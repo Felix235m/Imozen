@@ -986,6 +986,8 @@ function LeadNotesSheet({ open, onOpenChange, lead, notes, setNotes }: LeadNotes
     const textareaRef = useRef<HTMLTextAreaElement>(null);
     const [isSaving, setIsSaving] = useState(false);
     const [isAddingNewNote, setIsAddingNewNote] = useState(false);
+    const [tempNoteHolder, setTempNoteHolder] = useState('');
+
 
     useEffect(() => {
         if (open && lead) {
@@ -997,8 +999,8 @@ function LeadNotesSheet({ open, onOpenChange, lead, notes, setNotes }: LeadNotes
     }, [open, lead]);
 
     const handleNewNoteClick = () => {
-        if (noteContent.trim() !== '' && !isAddingNewNote) {
-            // Move current content to history locally
+        if (noteContent.trim() !== '') {
+            setTempNoteHolder(noteContent);
             const tempNote: Note = {
                 id: `temp-${Date.now()}`,
                 content: noteContent,
@@ -1006,20 +1008,27 @@ function LeadNotesSheet({ open, onOpenChange, lead, notes, setNotes }: LeadNotes
                 created_at_formatted: format(new Date(), "MMMM d, yyyy - h:mm a"),
             };
             setNotes(prev => [tempNote, ...prev]);
+            setNoteContent('');
+            setIsAddingNewNote(true);
+        } else {
+             setNoteContent('');
+             setIsAddingNewNote(true);
         }
-        // Clear the textarea for a new note
-        setNoteContent('');
-        setOriginalNoteContent(''); // So the new blank state is the "original" for this new note
-        setIsAddingNewNote(true); // Enter "add new note" mode
-        textareaRef.current?.focus();
     };
+    
+    const handleCancelNewNote = () => {
+        setNoteContent(tempNoteHolder);
+        setNotes(prev => prev.filter(n => !n.id.startsWith('temp-')));
+        setTempNoteHolder('');
+        setIsAddingNewNote(false);
+    }
 
     const handleSaveNote = async () => {
         setIsSaving(true);
         const operation = isAddingNewNote ? 'add_new_note' : 'save_note';
         
         try {
-            const response = await callLeadApi(operation, { lead_id: lead.lead_id, current_note: noteContent });
+            await callLeadApi(operation, { lead_id: lead.lead_id, current_note: noteContent });
             window.location.reload();
         } catch (error: any) {
             toast({ variant: 'destructive', title: 'Error', description: error.message || 'An unexpected error occurred.' });
@@ -1087,20 +1096,22 @@ function LeadNotesSheet({ open, onOpenChange, lead, notes, setNotes }: LeadNotes
                                 placeholder="Start typing your note..."
                                 className="border-0 focus-visible:ring-0 min-h-[100px] p-0 resize-none overflow-hidden"
                                 value={noteContent}
-                                onChange={(e) => {
-                                    setNoteContent(e.target.value);
-                                    if (isAddingNewNote) setIsAddingNewNote(false);
-                                }}
+                                onChange={(e) => setNoteContent(e.target.value)}
                             />
                              <div className="flex gap-2 justify-end mt-2">
                                 <Button variant="ghost" size="icon">
                                     <Mic className="h-5 w-5 text-gray-500" />
                                 </Button>
                                 {isAddingNewNote ? (
-                                    <Button onClick={handleSaveNote} disabled={isSaving || noteContent.trim() === ''}>
-                                        {isSaving ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
-                                        Add New Note
-                                    </Button>
+                                    <>
+                                        <Button variant="outline" onClick={handleCancelNewNote}>
+                                            Cancel
+                                        </Button>
+                                        <Button onClick={handleSaveNote} disabled={isSaving || noteContent.trim() === ''}>
+                                            {isSaving ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
+                                            Add New Note
+                                        </Button>
+                                    </>
                                 ) : (
                                     <>
                                         <Button onClick={handleNewNoteClick}>
@@ -1120,7 +1131,7 @@ function LeadNotesSheet({ open, onOpenChange, lead, notes, setNotes }: LeadNotes
                         <h4 className="text-lg font-semibold mb-4">Note History</h4>
                         <div className="space-y-4">
                             {notes.map(note => (
-                                <Card key={note.note_id || note.id} className="bg-gray-50">
+                                <Card key={note.note_id || note.id} className={cn("bg-gray-50", note.id.startsWith('temp-') && "border-primary")}>
                                     <CardContent className="p-4 relative">
                                         <p className="text-sm text-gray-700 mb-2 whitespace-pre-wrap">{note.note || note.content}</p>
                                         <p className="text-xs text-gray-400">{note.created_at_formatted || format(new Date(note.date), "MMMM d, yyyy - h:mm a")}</p>
