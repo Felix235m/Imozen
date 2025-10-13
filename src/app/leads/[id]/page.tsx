@@ -1020,13 +1020,11 @@ function LeadNotesSheet({ open, onOpenChange, lead, notes, setNotes }: LeadNotes
                     setOriginalNoteContent(responseData.current_note.note);
                 }
                 if (responseData.notes) {
-                    const newHistory = responseData.notes
-                        .filter((n: any) => n.note_id !== responseData.current_note?.note_id)
-                        .map((n: any) => ({
-                            id: n.note_id,
-                            content: n.note,
-                            date: n.created_at
-                        }));
+                    const newHistory = responseData.notes.map((n: any) => ({
+                        id: n.note_id,
+                        content: n.note,
+                        date: n.created_at,
+                    }));
                     setNotes(newHistory);
                 }
                 toast({ title: "Note saved successfully" });
@@ -1042,13 +1040,11 @@ function LeadNotesSheet({ open, onOpenChange, lead, notes, setNotes }: LeadNotes
     };
     
     const handleNoteAdded = (newNotes: any[]) => {
-        const history = newNotes
-            .filter(n => n.note_id !== lead.management.agent_notes)
-            .map((n: any) => ({
-                id: n.note_id,
-                content: n.note,
-                date: n.created_at,
-            }));
+        const history = newNotes.map((n: any) => ({
+            id: n.note_id,
+            content: n.note,
+            date: n.created_at,
+        }));
         setNotes(history);
     };
 
@@ -1300,6 +1296,7 @@ function LeadHistorySheet({ open, onOpenChange, lead, history }: LeadHistoryShee
     
 
     
+
 
 
 
