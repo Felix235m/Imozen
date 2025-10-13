@@ -107,6 +107,8 @@ export default function LeadDetailPage() {
   const imgRef = useRef<HTMLImageElement>(null);
   const [isCropModalOpen, setIsCropModalOpen] = useState(false);
   const [statusChangeInfo, setStatusChangeInfo] = useState<{ newStatus: 'Active' | 'Inactive' } | null>(null);
+  const [phoneCountryCode, setPhoneCountryCode] = useState('');
+  const [phoneNumber, setPhoneNumber] = useState('');
 
   const communicationHistory = useMemo(() => lead?.communication_history || [], [lead]);
   
@@ -115,6 +117,19 @@ export default function LeadDetailPage() {
     return lead.name;
   }, [lead]);
 
+  const parsePhoneNumber = useCallback((fullPhoneNumber: string | number | null | undefined) => {
+    const phoneStr = String(fullPhoneNumber || '');
+    const match = phoneStr.match(/\((.*?)\)\s*(.*)/);
+    if (match) {
+        return { code: match[1], number: match[2] };
+    }
+    // Fallback for numbers without country code in brackets
+    const codeMatch = phoneStr.match(/^\+(\d{1,3})/);
+    if (codeMatch) {
+        return { code: codeMatch[0], number: phoneStr.substring(codeMatch[0].length).trim() };
+    }
+    return { code: '+351', number: phoneStr };
+  }, []);
 
   const fetchLeadDetails = useCallback(async () => {
     try {
@@ -128,6 +143,10 @@ export default function LeadDetailPage() {
       setLead(currentLeadData);
       setOriginalLead(currentLeadData);
       setAvatarPreview(currentLeadData.image_url);
+
+      const { code, number } = parsePhoneNumber(currentLeadData.contact.phone);
+      setPhoneCountryCode(code);
+      setPhoneNumber(number);
       
       const history = (currentLeadData.communication_history || [])
         .filter((item: any) => item.type === 'note' && item.description !== currentLeadData.management.agent_notes)
@@ -146,7 +165,7 @@ export default function LeadDetailPage() {
        toast({ variant: 'destructive', title: 'Error', description: 'Could not load lead details.' });
        router.push('/leads');
     }
-  }, [id, toast, router, isEditMode]);
+  }, [id, toast, router, isEditMode, parsePhoneNumber]);
 
   useEffect(() => {
     fetchLeadDetails();
@@ -155,6 +174,16 @@ export default function LeadDetailPage() {
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
+
+    if (name === 'phone_country_code') {
+      setPhoneCountryCode(value);
+      return;
+    }
+    if (name === 'phone_number') {
+      setPhoneNumber(value);
+      return;
+    }
+
     if (lead) {
       const keys = name.split('.');
       setLead(prev => {
@@ -293,6 +322,16 @@ export default function LeadDetailPage() {
   const prepareSaveChanges = () => {
     if (!lead || !originalLead) return;
 
+    const reconstructedPhone = `(${phoneCountryCode}) ${phoneNumber}`;
+    
+    // Create a mutable copy of the lead to update the phone number
+    const updatedLead = { ...lead };
+    if (updatedLead.contact) {
+      updatedLead.contact.phone = reconstructedPhone as any;
+    }
+
+    setLead(updatedLead);
+
     const changes: ChangeSummary[] = [];
     
     const compareObjects = (obj1: any, obj2: any, prefix = '') => {
@@ -309,7 +348,7 @@ export default function LeadDetailPage() {
         }
     }
     
-    const tempLeadForComparison = JSON.parse(JSON.stringify(lead));
+    const tempLeadForComparison = JSON.parse(JSON.stringify(updatedLead));
     const tempOriginalLeadForComparison = JSON.parse(JSON.stringify(originalLead));
 
     compareObjects(tempLeadForComparison, tempOriginalLeadForComparison);
@@ -326,10 +365,10 @@ export default function LeadDetailPage() {
 
     if (propertyRequirementsChanged) {
         const oldScore = getQualificationScore(originalLead);
-        const newScore = getQualificationScore(lead);
+        const newScore = getQualificationScore(updatedLead);
         if (newScore !== oldScore) {
             const newStatus = getStatusFromScore(newScore);
-            if(newStatus !== lead.temperature) {
+            if(newStatus !== updatedLead.temperature) {
                 setSuggestedStatus(newStatus);
             } else {
                 setSuggestedStatus(null);
@@ -350,16 +389,26 @@ export default function LeadDetailPage() {
     setIsConfirmSaveOpen(false);
     
     const finalLead = suggestedStatus ? { ...lead, temperature: suggestedStatus } : lead;
+     // Reconstruct phone number before saving
+     const reconstructedPhone = `(${phoneCountryCode}) ${phoneNumber}`;
+     const payload = {
+         ...finalLead,
+         contact: {
+             ...finalLead.contact,
+             phone: reconstructedPhone,
+         },
+     };
+
 
     try {
-        await callLeadApi('edit_lead', finalLead);
+        await callLeadApi('edit_lead', payload);
         
         toast({
           title: "Success",
           description: "Lead details saved successfully.",
         });
-        setOriginalLead(finalLead);
-        setLead(finalLead);
+        setOriginalLead(payload);
+        setLead(payload);
         setIsEditing(false);
     } catch (error: any) {
         toast({ variant: 'destructive', title: 'Error', description: error.message || 'Could not save lead details.' });
@@ -374,6 +423,9 @@ export default function LeadDetailPage() {
   const handleCancel = () => {
     if (originalLead) {
       setLead({ ...originalLead });
+      const { code, number } = parsePhoneNumber(originalLead.contact.phone);
+      setPhoneCountryCode(code);
+      setPhoneNumber(number);
     }
     setIsEditing(false);
   };
@@ -574,7 +626,7 @@ export default function LeadDetailPage() {
               <div className="grid grid-cols-2 gap-y-4 gap-x-8 text-sm">
                 <EditableInfoItem label="Name" name="name" value={lead.name} isEditing={isEditing} onChange={handleInputChange} className="col-span-2" />
                 <EditableInfoItem label="Email" name="contact.email" value={lead.contact.email} isEditing={isEditing} onChange={handleInputChange} className="col-span-2" />
-                <EditableInfoItem label="Phone Number" name="contact.phone" value={String(lead.contact.phone || '')} isEditing={isEditing} onChange={handleInputChange} className="col-span-2" />
+                <EditableInfoItem label="Phone Number" name="contact.phone" value={String(lead.contact.phone || '')} isEditing={isEditing} onChange={handleInputChange} className="col-span-2" phoneCountryCode={phoneCountryCode} phoneNumber={phoneNumber} />
                 <EditableInfoItem label="Language" name="contact.language" value={lead.contact.language} isEditing={isEditing} onSelectChange={handleSelectChange} selectOptions={['English', 'Portuguese', 'French']} />
               </div>
             </CardContent>
@@ -754,6 +806,8 @@ function EditableInfoItem({
   displayValue,
   selectOptions,
   multiSelect,
+  phoneCountryCode,
+  phoneNumber,
 }: { 
   label: string; 
   name?: string; 
@@ -767,10 +821,37 @@ function EditableInfoItem({
   displayValue?: string;
   selectOptions?: string[];
   multiSelect?: boolean;
+  phoneCountryCode?: string;
+  phoneNumber?: string;
 }) {
   if (isEditing && name) {
     if (label === 'Temperature') {
         return null
+    }
+
+    if (label === "Phone Number" && onChange && phoneCountryCode !== undefined && phoneNumber !== undefined) {
+      return (
+        <div className={cn("grid gap-1", className)}>
+          <p className="text-gray-500">{label}</p>
+          <div className="flex items-center gap-2">
+            <Input 
+              name="phone_country_code" 
+              value={phoneCountryCode} 
+              onChange={onChange} 
+              className="h-8 text-sm w-20" 
+              placeholder="+351"
+            />
+            <Input 
+              name="phone_number" 
+              type="tel"
+              value={phoneNumber} 
+              onChange={onChange} 
+              className="h-8 text-sm" 
+              placeholder="Phone Number"
+            />
+          </div>
+        </div>
+      )
     }
 
     if (multiSelect && onSelectChange && Array.isArray(value)) {
@@ -987,7 +1068,7 @@ function LeadNotesSheet({ open, onOpenChange, lead, notes, setNotes }: LeadNotes
                                 <h3 className="text-lg font-bold">{lead.name}</h3>
                                 <Badge variant="outline" className={cn("text-sm", getStatusBadgeClass(lead.temperature))}>{lead.temperature}</Badge>
                             </div>
-                            <p className="text-sm text-gray-500">{lead.contact.phone}</p>
+                            <p className="text-sm text-gray-500">{String(lead.contact.phone || '')}</p>
                             <p className="text-sm text-gray-500">{lead.contact.email}</p>
                             <p className="text-xs text-gray-400 mt-1">Source: {lead.management.source} | Created: {lead.created_at_formatted}</p>
                         </div>
