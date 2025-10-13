@@ -1014,20 +1014,8 @@ function LeadNotesSheet({ open, onOpenChange, lead, notes, setNotes }: LeadNotes
             const responseData = Array.isArray(response) ? response[0] : null;
 
             if (responseData && responseData.success) {
-                if (responseData.current_note && responseData.current_note.note) {
-                    lead.management.agent_notes = responseData.current_note.note;
-                    setNoteContent(responseData.current_note.note);
-                    setOriginalNoteContent(responseData.current_note.note);
-                }
-                if (responseData.notes) {
-                    const newHistory = responseData.notes.map((n: any) => ({
-                        id: n.note_id,
-                        content: n.note,
-                        date: n.created_at,
-                    }));
-                    setNotes(newHistory);
-                }
                 toast({ title: "Note saved successfully" });
+                window.location.reload();
             } else {
                 throw new Error("Failed to save note");
             }
@@ -1040,12 +1028,7 @@ function LeadNotesSheet({ open, onOpenChange, lead, notes, setNotes }: LeadNotes
     };
     
     const handleNoteAdded = (newNotes: any[]) => {
-        const history = newNotes.map((n: any) => ({
-            id: n.note_id,
-            content: n.note,
-            date: n.created_at,
-        }));
-        setNotes(history);
+      window.location.reload();
     };
 
     useEffect(() => {
@@ -1185,8 +1168,8 @@ function AddNewNoteDialog({ open, onOpenChange, leadId, onNoteAdded }: AddNewNot
             const response = await callLeadApi('add_new_note', { lead_id: leadId, current_note: newNoteContent });
             const responseData = Array.isArray(response) ? response[0] : null;
 
-            if (responseData && responseData.success && responseData.notes) {
-                onNoteAdded(responseData.notes);
+            if (responseData && responseData.success) {
+                onNoteAdded(responseData.notes || []);
                 toast({ title: "New note added successfully" });
                 setNewNoteContent('');
                 onOpenChange(false);
@@ -1296,6 +1279,7 @@ function LeadHistorySheet({ open, onOpenChange, lead, history }: LeadHistoryShee
     
 
     
+
 
 
 
