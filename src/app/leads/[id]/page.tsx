@@ -698,6 +698,7 @@ export default function LeadDetailPage() {
         onOpenChange={setIsNotesOpen}
         lead={lead}
         currentNote={currentNote}
+        setCurrentNote={setCurrentNote}
         notes={notes}
         setNotes={setNotes}
       />
@@ -1011,11 +1012,12 @@ type LeadNotesSheetProps = {
   onOpenChange: (open: boolean) => void;
   lead: LeadData;
   currentNote: CurrentNote;
+  setCurrentNote: React.Dispatch<React.SetStateAction<CurrentNote>>;
   notes: Note[];
   setNotes: React.Dispatch<React.SetStateAction<Note[]>>;
 };
 
-function LeadNotesSheet({ open, onOpenChange, lead, currentNote, notes, setNotes }: LeadNotesSheetProps) {
+function LeadNotesSheet({ open, onOpenChange, lead, currentNote, setCurrentNote, notes, setNotes }: LeadNotesSheetProps) {
     const { toast } = useToast();
     const [noteContent, setNoteContent] = useState('');
     const [originalNoteContent, setOriginalNoteContent] = useState('');
@@ -1060,24 +1062,26 @@ function LeadNotesSheet({ open, onOpenChange, lead, currentNote, notes, setNotes
 
     const handleNewNoteClick = () => {
         if (currentNote) {
-            const newHistoryNote: Note = {
-                note_id: `temp-${Date.now()}`,
-                note: currentNote.note,
-                date: new Date().toISOString(), // This is a client-side date. The backend will have the real one.
-                created_at_formatted: currentNote.created_at_formatted,
-                created_by: currentNote.created_by,
-            };
-            setNotes(prev => [newHistoryNote, ...prev]);
+            // Ensure no duplicates are added to history before adding the new one.
+            const filteredNotes = notes.filter(n => n.note_id !== currentNote.note_id);
+            setNotes([currentNote, ...filteredNotes]);
+            setCurrentNote(null);
         }
         setIsAddingNewNote(true);
-        // We keep the old content in originalNoteContent and clear the editing area
-        setOriginalNoteContent(noteContent); 
         setNoteContent(''); 
     };
 
     const handleCancelNewNote = () => {
         setIsAddingNewNote(false);
-        setNoteContent(originalNoteContent); // Restore previous note content
+        // Find the note that was moved and restore it
+        const movedNote = notes.find(n => n.note_id === originalNoteContent);
+        if (movedNote) {
+            setCurrentNote(movedNote as CurrentNote);
+            setNotes(notes.filter(n => n.note_id !== originalNoteContent));
+        } else {
+            // fallback if something went wrong
+            setNoteContent(originalNoteContent);
+        }
     };
     
     useEffect(() => {
@@ -1096,7 +1100,7 @@ function LeadNotesSheet({ open, onOpenChange, lead, currentNote, notes, setNotes
         }
     };
     
-    const isNoteChanged = noteContent.trim() !== originalNoteContent.trim();
+    const isNoteChanged = currentNote && noteContent.trim() !== currentNote.note.trim();
     
     const handleCopy = (text: string) => {
         navigator.clipboard.writeText(text);
@@ -1164,6 +1168,7 @@ function LeadNotesSheet({ open, onOpenChange, lead, currentNote, notes, setNotes
                                 className="border-0 focus-visible:ring-0 min-h-[100px] p-0 resize-none overflow-hidden"
                                 value={noteContent}
                                 onChange={(e) => setNoteContent(e.target.value)}
+                                readOnly={!currentNote && !isAddingNewNote}
                             />
                              <div className="flex gap-2 justify-end mt-2">
                                 {isAddingNewNote ? (
@@ -1178,7 +1183,7 @@ function LeadNotesSheet({ open, onOpenChange, lead, currentNote, notes, setNotes
                                     </>
                                 ) : isNoteChanged ? (
                                      <>
-                                        <Button variant="outline" size="sm" onClick={() => setNoteContent(originalNoteContent)}>
+                                        <Button variant="outline" size="sm" onClick={() => currentNote && setNoteContent(currentNote.note)}>
                                             Cancel
                                         </Button>
                                         <Button size="sm" onClick={() => handleSaveNote('edit_note')} disabled={isSaving}>
@@ -1187,7 +1192,7 @@ function LeadNotesSheet({ open, onOpenChange, lead, currentNote, notes, setNotes
                                         </Button>
                                     </>
                                 ) : (
-                                    <Button size="sm" onClick={handleNewNoteClick}>
+                                    <Button size="sm" onClick={handleNewNoteClick} disabled={!currentNote}>
                                         Add New Note
                                     </Button>
                                 )}
@@ -1199,7 +1204,7 @@ function LeadNotesSheet({ open, onOpenChange, lead, currentNote, notes, setNotes
                         <h4 className="text-lg font-semibold mb-4">Note History</h4>
                         <div className="space-y-4">
                             {notes.map((note, index) => {
-                                const key = note.note_id || `${note.date}-${index}`;
+                                const key = note.note_id || `history-${index}`;
                                 const displayDate = note.created_at_formatted || formattedDate(note.date);
                                 
                                 return (
