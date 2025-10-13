@@ -987,8 +987,7 @@ function LeadNotesSheet({ open, onOpenChange, lead, notes, setNotes }: LeadNotes
     const [isSaving, setIsSaving] = useState(false);
     const [isAddingNewNote, setIsAddingNewNote] = useState(false);
     const [tempNoteHolder, setTempNoteHolder] = useState('');
-
-
+    
     useEffect(() => {
         if (open && lead) {
             const currentNote = lead.management.agent_notes || '';
@@ -1008,20 +1007,12 @@ function LeadNotesSheet({ open, onOpenChange, lead, notes, setNotes }: LeadNotes
                 created_at_formatted: format(new Date(), "MMMM d, yyyy - h:mm a"),
             };
             setNotes(prev => [tempNote, ...prev]);
-            setNoteContent('');
-            setIsAddingNewNote(true);
         } else {
-             setNoteContent('');
-             setIsAddingNewNote(true);
+             setTempNoteHolder('');
         }
+        setNoteContent('');
+        setIsAddingNewNote(true);
     };
-    
-    const handleCancelNewNote = () => {
-        setNoteContent(tempNoteHolder);
-        setNotes(prev => prev.filter(n => !n.id.startsWith('temp-')));
-        setTempNoteHolder('');
-        setIsAddingNewNote(false);
-    }
 
     const handleSaveNote = async () => {
         setIsSaving(true);
@@ -1034,6 +1025,17 @@ function LeadNotesSheet({ open, onOpenChange, lead, notes, setNotes }: LeadNotes
             toast({ variant: 'destructive', title: 'Error', description: error.message || 'An unexpected error occurred.' });
             setIsSaving(false);
         }
+    };
+
+    const handleCancelNewNote = () => {
+        setNoteContent(tempNoteHolder);
+        setNotes(prev => prev.filter(n => !n.id.startsWith('temp-')));
+        setTempNoteHolder('');
+        setIsAddingNewNote(false);
+    };
+
+    const handleCancelEdit = () => {
+        setNoteContent(originalNoteContent);
     };
     
     useEffect(() => {
@@ -1114,9 +1116,15 @@ function LeadNotesSheet({ open, onOpenChange, lead, notes, setNotes }: LeadNotes
                                     </>
                                 ) : (
                                     <>
-                                        <Button onClick={handleNewNoteClick}>
-                                            New Note
-                                        </Button>
+                                       {isNoteChanged ? (
+                                            <Button variant="outline" onClick={handleCancelEdit}>
+                                                Cancel
+                                            </Button>
+                                        ) : (
+                                            <Button onClick={handleNewNoteClick}>
+                                                New Note
+                                            </Button>
+                                        )}
                                         <Button onClick={handleSaveNote} disabled={!isNoteChanged || isSaving}>
                                             {isSaving ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
                                             Save Note
