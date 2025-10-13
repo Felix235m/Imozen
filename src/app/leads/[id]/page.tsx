@@ -56,6 +56,9 @@ type Note = {
     id: string;
     content: string;
     date: string;
+    created_at_formatted?: string;
+    note_id?: string;
+    note?: string;
 };
 
 type ChangeSummary = {
@@ -1007,19 +1010,29 @@ function LeadNotesSheet({ open, onOpenChange, lead, notes, setNotes }: LeadNotes
 
         setIsSaving(true);
         try {
-            await callLeadApi('save_note', { lead_id: lead.lead_id, current_note: noteContent });
-            
-            if (originalNoteContent) { // only add to history if there was a previous note
-                const newHistoryNote: Note = {
-                    id: `note-hist-${Date.now()}`,
-                    content: originalNoteContent,
-                    date: new Date().toISOString(),
-                };
-                setNotes(prev => [newHistoryNote, ...prev]);
+            const response = await callLeadApi('save_note', { lead_id: lead.lead_id, current_note: noteContent });
+            const responseData = Array.isArray(response) ? response[0] : null;
+
+            if (responseData && responseData.success) {
+                if (responseData.current_note) {
+                    lead.management.agent_notes = responseData.current_note.note;
+                    setNoteContent(responseData.current_note.note);
+                    setOriginalNoteContent(responseData.current_note.note);
+                }
+                if (responseData.notes) {
+                    const newHistory = responseData.notes
+                        .filter((n: any) => n.note_id !== responseData.current_note?.note_id)
+                        .map((n: any) => ({
+                            id: n.note_id,
+                            content: n.note,
+                            date: n.created_at
+                        }));
+                    setNotes(newHistory);
+                }
+                toast({ title: "Note saved successfully" });
+            } else {
+                throw new Error("Failed to save note");
             }
-            lead.management.agent_notes = noteContent;
-            setOriginalNoteContent(noteContent);
-            toast({ title: "Note saved successfully" });
         } catch (error) {
             toast({ variant: 'destructive', title: 'Error', description: 'Could not save note.' });
             setNoteContent(originalNoteContent); // Revert on failure
@@ -1028,9 +1041,16 @@ function LeadNotesSheet({ open, onOpenChange, lead, notes, setNotes }: LeadNotes
         }
     };
     
-    const handleNoteAdded = (newNote: Note) => {
-        setNotes(prev => [newNote, ...prev]);
-    }
+    const handleNoteAdded = (newNotes: any[]) => {
+        const history = newNotes
+            .filter(n => n.note_id !== lead.management.agent_notes)
+            .map((n: any) => ({
+                id: n.note_id,
+                content: n.note,
+                date: n.created_at,
+            }));
+        setNotes(history);
+    };
 
     useEffect(() => {
         if (textareaRef.current) {
@@ -1111,15 +1131,15 @@ function LeadNotesSheet({ open, onOpenChange, lead, notes, setNotes }: LeadNotes
                             <h4 className="text-lg font-semibold mb-4">Note History</h4>
                             <div className="space-y-4">
                                 {notes.map(note => (
-                                    <Card key={note.id} className="bg-gray-50">
+                                    <Card key={note.note_id || note.id} className="bg-gray-50">
                                         <CardContent className="p-4 relative">
-                                            <p className="text-sm text-gray-700 mb-2 whitespace-pre-wrap">{note.content}</p>
-                                            <p className="text-xs text-gray-400">{format(new Date(note.date), "MMMM d, yyyy - h:mm a")}</p>
+                                            <p className="text-sm text-gray-700 mb-2 whitespace-pre-wrap">{note.note || note.content}</p>
+                                            <p className="text-xs text-gray-400">{note.created_at_formatted || format(new Date(note.date), "MMMM d, yyyy - h:mm a")}</p>
                                             <Button 
                                                 variant="ghost" 
                                                 size="icon" 
                                                 className="absolute bottom-2 right-2 h-8 w-8"
-                                                onClick={() => handleCopy(note.content)}
+                                                onClick={() => handleCopy(note.note || note.content)}
                                             >
                                                 <Copy className="h-4 w-4 text-gray-500" />
                                             </Button>
@@ -1150,7 +1170,7 @@ type AddNewNoteDialogProps = {
     open: boolean;
     onOpenChange: (open: boolean) => void;
     leadId: string;
-    onNoteAdded: (note: Note) => void;
+    onNoteAdded: (notes: any[]) => void;
 };
 
 function AddNewNoteDialog({ open, onOpenChange, leadId, onNoteAdded }: AddNewNoteDialogProps) {
@@ -1166,18 +1186,17 @@ function AddNewNoteDialog({ open, onOpenChange, leadId, onNoteAdded }: AddNewNot
 
         setIsSaving(true);
         try {
-            await callLeadApi('add_new_note', { lead_id: leadId, current_note: newNoteContent });
-            
-            const newNote: Note = {
-                id: `note-${Date.now()}`,
-                content: newNoteContent,
-                date: new Date().toISOString(),
-            };
-            onNoteAdded(newNote);
+            const response = await callLeadApi('add_new_note', { lead_id: leadId, current_note: newNoteContent });
+            const responseData = Array.isArray(response) ? response[0] : null;
 
-            toast({ title: "New note added successfully" });
-            setNewNoteContent('');
-            onOpenChange(false);
+            if (responseData && responseData.success && responseData.notes) {
+                onNoteAdded(responseData.notes);
+                toast({ title: "New note added successfully" });
+                setNewNoteContent('');
+                onOpenChange(false);
+            } else {
+                throw new Error("Failed to add note");
+            }
         } catch (error) {
             toast({ variant: 'destructive', title: 'Error', description: 'Could not add new note.' });
         } finally {
@@ -1281,4 +1300,5 @@ function LeadHistorySheet({ open, onOpenChange, lead, history }: LeadHistoryShee
     
 
     
+
 
