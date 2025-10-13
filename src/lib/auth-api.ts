@@ -5,7 +5,7 @@ const LEAD_CREATION_URL = 'https://eurekagathr.app.n8n.cloud/webhook/domain/lead
 const LEAD_OPERATIONS_URL = 'https://eurekagathr.app.n8n.cloud/webhook/domain/lead-operations';
 const LEAD_STATUS_URL = 'https://eurekagathr.app.n8n.cloud/webhook/domain/lead-status';
 const FOLLOW_UP_URL = 'https://eurekagathr.app.n8n.cloud/webhook/follow-up_message';
-const LEAD_COMMUNICATION_URL = 'https://eurekagathr.app.n8n.cloud/webhook-test/domain/communication';
+const LEAD_COMMUNICATION_URL = 'https://eurekagathr.app.n8n.cloud/webhook/domain/notes';
 
 
 type Operation = 'login' | 'password_reset_request' | 'password_reset_complete' | 'onboard_agent' | 'update_agent' | 'validate_session';
