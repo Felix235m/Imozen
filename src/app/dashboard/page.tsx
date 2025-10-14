@@ -25,7 +25,7 @@ import { cn } from '@/lib/utils';
 import { useRouter } from 'next/navigation';
 import { useToast } from '@/hooks/use-toast';
 import { callAuthApi, callLeadApi } from '@/lib/auth-api';
-import { format, isToday, isTomorrow, formatRelative } from 'date-fns';
+import { format, isToday, isTomorrow, isValid } from 'date-fns';
 
 const initialStats = [
   { title: 'Leads for Follow-up', value: '0', icon: Users },
@@ -160,6 +160,7 @@ export default function AgentDashboardPage() {
     
     const formatTaskDate = (dateStr: string) => {
         const date = new Date(dateStr);
+        if (!isValid(date)) return 'Invalid Date';
         if (isToday(date)) return `Today - ${format(date, 'MMMM d, yyyy')}`;
         if (isTomorrow(date)) return `Tomorrow - ${format(date, 'MMMM d, yyyy')}`;
         return format(date, 'eeee - MMMM d, yyyy');
