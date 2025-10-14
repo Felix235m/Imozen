@@ -70,7 +70,8 @@ export default function AgentDashboardPage() {
         setIsLoading(true);
         try {
             const response = await callLeadApi('get_dashboard');
-            const data = Array.isArray(response) && response.length > 0 ? response[0] : null;
+            const data = Array.isArray(response) ? response[0] : response;
+            
             if (data && data.success) {
                 setDashboardData(data);
             } else {
