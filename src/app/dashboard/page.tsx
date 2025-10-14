@@ -50,6 +50,7 @@ export default function AgentDashboardPage() {
   const [isCheckingSession, setIsCheckingSession] = useState(false);
   const [agentName, setAgentName] = useState('');
   const [dashboardData, setDashboardData] = useState<any>(null);
+  const [isLoading, setIsLoading] = useState(true);
   const router = useRouter();
   const { toast } = useToast();
 
@@ -66,6 +67,7 @@ export default function AgentDashboardPage() {
     }
     
     const fetchDashboardData = async () => {
+        setIsLoading(true);
         try {
             const response = await callLeadApi('get_dashboard');
             const data = Array.isArray(response) && response.length > 0 ? response[0] : null;
@@ -84,6 +86,8 @@ export default function AgentDashboardPage() {
                 title: "Error",
                 description: "Could not load dashboard data.",
             });
+        } finally {
+            setIsLoading(false);
         }
     };
     fetchDashboardData();
@@ -165,6 +169,14 @@ export default function AgentDashboardPage() {
       formattedDate: formatTaskDate(taskGroup.date)
     }));
   }, [dashboardData]);
+  
+  if (isLoading) {
+    return (
+        <div className="flex h-full items-center justify-center">
+            <Loader2 className="h-8 w-8 animate-spin" />
+        </div>
+    );
+  }
 
   return (
     <div className="p-4 pb-20">
