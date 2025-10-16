@@ -1,4 +1,3 @@
-
 "use client";
 
 import React, { useState, useMemo, useEffect, useCallback } from 'react';
@@ -66,12 +65,18 @@ export default function LeadsPage() {
     setIsLoading(true);
     try {
         const response = await callLeadApi('get_all_leads');
-        const data = Array.isArray(response) ? response[0] : response;
+        
+        let data;
+        if (Array.isArray(response) && response.length > 0) {
+            data = response[0];
+        } else if (typeof response === 'object' && response !== null && !Array.isArray(response)) {
+            data = response;
+        }
 
         if (data && Array.isArray(data.leads)) {
             setLeads(data.leads);
         } else {
-             setLeads([]);
+            setLeads([]);
         }
     } catch (error) {
         toast({
@@ -456,7 +461,6 @@ export default function LeadsPage() {
           <div className="flex flex-col items-center justify-center h-full text-center text-gray-400">
             <Users className="w-16 h-16 mb-4" />
             <h2 className="text-xl font-semibold text-gray-500">No leads available</h2>
-            <p className="mt-1">Leads matching your criteria will appear here.</p>
           </div>
         )}
       </div>
