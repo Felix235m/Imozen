@@ -1,11 +1,10 @@
 
-
 "use client";
 
 import * as React from 'react';
 import { useState, useRef, useEffect, useMemo, useCallback } from 'react';
 import { useParams, useRouter, useSearchParams } from 'next/navigation';
-import { ArrowLeft, MoreVertical, Upload, History, FileText, Send, Edit, UserX, UserCheck, Save, X, Mic, Copy, RefreshCw, MessageSquare, Phone, Mail, Trash2, Zap, ChevronsUpDown, TrendingUp } from 'lucide-react';
+import { ArrowLeft, MoreVertical, Upload, History, FileText, Send, Edit, Save, X, Mic, Copy, RefreshCw, MessageSquare, Phone, Mail, Trash2, Zap, ChevronsUpDown, TrendingUp, Search, Handshake, Eye, Briefcase, DollarSign, FileSignature, CheckCircle2, XCircle, Ban, Target, BadgeHelp } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
@@ -89,18 +88,18 @@ type LeadStage =
   | 'Lost'
   | 'Not Interested';
 
-const LEAD_STAGES: { value: LeadStage; label: string; color: string; description: string }[] = [
-  { value: 'New Lead', label: 'New Lead', color: 'bg-blue-100 text-blue-700', description: 'Just received, not yet contacted' },
-  { value: 'Contacted', label: 'Contacted', color: 'bg-purple-100 text-purple-700', description: 'Initial contact made' },
-  { value: 'Qualified', label: 'Qualified', color: 'bg-indigo-100 text-indigo-700', description: 'Lead is qualified and interested' },
-  { value: 'Property Viewing Scheduled', label: 'Viewing Scheduled', color: 'bg-cyan-100 text-cyan-700', description: 'Property viewing appointment set' },
-  { value: 'Property Viewed', label: 'Property Viewed', color: 'bg-teal-100 text-teal-700', description: 'Lead has viewed property' },
-  { value: 'Offer Made', label: 'Offer Made', color: 'bg-orange-100 text-orange-700', description: 'Lead made an offer' },
-  { value: 'Negotiation', label: 'Negotiation', color: 'bg-yellow-100 text-yellow-700', description: 'In negotiation phase' },
-  { value: 'Under Contract', label: 'Under Contract', color: 'bg-lime-100 text-lime-700', description: 'Contract signed, pending closing' },
-  { value: 'Converted', label: 'Converted', color: 'bg-green-100 text-green-700', description: 'Deal successfully closed' },
-  { value: 'Lost', label: 'Lost', color: 'bg-red-100 text-red-700', description: 'Deal lost to competitor' },
-  { value: 'Not Interested', label: 'Not Interested', color: 'bg-gray-100 text-gray-700', description: 'Lead no longer interested' },
+const LEAD_STAGES: { value: LeadStage; label: string; color: string; description: string, icon: React.ElementType }[] = [
+  { value: 'New Lead', label: 'New Lead', color: 'bg-blue-100 text-blue-700', description: 'Just received, not yet contacted', icon: Target },
+  { value: 'Contacted', label: 'Contacted', color: 'bg-purple-100 text-purple-700', description: 'Initial contact made', icon: Phone },
+  { value: 'Qualified', label: 'Qualified', color: 'bg-indigo-100 text-indigo-700', description: 'Lead is qualified and interested', icon: BadgeHelp },
+  { value: 'Property Viewing Scheduled', label: 'Viewing Scheduled', color: 'bg-cyan-100 text-cyan-700', description: 'Property viewing appointment set', icon: Eye },
+  { value: 'Property Viewed', label: 'Property Viewed', color: 'bg-teal-100 text-teal-700', description: 'Lead has viewed property', icon: Briefcase },
+  { value: 'Offer Made', label: 'Offer Made', color: 'bg-orange-100 text-orange-700', description: 'Lead made an offer', icon: DollarSign },
+  { value: 'Negotiation', label: 'Negotiation', color: 'bg-yellow-100 text-yellow-700', description: 'In negotiation phase', icon: Handshake },
+  { value: 'Under Contract', label: 'Under Contract', color: 'bg-lime-100 text-lime-700', description: 'Contract signed, pending closing', icon: FileSignature },
+  { value: 'Converted', label: 'Converted', color: 'bg-green-100 text-green-700', description: 'Deal successfully closed', icon: CheckCircle2 },
+  { value: 'Lost', label: 'Lost', color: 'bg-red-100 text-red-700', description: 'Deal lost', icon: XCircle },
+  { value: 'Not Interested', label: 'Not Interested', color: 'bg-gray-100 text-gray-700', description: 'Lead no longer interested', icon: Ban },
 ];
 
 const allLocations = [
@@ -387,11 +386,12 @@ export default function LeadDetailPage() {
         'row_number',
         'lead_id',
         'next_follow_up',
-        'management', // Can be refined if specific fields are editable
+        'management',
     ];
 
     const compareObjects = (newObj: any, oldObj: any, prefix = '') => {
-        const allKeys = new Set([...Object.keys(newObj || {}), ...Object.keys(oldObj || {})]);
+        if (!newObj || !oldObj) return;
+        const allKeys = new Set([...Object.keys(newObj), ...Object.keys(oldObj)]);
 
         for (const key of allKeys) {
             if (excludedFields.includes(key)) {
@@ -954,30 +954,33 @@ export default function LeadDetailPage() {
 
        {/* Lead Stage Change Dialog */}
        <Dialog open={isLeadStageDialogOpen} onOpenChange={setIsLeadStageDialogOpen}>
-        <DialogContent className="sm:max-w-lg">
+        <DialogContent className="sm:max-w-2xl">
             <DialogHeader>
                 <DialogTitle>Change Lead Status</DialogTitle>
                 <DialogDescription>
-                    Select the new status for this lead in the sales pipeline
+                    Select the new status for this lead in the sales pipeline.
                 </DialogDescription>
             </DialogHeader>
-            <div className="space-y-2 max-h-[60vh] overflow-y-auto pr-2">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-3 max-h-[60vh] overflow-y-auto p-1">
                 {LEAD_STAGES.map((stage) => (
                     <button
                         key={stage.value}
                         onClick={() => handleLeadStageChange(stage.value)}
-                        className="w-full text-left p-3 rounded-lg border border-gray-200 hover:border-primary hover:bg-gray-50 transition-colors"
+                        className="w-full text-left p-4 rounded-lg border border-gray-200 hover:border-primary hover:bg-gray-50/50 transition-all focus:outline-none focus:ring-2 focus:ring-primary"
                     >
-                        <div className="flex items-center gap-3">
-                            <Badge variant="outline" className={cn("text-xs", stage.color)}>
-                                {stage.label}
-                            </Badge>
+                        <div className="flex items-start gap-4">
+                            <div className={cn("mt-1 flex h-8 w-8 items-center justify-center rounded-full shrink-0", stage.color)}>
+                                <stage.icon className="h-5 w-5" />
+                            </div>
+                            <div className='flex-1'>
+                                <p className="font-semibold">{stage.label}</p>
+                                <p className="text-sm text-gray-500">{stage.description}</p>
+                            </div>
                         </div>
-                        <p className="text-sm text-gray-500 mt-1">{stage.description}</p>
                     </button>
                 ))}
             </div>
-            <DialogFooter>
+            <DialogFooter className="mt-4">
                 <Button variant="outline" onClick={() => setIsLeadStageDialogOpen(false)}>Cancel</Button>
             </DialogFooter>
         </DialogContent>
@@ -1529,3 +1532,6 @@ function LeadHistorySheet({ open, onOpenChange, lead, history }: LeadHistoryShee
 
 
 
+
+
+    
