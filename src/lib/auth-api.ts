@@ -18,7 +18,11 @@ async function callApi(url: string, body: any) {
         'Content-Type': 'application/json',
     };
 
-    const token = typeof window !== 'undefined' ? localStorage.getItem('auth_token') : null;
+    let token = null;
+    if (typeof window !== 'undefined') {
+        token = localStorage.getItem('auth_token') || sessionStorage.getItem('sessionToken');
+    }
+    
     if (token) {
         headers['Authorization'] = `Bearer ${token}`;
     }
@@ -63,31 +67,38 @@ export async function callAuthApi(operation: Operation, payload: any) {
 }
 
 export async function callLeadApi(operation: LeadOperation, payload: any = {}) {
-    const body = { operation, ...payload };
+    // Extract lead_id from various possible field names
+    const lead_id = payload.lead_id || payload.id || payload.leadId || payload._id;
+    
+    // Create a clean payload without duplicate ID fields
+    const { id, leadId, _id, ...cleanPayload } = payload;
+    
+    const body: any = { 
+        operation,
+        lead_id, // Explicit lead_id at top level
+        ...cleanPayload // Spread cleaned payload (without duplicate IDs)
+    };
+    
     let url = LEAD_OPERATIONS_URL;
 
+    // Use different URL for note operations
     if (operation === 'add_new_note' || operation === 'save_note' || operation === 'get_notes') {
         url = LEAD_COMMUNICATION_URL;
-        const token = localStorage.getItem('auth_token');
-        body.session_token = token;
     }
 
     return callApi(url, body);
 }
 
 export async function callFollowUpApi(operation: FollowUpOperation, payload: any = {}) {
-    const token = localStorage.getItem('auth_token');
-    const body = { operation, session_token: token, ...payload };
+    const body = { operation, ...payload };
     return callApi(FOLLOW_UP_URL, body);
 }
 
 export async function callLeadStatusApi(leadId: string, status: LeadStatus | "change_priority", details?: { new_priority?: 'Hot' | 'Warm' | 'Cold', note?: string }) {
-    const token = localStorage.getItem('auth_token');
     let body: any;
 
     if (status === 'change_priority' && details) {
         body = {
-            token,
             lead_id: leadId,
             operation: 'change_priority',
             new_priority: details.new_priority,
@@ -95,7 +106,6 @@ export async function callLeadStatusApi(leadId: string, status: LeadStatus | "ch
         };
     } else if (status === 'active' || status === 'inactive') {
         body = {
-            token,
             lead_id: leadId,
             operation: 'change_status',
             status: status,
@@ -104,8 +114,11 @@ export async function callLeadStatusApi(leadId: string, status: LeadStatus | "ch
         throw new Error("Invalid parameters for callLeadStatusApi");
     }
     
+    // This API call seems to have a side effect and then another call is made to sync state.
+    // The first call notifies or logs the status change.
     await callApi(LEAD_STATUS_URL, body);
     
+    // The second call updates the lead object in the main database.
     if (status === 'active' || status === 'inactive') {
         return callLeadApi('edit_lead', { lead_id: leadId, status: status === 'active' ? 'Active' : 'Inactive' });
     } else if (status === 'change_priority' && details) {
