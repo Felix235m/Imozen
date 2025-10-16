@@ -500,14 +500,61 @@ export default function LeadDetailPage() {
   const executeToggleActiveStatus = async () => {
     if (!lead || !statusChangeInfo) return;
     const { newStatus } = statusChangeInfo;
+
+    console.log('🔄 executeToggleActiveStatus - Starting status toggle');
+    console.log('🔄 Current lead data:', lead);
+    console.log('🔄 New status:', newStatus);
+
     try {
-        await callLeadStatusApi(id, newStatus.toLowerCase() as 'active' | 'inactive');
-        setLead(prev => prev ? ({ ...prev, status: newStatus }) : null);
+        // Send the FULL lead data with only the status changed
+        const reconstructedPhone = `(${phoneCountryCode}) ${phoneNumber}`;
+
+        const fullPayload = {
+            ...lead,
+            status: newStatus,
+            contact: {
+                ...lead.contact,
+                phone: reconstructedPhone as any,
+            },
+        };
+
+        console.log('🔄 Sending full payload to webhook:', fullPayload);
+
+        // Call API and get response
+        const response = await callLeadStatusApi(id, newStatus.toLowerCase() as 'active' | 'inactive', fullPayload);
+
+        console.log('🔄 Webhook response:', response);
+
+        // Process the response and update state with returned data
+        if (response && Array.isArray(response) && response.length > 0) {
+            const updatedLeadFromServer = response[0];
+            console.log('🔄 Updated lead from server:', updatedLeadFromServer);
+
+            // Transform the response to match frontend structure
+            const transformedLead = {
+                ...lead,
+                status: newStatus,
+                // Keep all existing data, just update the status
+            };
+
+            setLead(transformedLead);
+            setOriginalLead(JSON.parse(JSON.stringify(transformedLead)));
+
+            console.log('✅ Local state updated with new status');
+        } else {
+            // Fallback: Just update the status locally if no response data
+            setLead(prev => prev ? ({ ...prev, status: newStatus }) : null);
+            setOriginalLead(prev => prev ? JSON.parse(JSON.stringify({ ...prev, status: newStatus })) : null);
+        }
+
         toast({
           title: "Status Updated",
           description: `Lead marked as ${newStatus.toLowerCase()}.`,
         });
+
+        console.log('✅ Status toggle successful');
     } catch(error) {
+        console.error('❌ Status toggle failed:', error);
         toast({ variant: 'destructive', title: 'Error', description: 'Could not update status.' });
     } finally {
         setStatusChangeInfo(null);
@@ -557,8 +604,49 @@ export default function LeadDetailPage() {
   const handleStatusSave = (leadId: string, newStatus: 'Hot' | 'Warm' | 'Cold', note: string) => {
     if (!lead || lead.lead_id !== leadId) return;
 
-    callLeadStatusApi(leadId, "change_priority", { new_priority: newStatus, note }).then(() => {
-        setLead(prev => prev ? ({ ...prev, temperature: newStatus }) : null);
+    console.log('🔥 handleStatusSave - Starting priority change');
+    console.log('🔥 Current lead:', lead);
+    console.log('🔥 New priority:', newStatus);
+
+    // Send the FULL lead data with only the temperature changed
+    const reconstructedPhone = `(${phoneCountryCode}) ${phoneNumber}`;
+
+    const fullPayload = {
+        ...lead,
+        temperature: newStatus,
+        note: note, // Add the note to the payload
+        contact: {
+            ...lead.contact,
+            phone: reconstructedPhone as any,
+        },
+    };
+
+    console.log('🔥 Sending full payload for priority change:', fullPayload);
+
+    callLeadStatusApi(leadId, "change_priority", fullPayload).then((response) => {
+        console.log('🔥 Webhook response:', response);
+
+        // Process the response
+        if (response && Array.isArray(response) && response.length > 0) {
+            const updatedLeadFromServer = response[0];
+            console.log('🔥 Updated lead from server:', updatedLeadFromServer);
+
+            // Transform the response to match frontend structure - keep all existing data
+            const transformedLead = {
+                ...lead,
+                temperature: newStatus,
+                // Keep all existing data, just update the temperature
+            };
+
+            setLead(transformedLead);
+            setOriginalLead(JSON.parse(JSON.stringify(transformedLead)));
+
+            console.log('✅ Local state updated with new priority');
+        } else {
+            // Fallback: Just update locally
+            setLead(prev => prev ? ({ ...prev, temperature: newStatus }) : null);
+            setOriginalLead(prev => prev ? JSON.parse(JSON.stringify({ ...prev, temperature: newStatus })) : null);
+        }
 
         const newNote: Note = {
             id: `note-${Date.now()}`,
@@ -566,13 +654,16 @@ export default function LeadDetailPage() {
             date: new Date().toISOString(),
         };
         setNotes(prev => [newNote, ...prev]);
-        
+
         toast({
             title: "Priority updated",
             description: `Lead priority changed to ${newStatus} and note added.`,
         });
         setIsStatusDialogOpen(false);
-    }).catch(() => {
+
+        console.log('✅ Priority change successful');
+    }).catch((error) => {
+        console.error('❌ Priority change failed:', error);
         toast({ variant: 'destructive', title: 'Error', description: 'Could not update priority.' });
     });
   };

@@ -110,34 +110,72 @@ export async function callFollowUpApi(operation: FollowUpOperation, payload: any
     return callApi(FOLLOW_UP_URL, body);
 }
 
-export async function callLeadStatusApi(leadId: string, status: LeadStatus | "change_priority", details?: { new_priority?: 'Hot' | 'Warm' | 'Cold', note?: string }) {
-    let body: any;
+export async function callLeadStatusApi(
+    leadId: string,
+    status: LeadStatus | "change_priority",
+    detailsOrFullPayload?: { new_priority?: 'Hot' | 'Warm' | 'Cold', note?: string } | any
+) {
+    let statusLogBody: any;
 
-    if (status === 'change_priority' && details) {
-        body = {
+    // Determine if we have a full lead payload or just details
+    const isFullPayload = detailsOrFullPayload &&
+                          typeof detailsOrFullPayload === 'object' &&
+                          ('name' in detailsOrFullPayload || 'contact' in detailsOrFullPayload);
+
+    if (status === 'change_priority' && detailsOrFullPayload && !isFullPayload) {
+        const details = detailsOrFullPayload as { new_priority?: 'Hot' | 'Warm' | 'Cold', note?: string };
+        statusLogBody = {
             lead_id: leadId,
             operation: 'change_priority',
             new_priority: details.new_priority,
             note: details.note,
         };
     } else if (status === 'active' || status === 'inactive') {
-        body = {
+        statusLogBody = {
             lead_id: leadId,
             operation: 'change_status',
             status: status,
         };
+    } else if (status === 'change_priority' && detailsOrFullPayload && isFullPayload) {
+        // When full payload is provided for priority change
+        statusLogBody = {
+            lead_id: leadId,
+            operation: 'change_priority',
+            new_priority: detailsOrFullPayload.temperature,
+            note: detailsOrFullPayload.note || '',
+        };
     } else {
         throw new Error("Invalid parameters for callLeadStatusApi");
     }
-    
-    // This API call seems to have a side effect and then another call is made to sync state.
-    // The first call notifies or logs the status change.
-    await callApi(LEAD_STATUS_URL, body);
-    
-    // The second call updates the lead object in the main database.
+
+    console.log('🔵 callLeadStatusApi - Status log body:', statusLogBody);
+
+    // First call: Log the status change
+    await callApi(LEAD_STATUS_URL, statusLogBody);
+
+    // Second call: Update the full lead object in the main database
     if (status === 'active' || status === 'inactive') {
-        return callLeadApi('edit_lead', { lead_id: leadId, status: status === 'active' ? 'Active' : 'Inactive' });
-    } else if (status === 'change_priority' && details) {
-        return callLeadApi('edit_lead', { lead_id: leadId, temperature: details.new_priority, note: details.note });
+        const updatePayload = isFullPayload
+            ? { ...detailsOrFullPayload, lead_id: leadId, status: status === 'active' ? 'Active' : 'Inactive' }
+            : { lead_id: leadId, status: status === 'active' ? 'Active' : 'Inactive' };
+
+        console.log('🔵 callLeadStatusApi - Updating lead with payload:', updatePayload);
+        return callLeadApi('edit_lead', updatePayload);
+    } else if (status === 'change_priority' && detailsOrFullPayload) {
+        // Check if we have full payload for priority change
+        if (isFullPayload) {
+            const updatePayload = {
+                ...detailsOrFullPayload,
+                lead_id: leadId,
+                temperature: detailsOrFullPayload.temperature || detailsOrFullPayload.new_priority
+            };
+            console.log('🔵 callLeadStatusApi - Updating lead with full payload for priority change:', updatePayload);
+            return callLeadApi('edit_lead', updatePayload);
+        } else {
+            // Legacy: Only temperature and note (should be avoided)
+            const details = detailsOrFullPayload as { new_priority?: 'Hot' | 'Warm' | 'Cold', note?: string };
+            console.warn('⚠️ callLeadStatusApi - Using incomplete payload for priority change. This may clear other fields!');
+            return callLeadApi('edit_lead', { lead_id: leadId, temperature: details.new_priority, note: details.note });
+        }
     }
 }

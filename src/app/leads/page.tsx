@@ -1,3 +1,4 @@
+
 "use client";
 
 import React, { useState, useMemo, useEffect, useCallback } from 'react';
@@ -57,7 +58,6 @@ export default function LeadsPage() {
   const [leadToDelete, setLeadToDelete] = useState<string | null>(null);
   const [leadsToDelete, setLeadsToDelete] = useState<string[] | null>(null);
 
-  const [statusChangeInfo, setStatusChangeInfo] = useState<{ leadId: string; newStatus: LeadStatus } | null>(null);
   const [isCheckingSession, setIsCheckingSession] = useState(false);
 
 
@@ -199,31 +199,6 @@ export default function LeadsPage() {
       setSelectedLeads([]);
   }
 
-  const confirmLeadAction = (leadId: string, action: 'setActive' | 'setInactive') => {
-    const newStatus = action === 'setActive' ? 'Active' : 'Inactive';
-    setStatusChangeInfo({ leadId, newStatus });
-  };
-
-  const executeLeadAction = async () => {
-    if (!statusChangeInfo) return;
-    const { leadId, newStatus } = statusChangeInfo;
-
-    try {
-      await callLeadStatusApi(leadId, newStatus.toLowerCase() as 'active' | 'inactive');
-      setLeads(leads.map(lead => 
-        lead.lead_id === leadId ? { ...lead, status: newStatus } : lead
-      ));
-      toast({
-        title: "Success",
-        description: `Lead marked as ${newStatus.toLowerCase()}.`,
-      });
-    } catch (error) {
-       toast({ variant: "destructive", title: "Error", description: "Could not update lead status." });
-    } finally {
-      setStatusChangeInfo(null);
-    }
-  };
-
   const confirmDeleteSingleLead = (leadId: string) => {
     setLeadToDelete(leadId);
   }
@@ -262,23 +237,6 @@ export default function LeadsPage() {
     }
     setLeadsToDelete(null);
   }
-
-  const handleBulkAction = async (action: 'setActive' | 'setInactive') => {
-    const newStatus = action === 'setActive' ? 'Active' : 'Inactive';
-    try {
-        await Promise.all(selectedLeads.map(id => callLeadStatusApi(id, newStatus.toLowerCase() as 'active' | 'inactive')));
-        setLeads(leads.map(lead => 
-          selectedLeads.includes(lead.lead_id) ? { ...lead, status: newStatus } : lead
-        ));
-        setSelectedLeads([]);
-        toast({
-          title: "Success",
-          description: `${selectedLeads.length} lead(s) marked as ${newStatus.toLowerCase()}.`,
-        });
-    } catch (error) {
-       toast({ variant: "destructive", title: "Error", description: `Could not mark leads as ${newStatus.toLowerCase()}.` });
-    }
-  };
 
   const openStatusDialog = (lead: Lead) => {
     setSelectedLeadForStatus(lead);
@@ -386,8 +344,6 @@ export default function LeadsPage() {
                 <DropdownMenuItem onClick={confirmDeleteBulkLeads} className="text-red-500">
                   Delete
                 </DropdownMenuItem>
-                <DropdownMenuItem onClick={() => handleBulkAction('setActive')}>Mark as Active</DropdownMenuItem>
-                <DropdownMenuItem onClick={() => handleBulkAction('setInactive')}>Mark as Inactive</DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>
           </>
@@ -439,14 +395,6 @@ export default function LeadsPage() {
                           <Zap className="mr-2 h-4 w-4" />
                           <span>Priority (hot/warm/cold)</span>
                       </DropdownMenuItem>
-                      <DropdownMenuItem onSelect={() => confirmLeadAction(lead.lead_id, lead.status === 'Active' ? 'setInactive' : 'setActive')}>
-                        {lead.status === 'Active' ? (
-                          <UserX className="mr-2 h-4 w-4" />
-                        ) : (
-                          <UserCheck className="mr-2 h-4 w-4" />
-                        )}
-                        <span>Mark as {lead.status === 'Active' ? 'Inactive' : 'Active'}</span>
-                      </DropdownMenuItem>
                       <DropdownMenuItem onSelect={() => confirmDeleteSingleLead(lead.lead_id)} className="text-red-500">
                           <Trash2 className="mr-2 h-4 w-4" />
                           <span>Delete Lead</span>
@@ -473,23 +421,6 @@ export default function LeadsPage() {
           onSave={handleStatusSave as any}
         />
       )}
-
-      <AlertDialog open={!!statusChangeInfo} onOpenChange={() => setStatusChangeInfo(null)}>
-        <AlertDialogContent>
-            <AlertDialogHeader>
-                <AlertDialogTitle>Are you sure?</AlertDialogTitle>
-                <AlertDialogDescription>
-                    This will mark the lead as {statusChangeInfo?.newStatus.toLowerCase()}.
-                </AlertDialogDescription>
-            </AlertDialogHeader>
-            <AlertDialogFooter>
-                <AlertDialogCancel onClick={() => setStatusChangeInfo(null)}>Cancel</AlertDialogCancel>
-                <AlertDialogAction onClick={executeLeadAction}>
-                    Confirm
-                </AlertDialogAction>
-            </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
 
       <AlertDialog open={!!leadToDelete} onOpenChange={() => setLeadToDelete(null)}>
         <AlertDialogContent>
@@ -529,5 +460,3 @@ export default function LeadsPage() {
     </div>
   );
 }
-
-    
