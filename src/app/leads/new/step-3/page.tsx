@@ -168,7 +168,7 @@ export default function NewLeadStep3Page() {
                     <FormControl>
                       <RadioGroup
                         onValueChange={field.onChange}
-                        defaultValue={field.value}
+                        value={field.value}
                         className="flex flex-col space-y-1"
                       >
                         {purchaseTimeframes.map((item) => (
@@ -195,7 +195,7 @@ export default function NewLeadStep3Page() {
                     <FormControl>
                       <RadioGroup
                         onValueChange={field.onChange}
-                        defaultValue={field.value}
+                        value={field.value}
                         className="flex flex-col space-y-1"
                       >
                         {searchDurations.map((item) => (
@@ -222,7 +222,7 @@ export default function NewLeadStep3Page() {
                     <FormControl>
                       <RadioGroup
                         onValueChange={field.onChange}
-                        defaultValue={field.value}
+                        value={field.value}
                         className="flex flex-col space-y-1"
                       >
                         {propertiesViewedOptions.map((item) => (
