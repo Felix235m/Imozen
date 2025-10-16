@@ -408,7 +408,7 @@ export default function LeadDetailPage() {
         return;
     }
     
-    // ✅ Set loading state (shows spinner)
+    // Set loading state (shows spinner)
     setIsSaving(true);
     setIsConfirmSaveOpen(false);
     
@@ -416,27 +416,27 @@ export default function LeadDetailPage() {
     
     const reconstructedPhone = `(${phoneCountryCode}) ${phoneNumber}`;
     
-    // ✅ CORRECTED: Explicitly include lead_id
+    // CORRECTED: Explicitly include lead_id at the top level
     const payload = {
         ...finalLead,
-        lead_id: finalLead.lead_id || id, // ✅ Ensure lead_id is always present
+        lead_id: finalLead.lead_id || id, // Ensure lead_id is always present
         contact: {
             ...finalLead.contact,
-            phone: reconstructedPhone,
+            phone: reconstructedPhone as any,
         },
     };
 
     try {
-        // ✅ Call webhook via callLeadApi with operation "edit_lead"
-        const response = await callLeadApi('edit_lead', payload);
+        // Call webhook via callLeadApi with operation "edit_lead"
+        await callLeadApi('edit_lead', payload);
         
-        // ✅ Show success message "Lead updated"
+        // Show success message "Lead updated"
         toast({
             title: "Success",
             description: "Lead updated",
         });
         
-        // ✅ Update state with saved data
+        // Update state with saved data
         setOriginalLead(payload);
         setLead(payload);
         setIsEditing(false);
@@ -449,7 +449,7 @@ export default function LeadDetailPage() {
             description: error.message || 'Could not save lead details.' 
         });
     } finally {
-        // ✅ Remove loading state
+        // Remove loading state
         setIsSaving(false);
         setChangeSummary([]);
         setSuggestedStatus(null);
@@ -1379,6 +1379,7 @@ function LeadHistorySheet({ open, onOpenChange, lead, history }: LeadHistoryShee
 
 
     
+
 
 
 
