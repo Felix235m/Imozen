@@ -22,10 +22,14 @@ async function callApi(url: string, body: any) {
     if (typeof window !== 'undefined') {
         token = localStorage.getItem('auth_token') || sessionStorage.getItem('sessionToken');
     }
-    
+
     if (token) {
         headers['Authorization'] = `Bearer ${token}`;
     }
+
+    console.log('🟢 callApi - Making request to:', url);
+    console.log('🟢 callApi - Headers:', headers);
+    console.log('🟢 callApi - Request body:', body);
 
     const response = await fetch(url, {
         method: 'POST',
@@ -33,9 +37,13 @@ async function callApi(url: string, body: any) {
         body: JSON.stringify(body),
     });
 
+    console.log('🟢 callApi - Response status:', response.status, response.statusText);
+
     const text = await response.text();
+    console.log('🟢 callApi - Response text:', text);
 
     if (!response.ok) {
+        console.error('❌ callApi - Request failed:', response.status);
         try {
             const errorData = JSON.parse(text);
             throw new Error(errorData.error?.message || errorData.message || 'API request failed');
@@ -48,8 +56,11 @@ async function callApi(url: string, body: any) {
     }
 
     try {
-        return JSON.parse(text);
+        const parsed = JSON.parse(text);
+        console.log('✅ callApi - Success response:', parsed);
+        return parsed;
     } catch (e) {
+        console.log('✅ callApi - Success (non-JSON response):', text);
         return text || { success: true };
     }
 }
@@ -69,22 +80,27 @@ export async function callAuthApi(operation: Operation, payload: any) {
 export async function callLeadApi(operation: LeadOperation, payload: any = {}) {
     // Extract lead_id from various possible field names
     const lead_id = payload.lead_id || payload.id || payload.leadId || payload._id;
-    
+
     // Create a clean payload without duplicate ID fields
     const { id, leadId, _id, ...cleanPayload } = payload;
-    
-    const body: any = { 
+
+    const body: any = {
         operation,
         lead_id, // Explicit lead_id at top level
         ...cleanPayload // Spread cleaned payload (without duplicate IDs)
     };
-    
+
     let url = LEAD_OPERATIONS_URL;
 
     // Use different URL for note operations
     if (operation === 'add_new_note' || operation === 'save_note' || operation === 'get_notes') {
         url = LEAD_COMMUNICATION_URL;
     }
+
+    // Debug logging
+    console.log('🔵 callLeadApi - Operation:', operation);
+    console.log('🔵 callLeadApi - URL:', url);
+    console.log('🔵 callLeadApi - Body:', JSON.stringify(body, null, 2));
 
     return callApi(url, body);
 }

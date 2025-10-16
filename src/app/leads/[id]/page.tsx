@@ -156,7 +156,7 @@ export default function LeadDetailPage() {
       }
       
       setLead(currentLeadData);
-      setOriginalLead(currentLeadData);
+      setOriginalLead(JSON.parse(JSON.stringify(currentLeadData))); // Deep copy for reliable comparison
       setAvatarPreview(currentLeadData.image_url);
 
       const { code, number } = parsePhoneNumber(currentLeadData.contact.phone);
@@ -203,7 +203,7 @@ export default function LeadDetailPage() {
       const keys = name.split('.');
       setLead(prev => {
         if (!prev) return null;
-        const newLead = { ...prev };
+        const newLead = JSON.parse(JSON.stringify(prev)); // Deep copy to ensure state updates
         let current: any = newLead;
         for (let i = 0; i < keys.length - 1; i++) {
           current = current[keys[i]];
@@ -219,7 +219,7 @@ export default function LeadDetailPage() {
         const keys = name.split('.');
         setLead(prev => {
             if (!prev) return null;
-            const newLead = { ...prev };
+            const newLead = JSON.parse(JSON.stringify(prev)); // Deep copy
             let current: any = newLead;
             for (let i = 0; i < keys.length - 1; i++) {
             current = current[keys[i]];
@@ -335,55 +335,89 @@ export default function LeadDetailPage() {
   }
 
   const prepareSaveChanges = () => {
-    if (!lead || !originalLead) return;
-
-    const reconstructedPhone = `(${phoneCountryCode}) ${phoneNumber}`;
-    
-    // Create a mutable copy of the lead to update the phone number
-    const updatedLead = { ...lead };
-    if (updatedLead.contact) {
-      updatedLead.contact.phone = reconstructedPhone as any;
+    if (!lead || !originalLead) {
+        return;
     }
 
-    setLead(updatedLead);
+    const currentLeadWithPhone = {
+        ...lead,
+        contact: {
+            ...lead.contact,
+            phone: `(${phoneCountryCode}) ${phoneNumber}` as any,
+        },
+    };
 
     const changes: ChangeSummary[] = [];
-    
-    const compareObjects = (obj1: any, obj2: any, prefix = '') => {
-        for (const key in obj1) {
-            if (typeof obj1[key] === 'object' && obj1[key] !== null && !Array.isArray(obj1[key])) {
-                 compareObjects(obj1[key], obj2[key], `${prefix}${key}.`);
-            } else if (JSON.stringify(obj1[key]) !== JSON.stringify(obj2[key])) {
+
+    const excludedFields = [
+        'budget_formatted',
+        'created_at_formatted',
+        'image_url',
+        'notes',
+        'communication_history',
+        'created_at',
+        'updated_at',
+        'row_number',
+        'lead_id',
+        'next_follow_up',
+        'management', // Can be refined if specific fields are editable
+    ];
+
+    const compareObjects = (newObj: any, oldObj: any, prefix = '') => {
+        const allKeys = new Set([...Object.keys(newObj || {}), ...Object.keys(oldObj || {})]);
+
+        for (const key of allKeys) {
+            if (excludedFields.includes(key)) {
+                continue;
+            }
+
+            const fullKey = prefix ? `${prefix}.${key}` : key;
+            const newValue = newObj?.[key];
+            const oldValue = oldObj?.[key];
+
+            const areObjects = typeof newValue === 'object' && newValue !== null && typeof oldValue === 'object' && oldValue !== null;
+
+            if (areObjects && !Array.isArray(newValue) && !Array.isArray(oldValue)) {
+                compareObjects(newValue, oldValue, fullKey);
+            } else if (JSON.stringify(newValue) !== JSON.stringify(oldValue)) {
+                const fieldName = fullKey
+                    .split('.')
+                    .map(part => part.charAt(0).toUpperCase() + part.slice(1).replace(/_/g, ' '))
+                    .join(' → ');
+
                 changes.push({
-                    field: (prefix + key).replace(/([A-Z])/g, ' $1').replace(/^./, str => str.toUpperCase()),
-                    oldValue: obj2[key],
-                    newValue: obj1[key]
+                    field: fieldName,
+                    oldValue: oldValue,
+                    newValue: newValue
                 });
             }
         }
-    }
-    
-    const tempLeadForComparison = JSON.parse(JSON.stringify(updatedLead));
-    const tempOriginalLeadForComparison = JSON.parse(JSON.stringify(originalLead));
+    };
 
-    compareObjects(tempLeadForComparison, tempOriginalLeadForComparison);
-
+    compareObjects(currentLeadWithPhone, originalLead);
 
     if (changes.length === 0) {
-      setIsEditing(false);
-      return;
+        toast({
+            title: "No Changes",
+            description: "No changes were made to the lead data.",
+        });
+        setIsEditing(false);
+        return;
     }
-    
+
     setChangeSummary(changes);
-    
-    const propertyRequirementsChanged = changes.some(c => ['Property.Type', 'Property.Budget', 'Property.Bedrooms', 'Property.Locations'].includes(c.field));
+
+    const propertyRequirementsChanged = changes.some(c =>
+        c.field.includes('Property') &&
+        (c.field.includes('Type') || c.field.includes('Budget') || c.field.includes('Bedrooms') || c.field.includes('Locations'))
+    );
 
     if (propertyRequirementsChanged) {
         const oldScore = getQualificationScore(originalLead);
-        const newScore = getQualificationScore(updatedLead);
+        const newScore = getQualificationScore(currentLeadWithPhone);
         if (newScore !== oldScore) {
             const newStatus = getStatusFromScore(newScore);
-            if(newStatus !== updatedLead.temperature) {
+            if(newStatus !== currentLeadWithPhone.temperature) {
                 setSuggestedStatus(newStatus);
             } else {
                 setSuggestedStatus(null);
@@ -408,7 +442,6 @@ export default function LeadDetailPage() {
         return;
     }
     
-    // Set loading state (shows spinner)
     setIsSaving(true);
     setIsConfirmSaveOpen(false);
     
@@ -416,10 +449,9 @@ export default function LeadDetailPage() {
     
     const reconstructedPhone = `(${phoneCountryCode}) ${phoneNumber}`;
     
-    // CORRECTED: Explicitly include lead_id at the top level
     const payload = {
         ...finalLead,
-        lead_id: finalLead.lead_id || id, // Ensure lead_id is always present
+        lead_id: finalLead.lead_id || id, 
         contact: {
             ...finalLead.contact,
             phone: reconstructedPhone as any,
@@ -427,18 +459,17 @@ export default function LeadDetailPage() {
     };
 
     try {
-        // Call webhook via callLeadApi with operation "edit_lead"
         await callLeadApi('edit_lead', payload);
         
-        // Show success message "Lead updated"
         toast({
             title: "Success",
             description: "Lead updated",
         });
         
-        // Update state with saved data
-        setOriginalLead(payload);
-        setLead(payload);
+        // After successful save, update the original state to match the saved state
+        const updatedLeadData = { ...payload };
+        setOriginalLead(JSON.parse(JSON.stringify(updatedLeadData)));
+        setLead(updatedLeadData);
         setIsEditing(false);
         
     } catch (error: any) {
@@ -449,7 +480,6 @@ export default function LeadDetailPage() {
             description: error.message || 'Could not save lead details.' 
         });
     } finally {
-        // Remove loading state
         setIsSaving(false);
         setChangeSummary([]);
         setSuggestedStatus(null);
@@ -549,7 +579,10 @@ export default function LeadDetailPage() {
   
   const formatValue = (field: string, value: any) => {
     if (Array.isArray(value)) {
-        return value.map(v => allLocations.find(l=>l.value === v)?.label || v).join(', ');
+        return value.map(v => allLocations.find(l=>l.value === v)?.label || v).join(', ') || '(empty)';
+    }
+    if (value === null || value === undefined || value === '') {
+        return '(empty)';
     }
     if (field.toLowerCase().includes('budget')) {
       return `€${Number(value).toLocaleString()}`;
@@ -782,7 +815,7 @@ export default function LeadDetailPage() {
               Please review the changes before saving.
             </AlertDialogDescription>
           </AlertDialogHeader>
-          <div className="space-y-4 text-sm">
+          <div className="space-y-4 text-sm max-h-60 overflow-y-auto pr-2">
             <div>
                 <h4 className="font-semibold mb-2">Changes:</h4>
                 <ul className="list-disc list-inside space-y-1">
@@ -1379,6 +1412,7 @@ function LeadHistorySheet({ open, onOpenChange, lead, history }: LeadHistoryShee
 
 
     
+
 
 
 
