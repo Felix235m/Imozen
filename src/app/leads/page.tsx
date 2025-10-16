@@ -2,7 +2,7 @@
 "use client";
 
 import React, { useState, useMemo, useEffect, useCallback } from 'react';
-import { Search, Plus, MoreVertical, X, Edit, Zap, UserCheck, UserX, Trash2, Loader2 } from 'lucide-react';
+import { Search, Plus, MoreVertical, X, Edit, Zap, UserCheck, UserX, Trash2, Loader2, Users } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent } from '@/components/ui/card';
@@ -68,11 +68,10 @@ export default function LeadsPage() {
         const response = await callLeadApi('get_all_leads');
         const data = Array.isArray(response) ? response[0] : response;
 
-        if (data && data.leads) {
+        if (data && Array.isArray(data.leads)) {
             setLeads(data.leads);
         } else {
-            // Handle cases where response is empty or doesn't have a 'leads' property
-            setLeads([]);
+             setLeads([]);
         }
     } catch (error) {
         toast({
@@ -414,44 +413,52 @@ export default function LeadsPage() {
       )}
 
       <div className="flex-1 overflow-y-auto space-y-3 pb-16">
-        {filteredLeads.map((lead) => (
-           <div key={lead.lead_id} className="relative group">
-             <LeadCard lead={lead} />
-            {!isBulkEditing && (
-              <div className="absolute right-2 top-1/2 -translate-y-1/2">
-                <DropdownMenu>
-                  <DropdownMenuTrigger asChild>
-                    <Button variant="ghost" size="icon" onClick={(e) => e.stopPropagation()}>
-                      <MoreVertical className="h-5 w-5 text-gray-500" />
-                    </Button>
-                  </DropdownMenuTrigger>
-                  <DropdownMenuContent align="end" onClick={(e) => e.stopPropagation()}>
-                    <DropdownMenuItem onSelect={() => router.push(`/leads/${lead.lead_id}?edit=true`)}>
-                        <Edit className="mr-2 h-4 w-4" />
-                        <span>Edit</span>
-                    </DropdownMenuItem>
-                    <DropdownMenuItem onSelect={() => openStatusDialog(lead)}>
-                        <Zap className="mr-2 h-4 w-4" />
-                        <span>Priority (hot/warm/cold)</span>
-                    </DropdownMenuItem>
-                    <DropdownMenuItem onSelect={() => confirmLeadAction(lead.lead_id, lead.status === 'Active' ? 'setInactive' : 'setActive')}>
-                      {lead.status === 'Active' ? (
-                        <UserX className="mr-2 h-4 w-4" />
-                      ) : (
-                        <UserCheck className="mr-2 h-4 w-4" />
-                      )}
-                      <span>Mark as {lead.status === 'Active' ? 'Inactive' : 'Active'}</span>
-                    </DropdownMenuItem>
-                    <DropdownMenuItem onSelect={() => confirmDeleteSingleLead(lead.lead_id)} className="text-red-500">
-                        <Trash2 className="mr-2 h-4 w-4" />
-                        <span>Delete Lead</span>
-                    </DropdownMenuItem>
-                  </DropdownMenuContent>
-                </DropdownMenu>
-              </div>
-            )}
-           </div>
-        ))}
+        {filteredLeads.length > 0 ? (
+          filteredLeads.map((lead) => (
+            <div key={lead.lead_id} className="relative group">
+              <LeadCard lead={lead} />
+              {!isBulkEditing && (
+                <div className="absolute right-2 top-1/2 -translate-y-1/2">
+                  <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                      <Button variant="ghost" size="icon" onClick={(e) => e.stopPropagation()}>
+                        <MoreVertical className="h-5 w-5 text-gray-500" />
+                      </Button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent align="end" onClick={(e) => e.stopPropagation()}>
+                      <DropdownMenuItem onSelect={() => router.push(`/leads/${lead.lead_id}?edit=true`)}>
+                          <Edit className="mr-2 h-4 w-4" />
+                          <span>Edit</span>
+                      </DropdownMenuItem>
+                      <DropdownMenuItem onSelect={() => openStatusDialog(lead)}>
+                          <Zap className="mr-2 h-4 w-4" />
+                          <span>Priority (hot/warm/cold)</span>
+                      </DropdownMenuItem>
+                      <DropdownMenuItem onSelect={() => confirmLeadAction(lead.lead_id, lead.status === 'Active' ? 'setInactive' : 'setActive')}>
+                        {lead.status === 'Active' ? (
+                          <UserX className="mr-2 h-4 w-4" />
+                        ) : (
+                          <UserCheck className="mr-2 h-4 w-4" />
+                        )}
+                        <span>Mark as {lead.status === 'Active' ? 'Inactive' : 'Active'}</span>
+                      </DropdownMenuItem>
+                      <DropdownMenuItem onSelect={() => confirmDeleteSingleLead(lead.lead_id)} className="text-red-500">
+                          <Trash2 className="mr-2 h-4 w-4" />
+                          <span>Delete Lead</span>
+                      </DropdownMenuItem>
+                    </DropdownMenuContent>
+                  </DropdownMenu>
+                </div>
+              )}
+            </div>
+          ))
+        ) : (
+          <div className="flex flex-col items-center justify-center h-full text-center text-gray-400">
+            <Users className="w-16 h-16 mb-4" />
+            <h2 className="text-xl font-semibold text-gray-500">No leads available</h2>
+            <p className="mt-1">Leads matching your criteria will appear here.</p>
+          </div>
+        )}
       </div>
       {selectedLeadForStatus && (
         <LeadStatusDialog
