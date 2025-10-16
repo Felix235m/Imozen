@@ -1,5 +1,4 @@
 
-
 "use client";
 
 import React, { useState, useMemo, useEffect, useCallback } from 'react';
@@ -67,10 +66,12 @@ export default function LeadsPage() {
     setIsLoading(true);
     try {
         const response = await callLeadApi('get_all_leads');
-        if (Array.isArray(response) && response.length > 0 && response[0].leads) {
-            setLeads(response[0].leads);
+        const data = Array.isArray(response) ? response[0] : response;
+
+        if (data && data.leads) {
+            setLeads(data.leads);
         } else {
-            console.error("API response is not in the expected format:", response);
+            // Handle cases where response is empty or doesn't have a 'leads' property
             setLeads([]);
         }
     } catch (error) {
@@ -517,3 +518,5 @@ export default function LeadsPage() {
     </div>
   );
 }
+
+    
