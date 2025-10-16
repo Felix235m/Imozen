@@ -5,7 +5,7 @@
 import * as React from 'react';
 import { useState, useRef, useEffect, useMemo, useCallback } from 'react';
 import { useParams, useRouter, useSearchParams } from 'next/navigation';
-import { ArrowLeft, MoreVertical, Upload, History, FileText, Send, Edit, UserX, UserCheck, Save, X, Mic, Copy, RefreshCw, MessageSquare, Phone, Mail, Trash2, Zap, ChevronsUpDown } from 'lucide-react';
+import { ArrowLeft, MoreVertical, Upload, History, FileText, Send, Edit, UserX, UserCheck, Save, X, Mic, Copy, RefreshCw, MessageSquare, Phone, Mail, Trash2, Zap, ChevronsUpDown, TrendingUp } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
@@ -76,6 +76,33 @@ type ChangeSummary = {
   newValue: any;
 };
 
+type LeadStage =
+  | 'New Lead'
+  | 'Contacted'
+  | 'Qualified'
+  | 'Property Viewing Scheduled'
+  | 'Property Viewed'
+  | 'Offer Made'
+  | 'Negotiation'
+  | 'Under Contract'
+  | 'Converted'
+  | 'Lost'
+  | 'Not Interested';
+
+const LEAD_STAGES: { value: LeadStage; label: string; color: string; description: string }[] = [
+  { value: 'New Lead', label: 'New Lead', color: 'bg-blue-100 text-blue-700', description: 'Just received, not yet contacted' },
+  { value: 'Contacted', label: 'Contacted', color: 'bg-purple-100 text-purple-700', description: 'Initial contact made' },
+  { value: 'Qualified', label: 'Qualified', color: 'bg-indigo-100 text-indigo-700', description: 'Lead is qualified and interested' },
+  { value: 'Property Viewing Scheduled', label: 'Viewing Scheduled', color: 'bg-cyan-100 text-cyan-700', description: 'Property viewing appointment set' },
+  { value: 'Property Viewed', label: 'Property Viewed', color: 'bg-teal-100 text-teal-700', description: 'Lead has viewed property' },
+  { value: 'Offer Made', label: 'Offer Made', color: 'bg-orange-100 text-orange-700', description: 'Lead made an offer' },
+  { value: 'Negotiation', label: 'Negotiation', color: 'bg-yellow-100 text-yellow-700', description: 'In negotiation phase' },
+  { value: 'Under Contract', label: 'Under Contract', color: 'bg-lime-100 text-lime-700', description: 'Contract signed, pending closing' },
+  { value: 'Converted', label: 'Converted', color: 'bg-green-100 text-green-700', description: 'Deal successfully closed' },
+  { value: 'Lost', label: 'Lost', color: 'bg-red-100 text-red-700', description: 'Deal lost to competitor' },
+  { value: 'Not Interested', label: 'Not Interested', color: 'bg-gray-100 text-gray-700', description: 'Lead no longer interested' },
+];
+
 const allLocations = [
     { value: "lisbon", label: "Lisbon" },
     { value: "porto", label: "Porto" },
@@ -109,6 +136,7 @@ export default function LeadDetailPage() {
   const [isStatusDialogOpen, setIsStatusDialogOpen] = useState(false);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const [isConfirmSaveOpen, setIsConfirmSaveOpen] = useState(false);
+  const [isLeadStageDialogOpen, setIsLeadStageDialogOpen] = useState(false);
   const [changeSummary, setChangeSummary] = useState<ChangeSummary[]>([]);
   const [suggestedStatus, setSuggestedStatus] = useState<LeadData['temperature'] | null>(null);
 
@@ -120,7 +148,6 @@ export default function LeadDetailPage() {
   const [imgSrc, setImgSrc] = useState('');
   const imgRef = useRef<HTMLImageElement>(null);
   const [isCropModalOpen, setIsCropModalOpen] = useState(false);
-  const [statusChangeInfo, setStatusChangeInfo] = useState<{ newStatus: 'Active' | 'Inactive' } | null>(null);
   const [phoneCountryCode, setPhoneCountryCode] = useState('');
   const [phoneNumber, setPhoneNumber] = useState('');
   const [isFetchingNotes, setIsFetchingNotes] = useState(false);
@@ -496,76 +523,6 @@ export default function LeadDetailPage() {
     }
     setIsEditing(false);
   };
-
-  const executeToggleActiveStatus = async () => {
-    if (!lead || !statusChangeInfo) return;
-    const { newStatus } = statusChangeInfo;
-
-    console.log('🔄 executeToggleActiveStatus - Starting status toggle');
-    console.log('🔄 Current lead data:', lead);
-    console.log('🔄 New status:', newStatus);
-
-    try {
-        // Send the FULL lead data with only the status changed
-        const reconstructedPhone = `(${phoneCountryCode}) ${phoneNumber}`;
-
-        const fullPayload = {
-            ...lead,
-            status: newStatus,
-            contact: {
-                ...lead.contact,
-                phone: reconstructedPhone as any,
-            },
-        };
-
-        console.log('🔄 Sending full payload to webhook:', fullPayload);
-
-        // Call API and get response
-        const response = await callLeadStatusApi(id, newStatus.toLowerCase() as 'active' | 'inactive', fullPayload);
-
-        console.log('🔄 Webhook response:', response);
-
-        // Process the response and update state with returned data
-        if (response && Array.isArray(response) && response.length > 0) {
-            const updatedLeadFromServer = response[0];
-            console.log('🔄 Updated lead from server:', updatedLeadFromServer);
-
-            // Transform the response to match frontend structure
-            const transformedLead = {
-                ...lead,
-                status: newStatus,
-                // Keep all existing data, just update the status
-            };
-
-            setLead(transformedLead);
-            setOriginalLead(JSON.parse(JSON.stringify(transformedLead)));
-
-            console.log('✅ Local state updated with new status');
-        } else {
-            // Fallback: Just update the status locally if no response data
-            setLead(prev => prev ? ({ ...prev, status: newStatus }) : null);
-            setOriginalLead(prev => prev ? JSON.parse(JSON.stringify({ ...prev, status: newStatus })) : null);
-        }
-
-        toast({
-          title: "Status Updated",
-          description: `Lead marked as ${newStatus.toLowerCase()}.`,
-        });
-
-        console.log('✅ Status toggle successful');
-    } catch(error) {
-        console.error('❌ Status toggle failed:', error);
-        toast({ variant: 'destructive', title: 'Error', description: 'Could not update status.' });
-    } finally {
-        setStatusChangeInfo(null);
-    }
-  };
-
-  const confirmToggleActiveStatus = () => {
-    if (!lead) return;
-    const newStatus = lead.status === 'Active' ? 'Inactive' : 'Active';
-    setStatusChangeInfo({ newStatus });
-  };
   
   const handleDeleteLead = async () => {
     try {
@@ -668,6 +625,55 @@ export default function LeadDetailPage() {
     });
   };
   
+  const handleLeadStageChange = async (newStage: LeadStage) => {
+    if (!lead) return;
+
+    console.log('📊 handleLeadStageChange - Starting stage change');
+    console.log('📊 Current lead:', lead);
+    console.log('📊 New stage:', newStage);
+
+    try {
+        // Send the FULL lead data with only the stage changed
+        const reconstructedPhone = `(${phoneCountryCode}) ${phoneNumber}`;
+
+        const fullPayload = {
+            ...lead,
+            lead_stage: newStage, // Add the new stage field
+            contact: {
+                ...lead.contact,
+                phone: reconstructedPhone as any,
+            },
+        };
+
+        console.log('📊 Sending full payload for stage change:', fullPayload);
+
+        // Call webhook via edit_lead operation
+        const response = await callLeadApi('edit_lead', fullPayload);
+
+        console.log('📊 Webhook response:', response);
+
+        // Update local state
+        setLead(prev => prev ? ({ ...prev, lead_stage: newStage } as any) : null);
+        setOriginalLead(prev => prev ? JSON.parse(JSON.stringify({ ...prev, lead_stage: newStage })) : null);
+
+        toast({
+            title: "Status Updated",
+            description: `Lead status changed to "${newStage}".`,
+        });
+
+        setIsLeadStageDialogOpen(false);
+
+        console.log('✅ Stage change successful');
+    } catch (error: any) {
+        console.error('❌ Stage change failed:', error);
+        toast({
+            variant: 'destructive',
+            title: 'Error',
+            description: error.message || 'Could not update lead status.'
+        });
+    }
+  };
+
   const formatValue = (field: string, value: any) => {
     if (Array.isArray(value)) {
         return value.map(v => allLocations.find(l=>l.value === v)?.label || v).join(', ') || '(empty)';
@@ -741,13 +747,9 @@ export default function LeadDetailPage() {
                 <Zap className="mr-2 h-4 w-4" />
                 <span>Priority (hot/warm/cold)</span>
               </DropdownMenuItem>
-              <DropdownMenuItem onSelect={confirmToggleActiveStatus}>
-                {lead.status === 'Active' ? (
-                  <UserX className="mr-2 h-4 w-4" />
-                ) : (
-                  <UserCheck className="mr-2 h-4 w-4" />
-                )}
-                <span>Mark as {lead.status === 'Active' ? 'Inactive' : 'Active'}</span>
+              <DropdownMenuItem onSelect={() => setIsLeadStageDialogOpen(true)}>
+                <TrendingUp className="mr-2 h-4 w-4" />
+                <span>Change Status</span>
               </DropdownMenuItem>
               <DropdownMenuSeparator />
               <DropdownMenuItem onSelect={() => setIsDeleteDialogOpen(true)} className="text-red-600">
@@ -882,22 +884,6 @@ export default function LeadDetailPage() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
-      <AlertDialog open={!!statusChangeInfo} onOpenChange={() => setStatusChangeInfo(null)}>
-        <AlertDialogContent>
-            <AlertDialogHeader>
-                <AlertDialogTitle>Are you sure?</AlertDialogTitle>
-                <AlertDialogDescription>
-                    This will mark the lead as {statusChangeInfo?.newStatus.toLowerCase()}.
-                </AlertDialogDescription>
-            </AlertDialogHeader>
-            <AlertDialogFooter>
-                <AlertDialogCancel onClick={() => setStatusChangeInfo(null)}>Cancel</AlertDialogCancel>
-                <AlertDialogAction onClick={executeToggleActiveStatus}>
-                    Confirm
-                </AlertDialogAction>
-            </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
       <AlertDialog open={isConfirmSaveOpen} onOpenChange={setIsConfirmSaveOpen}>
         <AlertDialogContent className="sm:max-w-md">
           <AlertDialogHeader>
@@ -962,6 +948,37 @@ export default function LeadDetailPage() {
             <DialogFooter>
                 <Button variant="outline" onClick={() => setIsCropModalOpen(false)}>Cancel</Button>
                 <Button onClick={handleSaveCrop}>Save</Button>
+            </DialogFooter>
+        </DialogContent>
+       </Dialog>
+
+       {/* Lead Stage Change Dialog */}
+       <Dialog open={isLeadStageDialogOpen} onOpenChange={setIsLeadStageDialogOpen}>
+        <DialogContent className="sm:max-w-lg">
+            <DialogHeader>
+                <DialogTitle>Change Lead Status</DialogTitle>
+                <DialogDescription>
+                    Select the new status for this lead in the sales pipeline
+                </DialogDescription>
+            </DialogHeader>
+            <div className="space-y-2 max-h-[60vh] overflow-y-auto pr-2">
+                {LEAD_STAGES.map((stage) => (
+                    <button
+                        key={stage.value}
+                        onClick={() => handleLeadStageChange(stage.value)}
+                        className="w-full text-left p-3 rounded-lg border border-gray-200 hover:border-primary hover:bg-gray-50 transition-colors"
+                    >
+                        <div className="flex items-center gap-3">
+                            <Badge variant="outline" className={cn("text-xs", stage.color)}>
+                                {stage.label}
+                            </Badge>
+                        </div>
+                        <p className="text-sm text-gray-500 mt-1">{stage.description}</p>
+                    </button>
+                ))}
+            </div>
+            <DialogFooter>
+                <Button variant="outline" onClick={() => setIsLeadStageDialogOpen(false)}>Cancel</Button>
             </DialogFooter>
         </DialogContent>
        </Dialog>
@@ -1503,6 +1520,7 @@ function LeadHistorySheet({ open, onOpenChange, lead, history }: LeadHistoryShee
 
 
     
+
 
 
 
