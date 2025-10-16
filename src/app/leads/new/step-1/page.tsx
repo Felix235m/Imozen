@@ -76,7 +76,7 @@ export default function NewLeadStep1Page() {
         const storedData = sessionStorage.getItem('leadFormData');
         const leadFormData = storedData ? JSON.parse(storedData) : {};
         
-        const completePhoneNumber = `${values.countryCode}${values.phoneNumber}`;
+        const completePhoneNumber = `(${values.countryCode}) ${values.phoneNumber}`;
         
         leadFormData.step1 = { ...values, phoneNumber: completePhoneNumber };
         delete (leadFormData.step1 as any).countryCode;
