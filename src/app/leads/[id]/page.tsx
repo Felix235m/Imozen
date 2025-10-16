@@ -399,40 +399,62 @@ export default function LeadDetailPage() {
   };
 
   const confirmAndSaveChanges = async () => {
-    if (!lead) return;
+    if (!lead) {
+        toast({
+            variant: 'destructive',
+            title: 'Error',
+            description: 'No lead data available'
+        });
+        return;
+    }
+    
+    // ✅ Set loading state (shows spinner)
     setIsSaving(true);
     setIsConfirmSaveOpen(false);
     
     const finalLead = suggestedStatus ? { ...lead, temperature: suggestedStatus } : lead;
-     // Reconstruct phone number before saving
-     const reconstructedPhone = `(${phoneCountryCode}) ${phoneNumber}`;
-     const payload = {
-         ...finalLead,
-         contact: {
-             ...finalLead.contact,
-             phone: reconstructedPhone,
-         },
-     };
-
+    
+    const reconstructedPhone = `(${phoneCountryCode}) ${phoneNumber}`;
+    
+    // ✅ CORRECTED: Explicitly include lead_id
+    const payload = {
+        ...finalLead,
+        lead_id: finalLead.lead_id || id, // ✅ Ensure lead_id is always present
+        contact: {
+            ...finalLead.contact,
+            phone: reconstructedPhone,
+        },
+    };
 
     try {
-        await callLeadApi('edit_lead', payload);
+        // ✅ Call webhook via callLeadApi with operation "edit_lead"
+        const response = await callLeadApi('edit_lead', payload);
         
+        // ✅ Show success message "Lead updated"
         toast({
-          title: "Success",
-          description: "Lead details saved successfully.",
+            title: "Success",
+            description: "Lead updated",
         });
+        
+        // ✅ Update state with saved data
         setOriginalLead(payload);
         setLead(payload);
         setIsEditing(false);
+        
     } catch (error: any) {
-        toast({ variant: 'destructive', title: 'Error', description: error.message || 'Could not save lead details.' });
+        console.error('Error saving lead:', error);
+        toast({ 
+            variant: 'destructive', 
+            title: 'Error', 
+            description: error.message || 'Could not save lead details.' 
+        });
     } finally {
+        // ✅ Remove loading state
         setIsSaving(false);
         setChangeSummary([]);
         setSuggestedStatus(null);
     }
-  };
+};
 
 
   const handleCancel = () => {
@@ -1357,6 +1379,7 @@ function LeadHistorySheet({ open, onOpenChange, lead, history }: LeadHistoryShee
 
 
     
+
 
 
 
