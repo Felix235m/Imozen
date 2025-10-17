@@ -1,10 +1,11 @@
 
+
 "use client";
 
 import * as React from 'react';
 import { useState, useRef, useEffect, useMemo, useCallback } from 'react';
 import { useParams, useRouter } from 'next/navigation';
-import { ArrowLeft, MoreVertical, Upload, History, FileText, Send, Edit, Save, X, Mic, Copy, RefreshCw, MessageSquare, Phone, Mail, Trash2, Zap, ChevronsUpDown, TrendingUp, Search, Handshake, Eye, Briefcase, DollarSign, FileSignature, CheckCircle2, XCircle, Ban, Target, BadgeHelp, ArrowRight, UserPlus, PhoneCall, UserCheck, Calendar, Home, Tag, MessageCircle as MessageCircleIcon, FileText as Contract, PartyPopper, ThumbsDown, UserX } from 'lucide-react';
+import { ArrowLeft, MoreVertical, Upload, History, FileText, Send, Edit, Save, X, Mic, Copy, RefreshCw, MessageSquare, Phone, Mail, Trash2, Zap, ChevronsUpDown, TrendingUp, Search, Handshake, Eye, Briefcase, DollarSign, FileSignature, CheckCircle2, XCircle, Ban, Target, BadgeHelp, ArrowRight, UserPlus, PhoneCall, UserCheck, Calendar, Home, Tag, MessageCircle as MessageCircleIcon, FileText as Contract, PartyPopper, ThumbsDown, UserX, Building, Warehouse, Mountain, Minus, Plus } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
@@ -114,6 +115,14 @@ const allLocations = [
     { value: "funchal", label: "Funchal" },
     { value: "guimaraes", label: "Guimarães" }
 ];
+
+const propertyTypes = [
+  { name: "Apartment", icon: Building },
+  { name: "House", icon: Home },
+  { name: "Commercial", icon: Warehouse },
+  { name: "Land", icon: Mountain },
+];
+
 
 export default function LeadDetailPage() {
   const params = useParams();
@@ -376,14 +385,9 @@ export default function LeadDetailPage() {
     if (!lead || !selectedStage) return;
 
     try {
-        // Get session token
         const token = localStorage.getItem('auth_token') || sessionStorage.getItem('sessionToken');
+        if (!token) throw new Error('No authentication token found');
 
-        if (!token) {
-            throw new Error('No authentication token found');
-        }
-
-        // Call the webhook with required data
         const webhookUrl = 'https://eurekagathr.app.n8n.cloud/webhook/domain/lead-status';
         const webhookPayload = {
             lead_id: lead.lead_id,
@@ -391,45 +395,23 @@ export default function LeadDetailPage() {
             status: selectedStage
         };
 
-        console.log('🔵 confirmLeadStageChange - Calling webhook:', webhookUrl);
-        console.log('🔵 confirmLeadStageChange - Webhook payload:', webhookPayload);
-
         const response = await fetch(webhookUrl, {
             method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'Authorization': `Bearer ${token}`
-            },
+            headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
             body: JSON.stringify(webhookPayload)
         });
 
-        console.log('🔵 confirmLeadStageChange - Response status:', response.status);
-
         if (!response.ok) {
             const errorText = await response.text();
-            console.error('❌ confirmLeadStageChange - Webhook failed:', errorText);
             throw new Error(errorText || 'Failed to update lead status');
         }
-
-        const responseData = await response.json();
-        console.log('✅ confirmLeadStageChange - Webhook response:', responseData);
-
-        // Update local state only after successful webhook response
-        // Update both 'status' and 'lead_stage' fields to ensure compatibility
+        
         setLead(prev => prev ? ({ ...prev, status: selectedStage, lead_stage: selectedStage } as any) : null);
         setOriginalLead(prev => prev ? JSON.parse(JSON.stringify({ ...prev, status: selectedStage, lead_stage: selectedStage })) : null);
 
-        toast({
-            title: "Status Updated",
-            description: `Lead status changed to "${selectedStage}".`,
-        });
+        toast({ title: "Status Updated", description: `Lead status changed to "${selectedStage}".` });
     } catch (error: any) {
-        console.error('❌ confirmLeadStageChange - Error:', error);
-        toast({
-            variant: 'destructive',
-            title: 'Error',
-            description: error.message || 'Could not update lead status.'
-        });
+        toast({ variant: 'destructive', title: 'Error', description: error.message || 'Could not update lead status.' });
     } finally {
         setIsStageConfirmDialogOpen(false);
         setSelectedStage(null);
@@ -438,48 +420,42 @@ export default function LeadDetailPage() {
 
   const prepareSaveChanges = () => {
     if (!lead || !originalLead) return;
-  
-    const changes: ChangeSummary[] = [];
-    const fieldsToCompare = {
-      'Name': { path: ['name'] },
-      'Email': { path: ['contact', 'email'] },
-      'Phone': {
-        oldValue: `(${parsePhoneNumber(originalLead.contact.phone).code}) ${parsePhoneNumber(originalLead.contact.phone).number}`,
-        newValue: `(${phoneCountryCode}) ${phoneNumber}`
-      },
-      'Language': { path: ['contact', 'language'] },
-      'Property Type': { path: ['property', 'type'] },
-      'Budget': { path: ['property', 'budget'] },
-      'Bedrooms': { path: ['property', 'bedrooms'] },
-      'Locations': { path: ['property', 'locations'], isArray: true },
-    };
-  
-    const getNestedValue = (obj: any, path: string[]) => {
-      return path.reduce((o, key) => (o && o[key] !== 'undefined' ? o[key] : undefined), obj);
-    };
-  
-    for (const [field, config] of Object.entries(fieldsToCompare)) {
-      let oldValue, newValue;
-  
-      if ('path' in config) {
-        oldValue = getNestedValue(originalLead, config.path);
-        newValue = getNestedValue(lead, config.path);
-        if (config.isArray) {
-          if (JSON.stringify(oldValue) !== JSON.stringify(newValue)) {
-            changes.push({ field, oldValue: (oldValue || []).join(', '), newValue: (newValue || []).join(', ') });
-          }
+    
+    const getNestedValue = (obj: any, path: string[]) => path.reduce((o, key) => (o && o[key] !== 'undefined' ? o[key] : undefined), obj);
+    
+    const compareAndAddChange = (field: string, path: string[], isArray: boolean = false) => {
+        const oldValue = getNestedValue(originalLead, path);
+        const newValue = getNestedValue(lead, path);
+
+        if (isArray) {
+            if (JSON.stringify(oldValue) !== JSON.stringify(newValue)) {
+                changes.push({ field, oldValue: (oldValue || []).join(', '), newValue: (newValue || []).join(', ') });
+            }
         } else if (String(oldValue || '') !== String(newValue || '')) {
-          changes.push({ field, oldValue, newValue });
+            changes.push({ field, oldValue, newValue });
         }
-      } else {
-        oldValue = config.oldValue;
-        newValue = config.newValue;
-        if (String(oldValue || '') !== String(newValue || '')) {
-          changes.push({ field, oldValue, newValue });
-        }
-      }
+    };
+    
+    const changes: ChangeSummary[] = [];
+
+    // Personal Info
+    compareAndAddChange('Name', ['name']);
+    compareAndAddChange('Email', ['contact', 'email']);
+    
+    const oldPhone = `(${parsePhoneNumber(originalLead.contact.phone).code}) ${parsePhoneNumber(originalLead.contact.phone).number}`;
+    const newPhone = `(${phoneCountryCode}) ${phoneNumber}`;
+    if (oldPhone !== newPhone) {
+        changes.push({ field: 'Phone', oldValue: oldPhone, newValue: newPhone });
     }
-  
+    
+    compareAndAddChange('Language', ['contact', 'language']);
+
+    // Property Requirements
+    compareAndAddChange('Property Type', ['property', 'type']);
+    compareAndAddChange('Budget', ['property', 'budget']);
+    compareAndAddChange('Bedrooms', ['property', 'bedrooms']);
+    compareAndAddChange('Locations', ['property', 'locations'], true);
+
     setChangeSummary(changes);
   
     if (changes.length > 0) {
@@ -509,7 +485,6 @@ export default function LeadDetailPage() {
 
       await callLeadApi('update_lead', { lead_id: id, ...updatedLeadData });
 
-      // Update original lead to match current state
       setOriginalLead(JSON.parse(JSON.stringify(updatedLeadData)));
 
       toast({ title: 'Success', description: 'Lead updated successfully!' });
@@ -546,6 +521,14 @@ export default function LeadDetailPage() {
   const handleEditClick = () => {
     setIsEditing(true);
   };
+
+  const isBedroomsDisabled = lead.property.type === 'Commercial' || lead.property.type === 'Land';
+
+  useEffect(() => {
+    if (isEditing && isBedroomsDisabled && lead && lead.property.bedrooms !== 0) {
+      setLead(prev => prev ? {...prev, property: {...prev.property, bedrooms: 0}} : null);
+    }
+  }, [isEditing, isBedroomsDisabled, lead]);
 
   // Map the 'status' field from API to lead_stage for display
   const leadStage = (lead as any)?.status || (lead as any)?.lead_stage;
@@ -718,45 +701,121 @@ export default function LeadDetailPage() {
 
           <Card>
             <CardHeader>
-              <CardTitle>Property Requirements</CardTitle>
+                <CardTitle>Property Requirements</CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="grid grid-cols-2 gap-y-4 gap-x-8 text-sm">
-                 {isEditing ? (
-                   <>
-                     <EditableField
-                       label="Property Type"
-                       value={lead.property.type}
-                       onChange={(value) => setLead(prev => prev ? {...prev, property: {...prev.property, type: value}} : null)}
-                     />
-                     <EditableField
-                       label="Budget"
-                       value={String(lead.property.budget)}
-                       onChange={(value) => setLead(prev => prev ? {...prev, property: {...prev.property, budget: Number(value)}} : null)}
-                     />
-                     <EditableField
-                       label="Bedrooms"
-                       value={String(lead.property.bedrooms)}
-                       onChange={(value) => setLead(prev => prev ? {...prev, property: {...prev.property, bedrooms: Number(value)}} : null)}
-                     />
-                     <EditableField
-                       label="Locations"
-                       value={lead.property.locations.join(', ')}
-                       onChange={(value) => setLead(prev => prev ? {...prev, property: {...prev.property, locations: value.split(',').map(l => l.trim())}} : null)}
-                       className="col-span-2"
-                     />
-                   </>
-                 ) : (
-                   <>
-                     <InfoItem label="Property Type" value={lead.property.type} />
-                     <InfoItem label="Budget" value={lead.property.budget_formatted} />
-                     <InfoItem label="Bedrooms" value={lead.property.bedrooms} />
-                     <InfoItem label="Locations" value={lead.property.locations.join(', ')} className="col-span-2" />
-                   </>
-                 )}
-              </div>
+                {isEditing ? (
+                    <div className="space-y-6">
+                        <div>
+                            <p className="text-gray-500 text-sm mb-2">Property Type</p>
+                            <div className="grid grid-cols-2 gap-4">
+                                {propertyTypes.map((type) => (
+                                    <Button
+                                        key={type.name}
+                                        variant={lead.property.type === type.name ? "default" : "outline"}
+                                        onClick={() => setLead(prev => prev ? {...prev, property: {...prev.property, type: type.name}} : null)}
+                                        className={cn("h-auto py-3 flex flex-col gap-2 transition-all", lead.property.type === type.name ? "bg-primary text-primary-foreground" : "bg-card hover:bg-accent hover:text-accent-foreground")}
+                                    >
+                                        <type.icon className="h-6 w-6" />
+                                        <span>{type.name}</span>
+                                    </Button>
+                                ))}
+                            </div>
+                        </div>
+
+                        <div>
+                            <p className="text-gray-500 text-sm mb-2">Budget</p>
+                            <Input
+                                type="number"
+                                value={lead.property.budget}
+                                onChange={(e) => setLead(prev => prev ? {...prev, property: {...prev.property, budget: Number(e.target.value)}} : null)}
+                            />
+                        </div>
+
+                        <div>
+                            <p className="text-gray-500 text-sm mb-2">Bedrooms</p>
+                            <div className={cn("flex items-center justify-center gap-4 p-2 border rounded-lg", isBedroomsDisabled && "opacity-50")}>
+                                <Button
+                                    type="button"
+                                    variant="outline"
+                                    size="icon"
+                                    onClick={() => setLead(prev => prev ? {...prev, property: {...prev.property, bedrooms: Math.max(0, prev.property.bedrooms - 1)}} : null)}
+                                    disabled={isBedroomsDisabled}
+                                >
+                                    <Minus className="h-4 w-4" />
+                                </Button>
+                                <span className="text-2xl font-bold w-12 text-center">{lead.property.bedrooms}</span>
+                                <Button
+                                    type="button"
+                                    variant="outline"
+                                    size="icon"
+                                    onClick={() => setLead(prev => prev ? {...prev, property: {...prev.property, bedrooms: prev.property.bedrooms + 1}} : null)}
+                                    disabled={isBedroomsDisabled}
+                                >
+                                    <Plus className="h-4 w-4" />
+                                </Button>
+                            </div>
+                        </div>
+
+                        <div>
+                            <p className="text-gray-500 text-sm mb-2">Locations</p>
+                            <DropdownMenu>
+                                <DropdownMenuTrigger asChild>
+                                    <Button variant="outline" className="w-full justify-between h-auto min-h-10">
+                                        <div className="flex gap-1 flex-wrap items-center">
+                                            {lead.property.locations.length > 0 ? (
+                                                lead.property.locations.map(locValue => (
+                                                    <Badge
+                                                        key={locValue}
+                                                        variant="secondary"
+                                                        className="mr-1"
+                                                        onClick={(e) => {
+                                                            e.stopPropagation();
+                                                            setLead(prev => prev ? {...prev, property: {...prev.property, locations: prev.property.locations.filter(l => l !== locValue)}} : null);
+                                                        }}
+                                                    >
+                                                        {allLocations.find(l => l.value === locValue)?.label || locValue}
+                                                        <X className="ml-1 h-3 w-3" />
+                                                    </Badge>
+                                                ))
+                                            ) : (
+                                                <span className="text-muted-foreground">Select locations...</span>
+                                            )}
+                                        </div>
+                                        <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                                    </Button>
+                                </DropdownMenuTrigger>
+                                <DropdownMenuContent className="w-[--radix-dropdown-menu-trigger-width]">
+                                    {allLocations.map((location) => (
+                                        <DropdownMenuCheckboxItem
+                                            key={location.value}
+                                            checked={lead.property.locations.includes(location.value)}
+                                            onSelect={(e) => e.preventDefault()}
+                                            onClick={() => {
+                                                const currentLocations = lead.property.locations || [];
+                                                const newLocations = currentLocations.includes(location.value)
+                                                    ? currentLocations.filter(loc => loc !== location.value)
+                                                    : [...currentLocations, location.value];
+                                                setLead(prev => prev ? {...prev, property: {...prev.property, locations: newLocations}} : null);
+                                            }}
+                                        >
+                                            {location.label}
+                                        </DropdownMenuCheckboxItem>
+                                    ))}
+                                </DropdownMenuContent>
+                            </DropdownMenu>
+                        </div>
+                    </div>
+                ) : (
+                    <div className="grid grid-cols-2 gap-y-4 gap-x-8 text-sm">
+                        <InfoItem label="Property Type" value={lead.property.type} />
+                        <InfoItem label="Budget" value={lead.property.budget_formatted} />
+                        <InfoItem label="Bedrooms" value={lead.property.bedrooms} />
+                        <InfoItem label="Locations" value={lead.property.locations.join(', ')} className="col-span-2" />
+                    </div>
+                )}
             </CardContent>
-          </Card>
+        </Card>
         </div>
       </main>
 
@@ -850,7 +909,7 @@ export default function LeadDetailPage() {
             </DialogHeader>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-3 max-h-[60vh] overflow-y-auto p-1">
                 {LEAD_STAGES.map((stage) => {
-                    const isCurrent = (lead as any).lead_stage === stage.value;
+                    const isCurrent = leadStage === stage.value;
                     return (
                         <button
                             key={stage.value}
@@ -964,7 +1023,7 @@ function InfoItem({ label, value, className }: { label: string; value: React.Rea
   );
 }
 
-function EditableField({ label, value, onChange, className }: { label: string; value: string | number | null | undefined; onChange: (value: string) => void; className?: string }) {
+function EditableField({ label, value, onChange, className, type = 'text' }: { label: string; value: string | number | null | undefined; onChange: (value: string) => void; className?: string; type?: string }) {
   return (
     <div className={cn("grid gap-1", className)}>
       <p className="text-gray-500">{label}</p>
@@ -972,6 +1031,7 @@ function EditableField({ label, value, onChange, className }: { label: string; v
         value={value ?? ''}
         onChange={(e) => onChange(e.target.value)}
         className="font-medium"
+        type={type}
       />
     </div>
   );
@@ -1360,4 +1420,5 @@ function LeadHistorySheet({ open, onOpenChange, lead, history }: LeadHistoryShee
     
 
     
+
 
