@@ -420,44 +420,38 @@ export default function LeadDetailPage() {
 
   const prepareSaveChanges = () => {
     if (!lead || !originalLead) return;
-    
-    const getNestedValue = (obj: any, path: string[]) => path.reduce((o, key) => (o && o[key] !== 'undefined' ? o[key] : undefined), obj);
-    
-    const compareAndAddChange = (field: string, path: string[], isArray: boolean = false) => {
-        const oldValue = getNestedValue(originalLead, path);
-        const newValue = getNestedValue(lead, path);
 
-        if (isArray) {
-            if (JSON.stringify(oldValue) !== JSON.stringify(newValue)) {
-                changes.push({ field, oldValue: (oldValue || []).join(', '), newValue: (newValue || []).join(', ') });
-            }
-        } else if (String(oldValue || '') !== String(newValue || '')) {
-            changes.push({ field, oldValue, newValue });
+    const findChanges = (
+      original: Record<string, any>,
+      current: Record<string, any>,
+      prefix = ''
+    ): ChangeSummary[] => {
+      let changes: ChangeSummary[] = [];
+
+      for (const key in original) {
+        if (key === 'row_number' || key === 'lead_id') continue;
+
+        const originalValue = original[key];
+        const currentValue = current[key];
+        const fieldName = prefix ? `${prefix} ${key}` : key;
+
+        if (typeof originalValue === 'object' && originalValue !== null && !Array.isArray(originalValue)) {
+          changes = changes.concat(findChanges(originalValue, currentValue, fieldName));
+        } else if (JSON.stringify(originalValue) !== JSON.stringify(currentValue)) {
+          changes.push({
+            field: fieldName.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase()),
+            oldValue: Array.isArray(originalValue) ? originalValue.join(', ') : originalValue,
+            newValue: Array.isArray(currentValue) ? currentValue.join(', ') : currentValue,
+          });
         }
+      }
+      return changes;
     };
-    
-    const changes: ChangeSummary[] = [];
 
-    // Personal Info
-    compareAndAddChange('Name', ['name']);
-    compareAndAddChange('Email', ['contact', 'email']);
-    
-    const oldPhone = `(${parsePhoneNumber(originalLead.contact.phone).code}) ${parsePhoneNumber(originalLead.contact.phone).number}`;
-    const newPhone = `(${phoneCountryCode}) ${phoneNumber}`;
-    if (oldPhone !== newPhone) {
-        changes.push({ field: 'Phone', oldValue: oldPhone, newValue: newPhone });
-    }
-    
-    compareAndAddChange('Language', ['contact', 'language']);
-
-    // Property Requirements
-    compareAndAddChange('Property Type', ['property', 'type']);
-    compareAndAddChange('Budget', ['property', 'budget']);
-    compareAndAddChange('Bedrooms', ['property', 'bedrooms']);
-    compareAndAddChange('Locations', ['property', 'locations'], true);
+    const changes = findChanges(originalLead, { ...lead, contact: { ...lead.contact, phone: `(${phoneCountryCode}) ${phoneNumber}` }});
 
     setChangeSummary(changes);
-  
+
     if (changes.length > 0) {
       setIsConfirmSaveOpen(true);
     } else {
@@ -1420,5 +1414,6 @@ function LeadHistorySheet({ open, onOpenChange, lead, history }: LeadHistoryShee
     
 
     
+
 
 
