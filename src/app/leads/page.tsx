@@ -2,7 +2,7 @@
 "use client";
 
 import React, { useState, useMemo, useEffect, useCallback } from 'react';
-import { Search, Plus, MoreVertical, X, Edit, Zap, Trash2, Loader2, Users, UserPlus, PhoneCall, UserCheck, Calendar, Home, Tag, MessageCircle, FileSignature, PartyPopper, ThumbsDown, UserX } from 'lucide-react';
+import { Search, Plus, MoreVertical, X, Edit, Zap, Trash2, Loader2, Users, UserPlus, PhoneCall, UserCheck, Calendar, Home, Tag, MessageCircle, FileSignature, PartyPopper, ThumbsDown, UserX, TrendingUp, ArrowRight } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent } from '@/components/ui/card';
@@ -11,7 +11,7 @@ import { Badge } from '@/components/ui/badge';
 import { cn } from '@/lib/utils';
 import Link from 'next/link';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuSeparator } from '@/components/ui/dropdown-menu';
 import { useToast } from '@/hooks/use-toast';
 import { useRouter } from 'next/navigation';
 import { LeadStatusDialog } from '@/components/leads/lead-status-dialog';
@@ -25,6 +25,14 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog"
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+  DialogFooter
+} from '@/components/ui/dialog';
 import { callLeadApi, callLeadStatusApi, callAuthApi } from '@/lib/auth-api';
 
 
@@ -87,6 +95,11 @@ export default function LeadsPage() {
   const [leadsToDelete, setLeadsToDelete] = useState<string[] | null>(null);
 
   const [isCheckingSession, setIsCheckingSession] = useState(false);
+  
+  const [isLeadStageDialogOpen, setIsLeadStageDialogOpen] = useState(false);
+  const [isStageConfirmDialogOpen, setIsStageConfirmDialogOpen] = useState(false);
+  const [selectedStage, setSelectedStage] = useState<LeadStage | null>(null);
+  const [selectedLeadForStageChange, setSelectedLeadForStageChange] = useState<Lead | null>(null);
 
 
   const fetchLeads = useCallback(async () => {
@@ -287,6 +300,67 @@ export default function LeadsPage() {
          toast({ variant: "destructive", title: "Error", description: "Could not update lead priority." });
     })
   };
+  
+  const handleStageSelect = (newStage: LeadStage) => {
+    if (selectedLeadForStageChange && newStage !== selectedLeadForStageChange.lead_stage) {
+      setSelectedStage(newStage);
+      setIsStageConfirmDialogOpen(true);
+      setIsLeadStageDialogOpen(false);
+    }
+  };
+
+  const openLeadStageDialog = (lead: Lead) => {
+    setSelectedLeadForStageChange(lead);
+    setIsLeadStageDialogOpen(true);
+  };
+
+  const confirmLeadStageChange = async () => {
+    if (!selectedLeadForStageChange || !selectedStage) return;
+
+    try {
+        const token = localStorage.getItem('auth_token') || sessionStorage.getItem('sessionToken');
+        if (!token) throw new Error('No authentication token found');
+
+        const webhookUrl = 'https://eurekagathr.app.n8n.cloud/webhook/domain/lead-status';
+        const webhookPayload = {
+            lead_id: selectedLeadForStageChange.lead_id,
+            operation: 'status_change',
+            status: selectedStage
+        };
+
+        const response = await fetch(webhookUrl, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+            body: JSON.stringify(webhookPayload)
+        });
+
+        if (!response.ok) {
+            const errorText = await response.text();
+            throw new Error(errorText || 'Failed to update lead status');
+        }
+
+        setLeads(prevLeads => prevLeads.map(l => 
+            l.lead_id === selectedLeadForStageChange.lead_id 
+            ? { ...l, lead_stage: selectedStage, status: selectedStage as any } 
+            : l
+        ));
+        
+        toast({
+            title: "Status Updated",
+            description: `Lead status changed to "${selectedStage}".`,
+        });
+    } catch (error: any) {
+        toast({
+            variant: 'destructive',
+            title: 'Error',
+            description: error.message || 'Could not update lead status.'
+        });
+    } finally {
+        setIsStageConfirmDialogOpen(false);
+        setSelectedStage(null);
+        setSelectedLeadForStageChange(null);
+    }
+  };
 
 
   const getStatusBadgeClass = (status: LeadTemperature) => {
@@ -299,6 +373,8 @@ export default function LeadsPage() {
   };
 
   const isBulkEditing = selectedLeads.length > 0;
+  const currentStageInfo = LEAD_STAGES.find(s => s.value === selectedLeadForStageChange?.lead_stage);
+  const selectedStageInfo = LEAD_STAGES.find(s => s.value === selectedStage);
   
   const LeadCard = ({lead}: {lead: Lead }) => {
     // Map the 'status' field from API to lead_stage for display
@@ -438,6 +514,11 @@ export default function LeadsPage() {
                           <Zap className="mr-2 h-4 w-4" />
                           <span>Priority (hot/warm/cold)</span>
                       </DropdownMenuItem>
+                      <DropdownMenuItem onSelect={() => openLeadStageDialog(lead)}>
+                        <TrendingUp className="mr-2 h-4 w-4" />
+                        <span>Change Status</span>
+                      </DropdownMenuItem>
+                      <DropdownMenuSeparator />
                       <DropdownMenuItem onSelect={() => confirmDeleteSingleLead(lead.lead_id)} className="text-red-500">
                           <Trash2 className="mr-2 h-4 w-4" />
                           <span>Delete Lead</span>
@@ -497,6 +578,87 @@ export default function LeadsPage() {
               Delete
             </AlertDialogAction>
           </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+       <Dialog open={isLeadStageDialogOpen} onOpenChange={setIsLeadStageDialogOpen}>
+        <DialogContent className="sm:max-w-2xl">
+            <DialogHeader>
+                <DialogTitle>Change Lead Status</DialogTitle>
+                <DialogDescription>
+                    Select the new status for this lead in the sales pipeline.
+                </DialogDescription>
+            </DialogHeader>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-3 max-h-[60vh] overflow-y-auto p-1">
+                {LEAD_STAGES.map((stage) => {
+                    const isCurrent = selectedLeadForStageChange?.lead_stage === stage.value;
+                    return (
+                        <button
+                            key={stage.value}
+                            onClick={() => handleStageSelect(stage.value)}
+                            disabled={isCurrent}
+                            className={cn(
+                                "w-full text-left p-4 rounded-lg border-2 hover:border-primary transition-all focus:outline-none focus:ring-2 focus:ring-primary relative",
+                                isCurrent ? "border-primary bg-primary/5" : "border-gray-200 hover:bg-gray-50/50",
+                                isCurrent && "cursor-default"
+                            )}
+                        >
+                            {isCurrent && <Badge className="absolute -top-2 -right-2">Current</Badge>}
+                            <div className="flex items-start gap-4">
+                                <div className={cn("mt-1 flex h-8 w-8 items-center justify-center rounded-full shrink-0", stage.color)}>
+                                    <stage.icon className="h-5 w-5" />
+                                </div>
+                                <div className='flex-1'>
+                                    <p className="font-semibold">{stage.label}</p>
+                                    <p className="text-sm text-gray-500">{stage.description}</p>
+                                </div>
+                            </div>
+                        </button>
+                    )
+                })}
+            </div>
+            <DialogFooter className="mt-4">
+                <Button variant="outline" onClick={() => setIsLeadStageDialogOpen(false)}>Cancel</Button>
+            </DialogFooter>
+        </DialogContent>
+       </Dialog>
+
+       <AlertDialog open={isStageConfirmDialogOpen} onOpenChange={setIsStageConfirmDialogOpen}>
+        <AlertDialogContent>
+            <AlertDialogHeader>
+                <AlertDialogTitle>Confirm Status Change</AlertDialogTitle>
+                <AlertDialogDescription>
+                    {currentStageInfo && selectedStageInfo
+                        ? `Change status from "${currentStageInfo.label}" to "${selectedStageInfo.label}"`
+                        : 'Are you sure you want to change the lead status?'}
+                </AlertDialogDescription>
+            </AlertDialogHeader>
+            {currentStageInfo && selectedStageInfo && (
+                <div className="flex items-center justify-center gap-4 my-4">
+                    <div className="flex flex-col items-center gap-2">
+                        <div className={cn("flex h-10 w-10 items-center justify-center rounded-full shrink-0", currentStageInfo.color)}>
+                            <currentStageInfo.icon className="h-6 w-6" />
+                        </div>
+                        <span className="font-semibold text-sm">{currentStageInfo.label}</span>
+                    </div>
+                    <ArrowRight className="h-6 w-6 text-gray-400 shrink-0" />
+                    <div className="flex flex-col items-center gap-2">
+                        <div className={cn("flex h-10 w-10 items-center justify-center rounded-full shrink-0", selectedStageInfo.color)}>
+                            <selectedStageInfo.icon className="h-6 w-6" />
+                        </div>
+                        <span className="font-semibold text-sm">{selectedStageInfo.label}</span>
+                    </div>
+                </div>
+            )}
+            <AlertDialogFooter>
+                <AlertDialogCancel onClick={() => {
+                    setIsStageConfirmDialogOpen(false);
+                    setIsLeadStageDialogOpen(true);
+                }}>Cancel</AlertDialogCancel>
+                <AlertDialogAction onClick={confirmLeadStageChange}>
+                  Confirm
+                </AlertDialogAction>
+            </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
 
