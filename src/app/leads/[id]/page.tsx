@@ -160,7 +160,7 @@ export default function LeadDetailPage() {
   const [phoneCountryCode, setPhoneCountryCode] = useState('');
   const [phoneNumber, setPhoneNumber] = useState('');
   const [isFetchingNotes, setIsFetchingNotes] = useState(false);
-
+  
   const communicationHistory = useMemo(() => lead?.communication_history || [], [lead]);
   
   const leadToDeleteName = useMemo(() => {
@@ -212,19 +212,7 @@ export default function LeadDetailPage() {
        router.push('/leads');
     }
   }, [id, toast, router, parsePhoneNumber]);
-
-  useEffect(() => {
-    fetchLeadDetails();
-  }, [fetchLeadDetails]);
   
-  if (!lead) {
-      return (
-          <div className="flex items-center justify-center h-screen">
-              <Loader2 className="h-8 w-8 animate-spin" />
-          </div>
-      )
-  }
-
   const prepareSaveChanges = useCallback(() => {
     if (!lead || !originalLead) return;
   
@@ -269,7 +257,25 @@ export default function LeadDetailPage() {
       toast({ title: 'No Changes', description: 'No changes to save.' });
       setIsEditing(false);
     }
-  }, [lead, originalLead, phoneCountryCode, phoneNumber]);
+  }, [lead, originalLead, phoneCountryCode, phoneNumber, toast]);
+
+  useEffect(() => {
+    fetchLeadDetails();
+  }, [fetchLeadDetails]);
+  
+  useEffect(() => {
+    if (lead && isEditing && (lead.property.type === 'Commercial' || lead.property.type === 'Land') && lead.property.bedrooms !== 0) {
+      setLead(prev => prev ? {...prev, property: {...prev.property, bedrooms: 0}} : null);
+    }
+  }, [isEditing, lead]);
+
+  if (!lead) {
+      return (
+          <div className="flex items-center justify-center h-screen">
+              <Loader2 className="h-8 w-8 animate-spin" />
+          </div>
+      )
+  }
 
   function getCroppedImg(image: HTMLImageElement, crop: Crop): Promise<string> {
     const canvas = document.createElement('canvas');
@@ -518,14 +524,8 @@ export default function LeadDetailPage() {
   const handleEditClick = () => {
     setIsEditing(true);
   };
-  
-  const isBedroomsDisabled = lead.property.type === 'Commercial' || lead.property.type === 'Land';
 
-  useEffect(() => {
-    if (isEditing && isBedroomsDisabled && lead && lead.property.bedrooms !== 0) {
-      setLead(prev => prev ? {...prev, property: {...prev.property, bedrooms: 0}} : null);
-    }
-  }, [isEditing, isBedroomsDisabled, lead]);
+  const isBedroomsDisabled = lead.property.type === 'Commercial' || lead.property.type === 'Land';
 
   // Map the 'status' field from API to lead_stage for display
   const leadStage = (lead as any)?.status || (lead as any)?.lead_stage;
@@ -1417,6 +1417,7 @@ function LeadHistorySheet({ open, onOpenChange, lead, history }: LeadHistoryShee
     
 
     
+
 
 
 
