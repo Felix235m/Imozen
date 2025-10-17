@@ -160,7 +160,7 @@ export default function LeadDetailPage() {
   const [phoneCountryCode, setPhoneCountryCode] = useState('');
   const [phoneNumber, setPhoneNumber] = useState('');
   const [isFetchingNotes, setIsFetchingNotes] = useState(false);
-
+  
   const communicationHistory = useMemo(() => lead?.communication_history || [], [lead]);
   
   const leadToDeleteName = useMemo(() => {
@@ -271,9 +271,9 @@ export default function LeadDetailPage() {
         }
     }
   }, [isEditing, lead?.property.type]);
-  
 
-  if (!lead) {
+
+  if (!lead || !originalLead) {
       return (
           <div className="flex items-center justify-center h-screen">
               <Loader2 className="h-8 w-8 animate-spin" />
@@ -772,7 +772,11 @@ export default function LeadDetailPage() {
                                                         className="mr-1"
                                                         onClick={(e) => {
                                                             e.stopPropagation();
-                                                            setLead(prev => prev ? {...prev, property: {...prev.property, locations: prev.property.locations.filter(l => l !== locValue)}} : null);
+                                                            setLead(prev => {
+                                                                if (!prev) return null;
+                                                                const newLocations = prev.property.locations.filter(l => l !== locValue);
+                                                                return {...prev, property: {...prev.property, locations: newLocations}};
+                                                            });
                                                         }}
                                                     >
                                                         {allLocations.find(l => l.value === locValue)?.label || locValue}
@@ -795,9 +799,15 @@ export default function LeadDetailPage() {
                                             onClick={() => {
                                                 if (!lead) return;
                                                 const currentLocations = lead.property.locations || [];
-                                                const newLocations = currentLocations.includes(location.value)
-                                                    ? currentLocations.filter(loc => loc !== location.value)
-                                                    : [...currentLocations, location.value];
+                                                const isSelected = currentLocations.includes(location.value);
+                                                
+                                                let newLocations;
+                                                if (isSelected) {
+                                                    newLocations = currentLocations.filter(loc => loc !== location.value);
+                                                } else {
+                                                    newLocations = [...currentLocations, location.value];
+                                                }
+
                                                 setLead(prev => prev ? {...prev, property: {...prev.property, locations: newLocations}} : null);
                                             }}
                                         >
