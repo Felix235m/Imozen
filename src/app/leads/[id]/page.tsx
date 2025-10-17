@@ -4,7 +4,7 @@
 import * as React from 'react';
 import { useState, useRef, useEffect, useMemo, useCallback } from 'react';
 import { useParams, useRouter, useSearchParams } from 'next/navigation';
-import { ArrowLeft, MoreVertical, Upload, History, FileText, Send, Edit, Save, X, Mic, Copy, RefreshCw, MessageSquare, Phone, Mail, Trash2, Zap, ChevronsUpDown, TrendingUp, Search, Handshake, Eye, Briefcase, DollarSign, FileSignature, CheckCircle2, XCircle, Ban, Target, BadgeHelp, ArrowRight } from 'lucide-react';
+import { ArrowLeft, MoreVertical, Upload, History, FileText, Send, Edit, Save, X, Mic, Copy, RefreshCw, MessageSquare, Phone, Mail, Trash2, Zap, ChevronsUpDown, TrendingUp, Search, Handshake, Eye, Briefcase, DollarSign, FileSignature, CheckCircle2, XCircle, Ban, Target, BadgeHelp, ArrowRight, UserPlus, PhoneCall, UserCheck, Calendar, Home, Tag, MessageCircle, FileText as Contract, PartyPopper, ThumbsDown, UserX } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
@@ -89,17 +89,17 @@ type LeadStage =
   | 'Not Interested';
 
 const LEAD_STAGES: { value: LeadStage; label: string; color: string; description: string, icon: React.ElementType }[] = [
-  { value: 'New Lead', label: 'New Lead', color: 'bg-blue-100 text-blue-700', description: 'Just received, not yet contacted', icon: Target },
-  { value: 'Contacted', label: 'Contacted', color: 'bg-purple-100 text-purple-700', description: 'Initial contact made', icon: Phone },
-  { value: 'Qualified', label: 'Qualified', color: 'bg-indigo-100 text-indigo-700', description: 'Lead is qualified and interested', icon: BadgeHelp },
-  { value: 'Property Viewing Scheduled', label: 'Viewing Scheduled', color: 'bg-cyan-100 text-cyan-700', description: 'Property viewing appointment set', icon: Eye },
-  { value: 'Property Viewed', label: 'Property Viewed', color: 'bg-teal-100 text-teal-700', description: 'Lead has viewed property', icon: Briefcase },
-  { value: 'Offer Made', label: 'Offer Made', color: 'bg-orange-100 text-orange-700', description: 'Lead made an offer', icon: DollarSign },
-  { value: 'Negotiation', label: 'Negotiation', color: 'bg-yellow-100 text-yellow-700', description: 'In negotiation phase', icon: Handshake },
+  { value: 'New Lead', label: 'New Lead', color: 'bg-blue-100 text-blue-700', description: 'Just received, not yet contacted', icon: UserPlus },
+  { value: 'Contacted', label: 'Contacted', color: 'bg-purple-100 text-purple-700', description: 'Initial contact made', icon: PhoneCall },
+  { value: 'Qualified', label: 'Qualified', color: 'bg-indigo-100 text-indigo-700', description: 'Lead is qualified and interested', icon: UserCheck },
+  { value: 'Property Viewing Scheduled', label: 'Viewing Scheduled', color: 'bg-cyan-100 text-cyan-700', description: 'Property viewing appointment set', icon: Calendar },
+  { value: 'Property Viewed', label: 'Property Viewed', color: 'bg-teal-100 text-teal-700', description: 'Lead has viewed property', icon: Home },
+  { value: 'Offer Made', label: 'Offer Made', color: 'bg-orange-100 text-orange-700', description: 'Lead made an offer', icon: Tag },
+  { value: 'Negotiation', label: 'Negotiation', color: 'bg-yellow-100 text-yellow-700', description: 'In negotiation phase', icon: MessageCircle },
   { value: 'Under Contract', label: 'Under Contract', color: 'bg-lime-100 text-lime-700', description: 'Contract signed, pending closing', icon: FileSignature },
-  { value: 'Converted', label: 'Converted', color: 'bg-green-100 text-green-700', description: 'Deal successfully closed', icon: CheckCircle2 },
-  { value: 'Lost', label: 'Lost', color: 'bg-red-100 text-red-700', description: 'Deal lost', icon: XCircle },
-  { value: 'Not Interested', label: 'Not Interested', color: 'bg-gray-100 text-gray-700', description: 'Lead no longer interested', icon: Ban },
+  { value: 'Converted', label: 'Converted', color: 'bg-green-100 text-green-700', description: 'Deal successfully closed', icon: PartyPopper },
+  { value: 'Lost', label: 'Lost', color: 'bg-red-100 text-red-700', description: 'Deal lost', icon: ThumbsDown },
+  { value: 'Not Interested', label: 'Not Interested', color: 'bg-gray-100 text-gray-700', description: 'Lead no longer interested', icon: UserX },
 ];
 
 const allLocations = [
@@ -377,27 +377,55 @@ export default function LeadDetailPage() {
     if (!lead || !selectedStage) return;
 
     try {
-        const reconstructedPhone = `(${phoneCountryCode}) ${phoneNumber}`;
+        // Get session token
+        const token = localStorage.getItem('auth_token') || sessionStorage.getItem('sessionToken');
 
-        const fullPayload = {
-            ...lead,
-            lead_stage: selectedStage,
-            contact: {
-                ...lead.contact,
-                phone: reconstructedPhone as any,
-            },
+        if (!token) {
+            throw new Error('No authentication token found');
+        }
+
+        // Call the webhook with required data
+        const webhookUrl = 'https://eurekagathr.app.n8n.cloud/webhook/domain/lead-status';
+        const webhookPayload = {
+            lead_id: lead.lead_id,
+            operation: 'status_change',
+            status: selectedStage
         };
 
-        await callLeadApi('edit_lead', fullPayload);
+        console.log('🔵 confirmLeadStageChange - Calling webhook:', webhookUrl);
+        console.log('🔵 confirmLeadStageChange - Webhook payload:', webhookPayload);
 
-        setLead(prev => prev ? ({ ...prev, lead_stage: selectedStage } as any) : null);
-        setOriginalLead(prev => prev ? JSON.parse(JSON.stringify({ ...prev, lead_stage: selectedStage })) : null);
+        const response = await fetch(webhookUrl, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${token}`
+            },
+            body: JSON.stringify(webhookPayload)
+        });
+
+        console.log('🔵 confirmLeadStageChange - Response status:', response.status);
+
+        if (!response.ok) {
+            const errorText = await response.text();
+            console.error('❌ confirmLeadStageChange - Webhook failed:', errorText);
+            throw new Error(errorText || 'Failed to update lead status');
+        }
+
+        const responseData = await response.json();
+        console.log('✅ confirmLeadStageChange - Webhook response:', responseData);
+
+        // Update local state only after successful webhook response
+        // Update both 'status' and 'lead_stage' fields to ensure compatibility
+        setLead(prev => prev ? ({ ...prev, status: selectedStage, lead_stage: selectedStage } as any) : null);
+        setOriginalLead(prev => prev ? JSON.parse(JSON.stringify({ ...prev, status: selectedStage, lead_stage: selectedStage })) : null);
 
         toast({
             title: "Status Updated",
             description: `Lead status changed to "${selectedStage}".`,
         });
     } catch (error: any) {
+        console.error('❌ confirmLeadStageChange - Error:', error);
         toast({
             variant: 'destructive',
             title: 'Error',
@@ -431,7 +459,9 @@ export default function LeadDetailPage() {
     }
   };
 
-  const currentStageInfo = LEAD_STAGES.find(s => s.value === (lead as any).lead_stage);
+  // Map the 'status' field from API to lead_stage for display
+  const leadStage = (lead as any)?.status || (lead as any)?.lead_stage;
+  const currentStageInfo = LEAD_STAGES.find(s => s.value === leadStage);
   const selectedStageInfo = LEAD_STAGES.find(s => s.value === selectedStage);
 
   return (
@@ -496,9 +526,21 @@ export default function LeadDetailPage() {
               onChange={handleAvatarChange}
             />
           </div>
-          <div className='flex items-center gap-2'>
-            <h2 className="text-2xl font-bold">{lead.name}</h2>
-            <Badge variant="outline" className={cn("text-sm", getStatusBadgeClass(lead.temperature))}>{lead.temperature}</Badge>
+          <div className='flex items-center gap-3'>
+            {currentStageInfo && (
+              <div className={cn("flex h-12 w-12 items-center justify-center rounded-full shrink-0", currentStageInfo.color)}>
+                <currentStageInfo.icon className="h-6 w-6" />
+              </div>
+            )}
+            <div className='flex flex-col gap-1'>
+              <h2 className="text-2xl font-bold">{lead.name}</h2>
+              <div className='flex items-center gap-2'>
+                <Badge variant="outline" className={cn("text-xs", getStatusBadgeClass(lead.temperature))}>{lead.temperature}</Badge>
+                {currentStageInfo && (
+                  <Badge variant="outline" className={cn("text-xs", currentStageInfo.color)}>{currentStageInfo.label}</Badge>
+                )}
+              </div>
+            </div>
           </div>
           <div className='flex items-center gap-2 text-sm text-gray-500 mt-1'>
             <span>ID: {lead.lead_id}</span>
@@ -665,7 +707,9 @@ export default function LeadDetailPage() {
             <AlertDialogHeader>
                 <AlertDialogTitle>Confirm Status Change</AlertDialogTitle>
                 <AlertDialogDescription>
-                    Are you sure you want to change the lead status?
+                    {currentStageInfo && selectedStageInfo
+                        ? `Change status from "${currentStageInfo.label}" to "${selectedStageInfo.label}"`
+                        : 'Are you sure you want to change the lead status?'}
                 </AlertDialogDescription>
             </AlertDialogHeader>
             {currentStageInfo && selectedStageInfo && (

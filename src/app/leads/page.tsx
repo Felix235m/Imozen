@@ -2,7 +2,7 @@
 "use client";
 
 import React, { useState, useMemo, useEffect, useCallback } from 'react';
-import { Search, Plus, MoreVertical, X, Edit, Zap, UserCheck, UserX, Trash2, Loader2, Users } from 'lucide-react';
+import { Search, Plus, MoreVertical, X, Edit, Zap, Trash2, Loader2, Users, UserPlus, PhoneCall, UserCheck, Calendar, Home, Tag, MessageCircle, FileSignature, PartyPopper, ThumbsDown, UserX } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent } from '@/components/ui/card';
@@ -31,16 +31,44 @@ import { callLeadApi, callLeadStatusApi, callAuthApi } from '@/lib/auth-api';
 type LeadTemperature = 'Hot' | 'Warm' | 'Cold';
 type LeadStatus = 'Active' | 'Inactive';
 
+type LeadStage =
+  | 'New Lead'
+  | 'Contacted'
+  | 'Qualified'
+  | 'Property Viewing Scheduled'
+  | 'Property Viewed'
+  | 'Offer Made'
+  | 'Negotiation'
+  | 'Under Contract'
+  | 'Converted'
+  | 'Lost'
+  | 'Not Interested';
+
 type Lead = {
   lead_id: string;
   name: string;
   temperature: LeadTemperature;
   status: LeadStatus;
+  lead_stage?: LeadStage;
   next_follow_up: {
     status: string;
     date: string | null;
   };
 };
+
+const LEAD_STAGES: { value: LeadStage; label: string; color: string; description: string, icon: React.ElementType }[] = [
+  { value: 'New Lead', label: 'New Lead', color: 'bg-blue-100 text-blue-700', description: 'Just received, not yet contacted', icon: UserPlus },
+  { value: 'Contacted', label: 'Contacted', color: 'bg-purple-100 text-purple-700', description: 'Initial contact made', icon: PhoneCall },
+  { value: 'Qualified', label: 'Qualified', color: 'bg-indigo-100 text-indigo-700', description: 'Lead is qualified and interested', icon: UserCheck },
+  { value: 'Property Viewing Scheduled', label: 'Viewing Scheduled', color: 'bg-cyan-100 text-cyan-700', description: 'Property viewing appointment set', icon: Calendar },
+  { value: 'Property Viewed', label: 'Property Viewed', color: 'bg-teal-100 text-teal-700', description: 'Lead has viewed property', icon: Home },
+  { value: 'Offer Made', label: 'Offer Made', color: 'bg-orange-100 text-orange-700', description: 'Lead made an offer', icon: Tag },
+  { value: 'Negotiation', label: 'Negotiation', color: 'bg-yellow-100 text-yellow-700', description: 'In negotiation phase', icon: MessageCircle },
+  { value: 'Under Contract', label: 'Under Contract', color: 'bg-lime-100 text-lime-700', description: 'Contract signed, pending closing', icon: FileSignature },
+  { value: 'Converted', label: 'Converted', color: 'bg-green-100 text-green-700', description: 'Deal successfully closed', icon: PartyPopper },
+  { value: 'Lost', label: 'Lost', color: 'bg-red-100 text-red-700', description: 'Deal lost', icon: ThumbsDown },
+  { value: 'Not Interested', label: 'Not Interested', color: 'bg-gray-100 text-gray-700', description: 'Lead no longer interested', icon: UserX },
+];
 
 export default function LeadsPage() {
   const [searchTerm, setSearchTerm] = useState('');
@@ -272,45 +300,60 @@ export default function LeadsPage() {
 
   const isBulkEditing = selectedLeads.length > 0;
   
-  const LeadCard = ({lead}: {lead: Lead }) => (
-    <Card 
-      className={cn("shadow-sm cursor-pointer hover:shadow-md transition-shadow", selectedLeads.includes(lead.lead_id) && "bg-blue-50 border-primary")}
-      onClick={() => handleNavigateToLead(lead.lead_id)}
-    >
-      <CardContent className="flex items-center justify-between p-4">
-        <div className="flex items-center gap-4">
-          <Checkbox 
-              id={`lead-${lead.lead_id}`} 
-              checked={selectedLeads.includes(lead.lead_id)}
-              onCheckedChange={() => handleSelectLead(lead.lead_id)}
-              onClick={(e) => e.stopPropagation()}
-          />
-          <div className="grid gap-0.5">
-            <div className='flex items-center gap-2'>
-              <span className={cn("font-semibold", isBulkEditing && 'cursor-pointer')}>{lead.name}</span>
-              {lead.status === 'Inactive' && (
-                  <Badge variant="secondary">Inactive</Badge>
-              )}
-            </div>
-            <div className="flex items-center gap-2 flex-wrap">
-              <Badge variant="outline" className={cn("text-xs", getStatusBadgeClass(lead.temperature))}>{lead.temperature}</Badge>
-              <p className="text-sm text-gray-500">
-                Next follow-up:
-                {lead.next_follow_up.date ? (
-                  <span className="text-red-500 font-medium ml-1">_</span>
-                ) : (
-                  <span className={cn(lead.next_follow_up.status === 'Overdue' && "text-red-500 font-medium ml-1")}>
-                    {' '}{lead.next_follow_up.status}
-                  </span>
+  const LeadCard = ({lead}: {lead: Lead }) => {
+    // Map the 'status' field from API to lead_stage for display
+    const leadStage = (lead as any).status || lead.lead_stage;
+    const stageInfo = leadStage ? LEAD_STAGES.find(s => s.value === leadStage) : null;
+    const StageIcon = stageInfo?.icon;
+
+    return (
+      <Card
+        className={cn("shadow-sm cursor-pointer hover:shadow-md transition-shadow", selectedLeads.includes(lead.lead_id) && "bg-blue-50 border-primary")}
+        onClick={() => handleNavigateToLead(lead.lead_id)}
+      >
+        <CardContent className="flex items-center justify-between p-4">
+          <div className="flex items-center gap-4">
+            <Checkbox
+                id={`lead-${lead.lead_id}`}
+                checked={selectedLeads.includes(lead.lead_id)}
+                onCheckedChange={() => handleSelectLead(lead.lead_id)}
+                onClick={(e) => e.stopPropagation()}
+            />
+            {stageInfo && StageIcon && (
+              <div className={cn("flex h-10 w-10 items-center justify-center rounded-full shrink-0", stageInfo.color)}>
+                <StageIcon className="h-5 w-5" />
+              </div>
+            )}
+            <div className="grid gap-0.5">
+              <div className='flex items-center gap-2'>
+                <span className={cn("font-semibold", isBulkEditing && 'cursor-pointer')}>{lead.name}</span>
+                {lead.status === 'Inactive' && (
+                    <Badge variant="secondary">Inactive</Badge>
                 )}
-              </p>
+              </div>
+              <div className="flex items-center gap-2 flex-wrap">
+                <Badge variant="outline" className={cn("text-xs", getStatusBadgeClass(lead.temperature))}>{lead.temperature}</Badge>
+                {stageInfo && (
+                  <Badge variant="outline" className={cn("text-xs", stageInfo.color)}>{stageInfo.label}</Badge>
+                )}
+                <p className="text-sm text-gray-500">
+                  Next follow-up:
+                  {lead.next_follow_up.date ? (
+                    <span className="text-red-500 font-medium ml-1">_</span>
+                  ) : (
+                    <span className={cn(lead.next_follow_up.status === 'Overdue' && "text-red-500 font-medium ml-1")}>
+                      {' '}{lead.next_follow_up.status}
+                    </span>
+                  )}
+                </p>
+              </div>
             </div>
           </div>
-        </div>
-        {isNavigating === lead.lead_id && <Loader2 className="h-5 w-5 animate-spin text-primary" />}
-      </CardContent>
-    </Card>
-  )
+          {isNavigating === lead.lead_id && <Loader2 className="h-5 w-5 animate-spin text-primary" />}
+        </CardContent>
+      </Card>
+    );
+  }
 
   return (
     <div className="flex h-full flex-col bg-gray-50 p-4 pb-20">
@@ -460,3 +503,5 @@ export default function LeadsPage() {
     </div>
   );
 }
+
+    
