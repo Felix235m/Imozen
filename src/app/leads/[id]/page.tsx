@@ -120,7 +120,7 @@ export default function LeadDetailPage() {
   const searchParams = useSearchParams();
   const router = useRouter();
   const id = params.id as string;
-  const isEditMode = searchParams.get('edit') === 'true';
+  const [isEditing, setIsEditing] = useState(false);
 
   const [lead, setLead] = useState<LeadData | null>(null);
   const [originalLead, setOriginalLead] = useState<LeadData | null>(null);
@@ -207,7 +207,12 @@ export default function LeadDetailPage() {
 
   useEffect(() => {
     fetchLeadDetails();
-  }, [fetchLeadDetails]);
+    const editMode = searchParams.get('edit') === 'true';
+    if(editMode) {
+        setIsEditing(true);
+        router.replace(`/leads/${id}`, undefined);
+    }
+  }, [fetchLeadDetails, searchParams, id, router]);
 
   function getCroppedImg(image: HTMLImageElement, crop: Crop): Promise<string> {
     const canvas = document.createElement('canvas');
