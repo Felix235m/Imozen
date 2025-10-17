@@ -160,7 +160,7 @@ export default function LeadDetailPage() {
   const [phoneCountryCode, setPhoneCountryCode] = useState('');
   const [phoneNumber, setPhoneNumber] = useState('');
   const [isFetchingNotes, setIsFetchingNotes] = useState(false);
-  
+
   const communicationHistory = useMemo(() => lead?.communication_history || [], [lead]);
   
   const leadToDeleteName = useMemo(() => {
@@ -262,12 +262,13 @@ export default function LeadDetailPage() {
   useEffect(() => {
     fetchLeadDetails();
   }, [fetchLeadDetails]);
-  
+
   useEffect(() => {
-    if (lead && isEditing && (lead.property.type === 'Commercial' || lead.property.type === 'Land') && lead.property.bedrooms !== 0) {
+    if (isEditing && lead && (lead.property.type === 'Commercial' || lead.property.type === 'Land') && lead.property.bedrooms !== 0) {
       setLead(prev => prev ? {...prev, property: {...prev.property, bedrooms: 0}} : null);
     }
   }, [isEditing, lead]);
+  
 
   if (!lead) {
       return (
@@ -524,7 +525,7 @@ export default function LeadDetailPage() {
   const handleEditClick = () => {
     setIsEditing(true);
   };
-
+  
   const isBedroomsDisabled = lead.property.type === 'Commercial' || lead.property.type === 'Land';
 
   // Map the 'status' field from API to lead_stage for display
@@ -724,7 +725,7 @@ export default function LeadDetailPage() {
                             <p className="text-gray-500 text-sm mb-2">Budget</p>
                             <Input
                                 type="number"
-                                value={lead.property.budget}
+                                value={lead.property.budget ?? ''}
                                 onChange={(e) => setLead(prev => prev ? {...prev, property: {...prev.property, budget: Number(e.target.value)}} : null)}
                             />
                         </div>
@@ -1375,51 +1376,3 @@ function LeadHistorySheet({ open, onOpenChange, lead, history }: LeadHistoryShee
         </Sheet>
     );
 }
-
-    
-
-    
-
-
-
-
-
-
-
-
-
-
-    
-
-    
-
-
-
-
-
-      
-
-
-
-
-    
-
-
-
-
-
-
-
-
-
-
-
-    
-
-    
-
-
-
-
-
-
