@@ -4,7 +4,7 @@
 import * as React from 'react';
 import { useState, useRef, useEffect, useMemo, useCallback } from 'react';
 import { useParams, useRouter, useSearchParams } from 'next/navigation';
-import { ArrowLeft, MoreVertical, Upload, History, FileText, Send, Edit, Save, X, Mic, Copy, RefreshCw, MessageSquare, Phone, Mail, Trash2, Zap, ChevronsUpDown, TrendingUp, Search, Handshake, Eye, Briefcase, DollarSign, FileSignature, CheckCircle2, XCircle, Ban, Target, BadgeHelp } from 'lucide-react';
+import { ArrowLeft, MoreVertical, Upload, History, FileText, Send, Edit, Save, X, Mic, Copy, RefreshCw, MessageSquare, Phone, Mail, Trash2, Zap, ChevronsUpDown, TrendingUp, Search, Handshake, Eye, Briefcase, DollarSign, FileSignature, CheckCircle2, XCircle, Ban, Target, BadgeHelp, ArrowRight } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
@@ -121,11 +121,10 @@ export default function LeadDetailPage() {
   const router = useRouter();
   const id = params.id as string;
   const isEditMode = searchParams.get('edit') === 'true';
-  const [isEditing, setIsEditing] = useState(isEditMode);
-  const [isSaving, setIsSaving] = useState(false);
 
   const [lead, setLead] = useState<LeadData | null>(null);
   const [originalLead, setOriginalLead] = useState<LeadData | null>(null);
+  const [isSaving, setIsSaving] = useState(false);
   const [avatarPreview, setAvatarPreview] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const { toast } = useToast();
@@ -136,6 +135,9 @@ export default function LeadDetailPage() {
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const [isConfirmSaveOpen, setIsConfirmSaveOpen] = useState(false);
   const [isLeadStageDialogOpen, setIsLeadStageDialogOpen] = useState(false);
+  const [isStageConfirmDialogOpen, setIsStageConfirmDialogOpen] = useState(false);
+  const [selectedStage, setSelectedStage] = useState<LeadStage | null>(null);
+
   const [changeSummary, setChangeSummary] = useState<ChangeSummary[]>([]);
   const [suggestedStatus, setSuggestedStatus] = useState<LeadData['temperature'] | null>(null);
 
@@ -164,7 +166,6 @@ export default function LeadDetailPage() {
     if (match) {
         return { code: match[1], number: match[2] };
     }
-    // Fallback for numbers without country code in brackets
     const codeMatch = phoneStr.match(/^\+(\d{1,3})/);
     if (codeMatch) {
         return { code: codeMatch[0], number: phoneStr.substring(codeMatch[0].length).trim() };
@@ -182,7 +183,7 @@ export default function LeadDetailPage() {
       }
       
       setLead(currentLeadData);
-      setOriginalLead(JSON.parse(JSON.stringify(currentLeadData))); // Deep copy for reliable comparison
+      setOriginalLead(JSON.parse(JSON.stringify(currentLeadData))); 
       setAvatarPreview(currentLeadData.image_url);
 
       const { code, number } = parsePhoneNumber(currentLeadData.contact.phone);
@@ -198,72 +199,15 @@ export default function LeadDetailPage() {
         }));
       setNotes(history);
 
-
-      if (isEditMode) {
-        setIsEditing(true);
-      }
     } catch (error) {
        toast({ variant: 'destructive', title: 'Error', description: 'Could not load lead details.' });
        router.push('/leads');
     }
-  }, [id, toast, router, isEditMode, parsePhoneNumber]);
+  }, [id, toast, router, parsePhoneNumber]);
 
   useEffect(() => {
     fetchLeadDetails();
   }, [fetchLeadDetails]);
-
-
-  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const { name, value } = e.target;
-
-    if (name === 'phone_country_code') {
-      setPhoneCountryCode(value);
-      return;
-    }
-    if (name === 'phone_number') {
-      setPhoneNumber(value);
-      return;
-    }
-
-    if (lead) {
-      const keys = name.split('.');
-      setLead(prev => {
-        if (!prev) return null;
-        const newLead = JSON.parse(JSON.stringify(prev)); // Deep copy to ensure state updates
-        let current: any = newLead;
-        for (let i = 0; i < keys.length - 1; i++) {
-          current = current[keys[i]];
-        }
-        current[keys[keys.length - 1]] = name.includes('budget') || name.includes('bedrooms') ? Number(value) : value;
-        return newLead;
-      });
-    }
-  };
-
-  const handleSelectChange = (name: string, value: string | string[]) => {
-     if (lead) {
-        const keys = name.split('.');
-        setLead(prev => {
-            if (!prev) return null;
-            const newLead = JSON.parse(JSON.stringify(prev)); // Deep copy
-            let current: any = newLead;
-            for (let i = 0; i < keys.length - 1; i++) {
-            current = current[keys[i]];
-            }
-            current[keys[keys.length - 1]] = value;
-            return newLead;
-        });
-     }
-  };
-
-  const handleLocationRemove = (e: React.MouseEvent, locationValue: string) => {
-      e.preventDefault();
-      e.stopPropagation();
-      if (lead) {
-          const newLocations = lead.property.locations.filter(loc => loc !== locationValue);
-          handleSelectChange('property.locations', newLocations);
-      }
-  };
 
   function getCroppedImg(image: HTMLImageElement, crop: Crop): Promise<string> {
     const canvas = document.createElement('canvas');
@@ -295,12 +239,12 @@ export default function LeadDetailPage() {
 
   const handleAvatarChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files.length > 0) {
-      setCrop(undefined) // Makes crop preview update between images.
+      setCrop(undefined) 
       const reader = new FileReader()
       reader.addEventListener('load', () => setImgSrc(reader.result?.toString() || ''))
       reader.readAsDataURL(e.target.files[0]);
       setIsCropModalOpen(true);
-      e.target.value = ''; // Reset file input
+      e.target.value = '';
     }
   };
   
@@ -318,7 +262,6 @@ export default function LeadDetailPage() {
         toast({ title: "Avatar updated successfully" });
     } catch (error) {
         toast({ variant: "destructive", title: "Error", description: "Could not upload avatar." });
-        // Revert preview if upload fails
         setAvatarPreview(originalLead?.image_url || null);
     }
   };
@@ -331,7 +274,7 @@ export default function LeadDetailPage() {
           unit: '%',
           width: 90,
         },
-        1, // aspect ratio 1:1
+        1,
         width,
         height
       ),
@@ -342,188 +285,6 @@ export default function LeadDetailPage() {
     setCompletedCrop(crop);
   }
 
-
-  const getQualificationScore = (leadData: LeadData) => {
-    let score = 0;
-    if (leadData.property.budget > 900000) score += 2;
-    else if (leadData.property.budget > 500000) score += 1;
-
-    if (leadData.property.bedrooms >= 4) score += 2;
-    else if (leadData.property.bedrooms >= 2) score += 1;
-    
-    return score;
-  }
-
-  const getStatusFromScore = (score: number): LeadData['temperature'] => {
-    if (score >= 3) return 'Hot';
-    if (score >= 1) return 'Warm';
-    return 'Cold';
-  }
-
-  const prepareSaveChanges = () => {
-    if (!lead || !originalLead) {
-        return;
-    }
-
-    const currentLeadWithPhone = {
-        ...lead,
-        contact: {
-            ...lead.contact,
-            phone: `(${phoneCountryCode}) ${phoneNumber}` as any,
-        },
-    };
-
-    const changes: ChangeSummary[] = [];
-
-    const excludedFields = [
-        'budget_formatted',
-        'created_at_formatted',
-        'image_url',
-        'notes',
-        'communication_history',
-        'created_at',
-        'updated_at',
-        'row_number',
-        'lead_id',
-        'next_follow_up',
-        'management',
-    ];
-
-    const compareObjects = (newObj: any, oldObj: any, prefix = '') => {
-        if (!newObj || !oldObj) return;
-        const allKeys = new Set([...Object.keys(newObj), ...Object.keys(oldObj)]);
-
-        for (const key of allKeys) {
-            if (excludedFields.includes(key)) {
-                continue;
-            }
-
-            const fullKey = prefix ? `${prefix}.${key}` : key;
-            const newValue = newObj?.[key];
-            const oldValue = oldObj?.[key];
-
-            const areObjects = typeof newValue === 'object' && newValue !== null && typeof oldValue === 'object' && oldValue !== null;
-
-            if (areObjects && !Array.isArray(newValue) && !Array.isArray(oldValue)) {
-                compareObjects(newValue, oldValue, fullKey);
-            } else if (JSON.stringify(newValue) !== JSON.stringify(oldValue)) {
-                const fieldName = fullKey
-                    .split('.')
-                    .map(part => part.charAt(0).toUpperCase() + part.slice(1).replace(/_/g, ' '))
-                    .join(' → ');
-
-                changes.push({
-                    field: fieldName,
-                    oldValue: oldValue,
-                    newValue: newValue
-                });
-            }
-        }
-    };
-
-    compareObjects(currentLeadWithPhone, originalLead);
-
-    if (changes.length === 0) {
-        toast({
-            title: "No Changes",
-            description: "No changes were made to the lead data.",
-        });
-        setIsEditing(false);
-        return;
-    }
-
-    setChangeSummary(changes);
-
-    const propertyRequirementsChanged = changes.some(c =>
-        c.field.includes('Property') &&
-        (c.field.includes('Type') || c.field.includes('Budget') || c.field.includes('Bedrooms') || c.field.includes('Locations'))
-    );
-
-    if (propertyRequirementsChanged) {
-        const oldScore = getQualificationScore(originalLead);
-        const newScore = getQualificationScore(currentLeadWithPhone);
-        if (newScore !== oldScore) {
-            const newStatus = getStatusFromScore(newScore);
-            if(newStatus !== currentLeadWithPhone.temperature) {
-                setSuggestedStatus(newStatus);
-            } else {
-                setSuggestedStatus(null);
-            }
-        } else {
-          setSuggestedStatus(null);
-        }
-    } else {
-      setSuggestedStatus(null);
-    }
-    
-    setIsConfirmSaveOpen(true);
-  };
-
-  const confirmAndSaveChanges = async () => {
-    if (!lead) {
-        toast({
-            variant: 'destructive',
-            title: 'Error',
-            description: 'No lead data available'
-        });
-        return;
-    }
-    
-    setIsSaving(true);
-    setIsConfirmSaveOpen(false);
-    
-    const finalLead = suggestedStatus ? { ...lead, temperature: suggestedStatus } : lead;
-    
-    const reconstructedPhone = `(${phoneCountryCode}) ${phoneNumber}`;
-    
-    const payload = {
-        ...finalLead,
-        lead_id: finalLead.lead_id || id, 
-        contact: {
-            ...finalLead.contact,
-            phone: reconstructedPhone as any,
-        },
-    };
-
-    try {
-        await callLeadApi('edit_lead', payload);
-        
-        toast({
-            title: "Success",
-            description: "Lead updated",
-        });
-        
-        // After successful save, update the original state to match the saved state
-        const updatedLeadData = { ...payload };
-        setOriginalLead(JSON.parse(JSON.stringify(updatedLeadData)));
-        setLead(updatedLeadData);
-        setIsEditing(false);
-        
-    } catch (error: any) {
-        console.error('Error saving lead:', error);
-        toast({ 
-            variant: 'destructive', 
-            title: 'Error', 
-            description: error.message || 'Could not save lead details.' 
-        });
-    } finally {
-        setIsSaving(false);
-        setChangeSummary([]);
-        setSuggestedStatus(null);
-    }
-};
-
-
-  const handleCancel = () => {
-    if (originalLead) {
-      setLead({ ...originalLead });
-      const { code, number } = parsePhoneNumber(originalLead.contact.phone);
-      setPhoneCountryCode(code);
-      setPhoneNumber(number);
-    }
-    setIsEditing(false);
-  };
-  
   const handleDeleteLead = async () => {
     try {
         await callLeadApi('delete_lead', { lead_id: id });
@@ -561,46 +322,28 @@ export default function LeadDetailPage() {
   const handleStatusSave = (leadId: string, newStatus: 'Hot' | 'Warm' | 'Cold', note: string) => {
     if (!lead || lead.lead_id !== leadId) return;
 
-    console.log('🔥 handleStatusSave - Starting priority change');
-    console.log('🔥 Current lead:', lead);
-    console.log('🔥 New priority:', newStatus);
-
-    // Send the FULL lead data with only the temperature changed
     const reconstructedPhone = `(${phoneCountryCode}) ${phoneNumber}`;
 
     const fullPayload = {
         ...lead,
         temperature: newStatus,
-        note: note, // Add the note to the payload
+        note: note,
         contact: {
             ...lead.contact,
             phone: reconstructedPhone as any,
         },
     };
 
-    console.log('🔥 Sending full payload for priority change:', fullPayload);
-
     callLeadStatusApi(leadId, "change_priority", fullPayload).then((response) => {
-        console.log('🔥 Webhook response:', response);
-
-        // Process the response
         if (response && Array.isArray(response) && response.length > 0) {
             const updatedLeadFromServer = response[0];
-            console.log('🔥 Updated lead from server:', updatedLeadFromServer);
-
-            // Transform the response to match frontend structure - keep all existing data
             const transformedLead = {
                 ...lead,
                 temperature: newStatus,
-                // Keep all existing data, just update the temperature
             };
-
             setLead(transformedLead);
             setOriginalLead(JSON.parse(JSON.stringify(transformedLead)));
-
-            console.log('✅ Local state updated with new priority');
         } else {
-            // Fallback: Just update locally
             setLead(prev => prev ? ({ ...prev, temperature: newStatus }) : null);
             setOriginalLead(prev => prev ? JSON.parse(JSON.stringify({ ...prev, temperature: newStatus })) : null);
         }
@@ -617,78 +360,54 @@ export default function LeadDetailPage() {
             description: `Lead priority changed to ${newStatus} and note added.`,
         });
         setIsStatusDialogOpen(false);
-
-        console.log('✅ Priority change successful');
     }).catch((error) => {
-        console.error('❌ Priority change failed:', error);
         toast({ variant: 'destructive', title: 'Error', description: 'Could not update priority.' });
     });
   };
   
-  const handleLeadStageChange = async (newStage: LeadStage) => {
-    if (!lead) return;
+  const handleStageSelect = (newStage: LeadStage) => {
+    if (newStage !== (lead as any).lead_stage) {
+      setSelectedStage(newStage);
+      setIsStageConfirmDialogOpen(true);
+      setIsLeadStageDialogOpen(false);
+    }
+  };
 
-    console.log('📊 handleLeadStageChange - Starting stage change');
-    console.log('📊 Current lead:', lead);
-    console.log('📊 New stage:', newStage);
+  const confirmLeadStageChange = async () => {
+    if (!lead || !selectedStage) return;
 
     try {
-        // Send the FULL lead data with only the stage changed
         const reconstructedPhone = `(${phoneCountryCode}) ${phoneNumber}`;
 
         const fullPayload = {
             ...lead,
-            lead_stage: newStage, // Add the new stage field
+            lead_stage: selectedStage,
             contact: {
                 ...lead.contact,
                 phone: reconstructedPhone as any,
             },
         };
 
-        console.log('📊 Sending full payload for stage change:', fullPayload);
+        await callLeadApi('edit_lead', fullPayload);
 
-        // Call webhook via edit_lead operation
-        const response = await callLeadApi('edit_lead', fullPayload);
-
-        console.log('📊 Webhook response:', response);
-
-        // Update local state
-        setLead(prev => prev ? ({ ...prev, lead_stage: newStage } as any) : null);
-        setOriginalLead(prev => prev ? JSON.parse(JSON.stringify({ ...prev, lead_stage: newStage })) : null);
+        setLead(prev => prev ? ({ ...prev, lead_stage: selectedStage } as any) : null);
+        setOriginalLead(prev => prev ? JSON.parse(JSON.stringify({ ...prev, lead_stage: selectedStage })) : null);
 
         toast({
             title: "Status Updated",
-            description: `Lead status changed to "${newStage}".`,
+            description: `Lead status changed to "${selectedStage}".`,
         });
-
-        setIsLeadStageDialogOpen(false);
-
-        console.log('✅ Stage change successful');
     } catch (error: any) {
-        console.error('❌ Stage change failed:', error);
         toast({
             variant: 'destructive',
             title: 'Error',
             description: error.message || 'Could not update lead status.'
         });
+    } finally {
+        setIsStageConfirmDialogOpen(false);
+        setSelectedStage(null);
     }
   };
-
-  const formatValue = (field: string, value: any) => {
-    if (Array.isArray(value)) {
-        return value.map(v => allLocations.find(l=>l.value === v)?.label || v).join(', ') || '(empty)';
-    }
-    if (value === null || value === undefined || value === '') {
-        return '(empty)';
-    }
-    if (field.toLowerCase().includes('budget')) {
-      return `€${Number(value).toLocaleString()}`;
-    }
-    if (typeof value === 'boolean') {
-        return value ? 'Yes' : 'No';
-    }
-    return String(value);
-  }
 
   const handleOpenNotes = async () => {
     setIsFetchingNotes(true);
@@ -712,6 +431,9 @@ export default function LeadDetailPage() {
     }
   };
 
+  const currentStageInfo = LEAD_STAGES.find(s => s.value === (lead as any).lead_stage);
+  const selectedStageInfo = LEAD_STAGES.find(s => s.value === selectedStage);
+
   return (
     <div className="flex h-screen flex-col bg-gray-50">
       <header className="flex items-center justify-between border-b bg-white px-4 py-3 sticky top-0 z-10">
@@ -723,42 +445,28 @@ export default function LeadDetailPage() {
           </Link>
           <h1 className="ml-4 text-xl font-semibold">Lead Details</h1>
         </div>
-        {isEditing ? (
-          <div className="flex items-center gap-2">
-            <Button variant="outline" size="sm" onClick={handleCancel} disabled={isSaving}>Cancel</Button>
-            <Button size="sm" onClick={prepareSaveChanges} disabled={isSaving}>
-              {isSaving ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Save className="mr-2 h-4 w-4" />}
-              Save
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <Button variant="ghost" size="icon">
+              <MoreVertical className="h-5 w-5" />
             </Button>
-          </div>
-        ) : (
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button variant="ghost" size="icon">
-                <MoreVertical className="h-5 w-5" />
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end">
-              <DropdownMenuItem onSelect={() => setIsEditing(true)}>
-                <Edit className="mr-2 h-4 w-4" />
-                <span>Edit</span>
-              </DropdownMenuItem>
-              <DropdownMenuItem onSelect={() => setIsStatusDialogOpen(true)}>
-                <Zap className="mr-2 h-4 w-4" />
-                <span>Priority (hot/warm/cold)</span>
-              </DropdownMenuItem>
-              <DropdownMenuItem onSelect={() => setIsLeadStageDialogOpen(true)}>
-                <TrendingUp className="mr-2 h-4 w-4" />
-                <span>Change Status</span>
-              </DropdownMenuItem>
-              <DropdownMenuSeparator />
-              <DropdownMenuItem onSelect={() => setIsDeleteDialogOpen(true)} className="text-red-600">
-                <Trash2 className="mr-2 h-4 w-4" />
-                <span>Delete Lead</span>
-              </DropdownMenuItem>
-            </DropdownMenuContent>
-          </DropdownMenu>
-        )}
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="end">
+            <DropdownMenuItem onSelect={() => setIsStatusDialogOpen(true)}>
+              <Zap className="mr-2 h-4 w-4" />
+              <span>Priority (hot/warm/cold)</span>
+            </DropdownMenuItem>
+            <DropdownMenuItem onSelect={() => setIsLeadStageDialogOpen(true)}>
+              <TrendingUp className="mr-2 h-4 w-4" />
+              <span>Change Status</span>
+            </DropdownMenuItem>
+            <DropdownMenuSeparator />
+            <DropdownMenuItem onSelect={() => setIsDeleteDialogOpen(true)} className="text-red-600">
+              <Trash2 className="mr-2 h-4 w-4" />
+              <span>Delete Lead</span>
+            </DropdownMenuItem>
+          </DropdownMenuContent>
+        </DropdownMenu>
       </header>
 
       <main className="flex-1 overflow-y-auto p-4 pb-40">
@@ -768,33 +476,26 @@ export default function LeadDetailPage() {
               <AvatarImage src={avatarPreview || undefined} alt={lead.name} />
               <AvatarFallback>{lead.name.split(' ').map(n => n[0]).join('')}</AvatarFallback>
             </Avatar>
-             {!isEditing && (
-              <>
-                <Button 
-                  variant="outline" 
-                  size="icon" 
-                  className="absolute bottom-0 right-0 h-8 w-8 rounded-full bg-white shadow-md"
-                  onClick={() => fileInputRef.current?.click()}
-                >
-                  <Upload className="h-4 w-4" />
-                </Button>
-                <Input 
-                  type="file" 
-                  ref={fileInputRef} 
-                  className="hidden" 
-                  accept="image/*" 
-                  onChange={handleAvatarChange}
-                />
-              </>
-            )}
+            <Button 
+              variant="outline" 
+              size="icon" 
+              className="absolute bottom-0 right-0 h-8 w-8 rounded-full bg-white shadow-md"
+              onClick={() => fileInputRef.current?.click()}
+            >
+              <Upload className="h-4 w-4" />
+            </Button>
+            <Input 
+              type="file" 
+              ref={fileInputRef} 
+              className="hidden" 
+              accept="image/*" 
+              onChange={handleAvatarChange}
+            />
           </div>
           <div className='flex items-center gap-2'>
             <h2 className="text-2xl font-bold">{lead.name}</h2>
-            {!isEditing && <Badge variant="outline" className={cn("text-sm", getStatusBadgeClass(lead.temperature))}>{lead.temperature}</Badge>}
+            <Badge variant="outline" className={cn("text-sm", getStatusBadgeClass(lead.temperature))}>{lead.temperature}</Badge>
           </div>
-           {lead.status === 'Inactive' && (
-              <Badge variant="secondary" className="mt-2">Inactive</Badge>
-           )}
           <div className='flex items-center gap-2 text-sm text-gray-500 mt-1'>
             <span>ID: {lead.lead_id}</span>
             <span>&bull;</span>
@@ -809,10 +510,10 @@ export default function LeadDetailPage() {
             </CardHeader>
             <CardContent>
               <div className="grid grid-cols-2 gap-y-4 gap-x-8 text-sm">
-                <EditableInfoItem label="Name" name="name" value={lead.name} isEditing={isEditing} onChange={handleInputChange} className="col-span-2" />
-                <EditableInfoItem label="Email" name="contact.email" value={lead.contact.email} isEditing={isEditing} onChange={handleInputChange} className="col-span-2" />
-                <EditableInfoItem label="Phone Number" name="contact.phone" value={String(lead.contact.phone || '')} isEditing={isEditing} onChange={handleInputChange} className="col-span-2" phoneCountryCode={phoneCountryCode} phoneNumber={phoneNumber} />
-                <EditableInfoItem label="Language" name="contact.language" value={lead.contact.language} isEditing={isEditing} onSelectChange={handleSelectChange} selectOptions={['English', 'Portuguese', 'French']} />
+                 <InfoItem label="Name" value={lead.name} className="col-span-2" />
+                 <InfoItem label="Email" value={lead.contact.email} className="col-span-2" />
+                 <InfoItem label="Phone Number" value={String(lead.contact.phone || '')} className="col-span-2" />
+                 <InfoItem label="Language" value={lead.contact.language} />
               </div>
             </CardContent>
           </Card>
@@ -823,24 +524,22 @@ export default function LeadDetailPage() {
             </CardHeader>
             <CardContent>
               <div className="grid grid-cols-2 gap-y-4 gap-x-8 text-sm">
-                <EditableInfoItem label="Property Type" name="property.type" value={lead.property.type} isEditing={isEditing} onSelectChange={handleSelectChange} selectOptions={['Apartment', 'House', 'Commercial', 'Land']} />
-                <EditableInfoItem label="Budget" name="property.budget" value={lead.property.budget_formatted} isEditing={isEditing} onChange={handleInputChange} type="number" displayValue={String(lead.property.budget || '')} />
-                <EditableInfoItem label="Bedrooms" name="property.bedrooms" value={lead.property.bedrooms} isEditing={isEditing} onChange={handleInputChange} type="number" />
-                <EditableInfoItem label="Locations" name="property.locations" value={lead.property.locations} isEditing={isEditing} onSelectChange={handleSelectChange} onLocationRemove={handleLocationRemove} className="col-span-2" multiSelect />
+                 <InfoItem label="Property Type" value={lead.property.type} />
+                 <InfoItem label="Budget" value={lead.property.budget_formatted} />
+                 <InfoItem label="Bedrooms" value={lead.property.bedrooms} />
+                 <InfoItem label="Locations" value={lead.property.locations.join(', ')} className="col-span-2" />
               </div>
             </CardContent>
           </Card>
         </div>
       </main>
 
-      {!isEditing && (
-        <div className="fixed bottom-20 right-4 z-20 flex flex-col items-end gap-4">
-            <ActionButton icon={FileText} label="Notes" onClick={handleOpenNotes} isLoading={isFetchingNotes} />
-            <ActionButton icon={Send} label="Follow-up" onClick={() => setIsFollowUpOpen(true)} />
-            <ActionButton icon={History} label="History" onClick={() => setIsHistoryOpen(true)} />
-        </div>
-      )}
-
+      <div className="fixed bottom-20 right-4 z-20 flex flex-col items-end gap-4">
+          <ActionButton icon={FileText} label="Notes" onClick={handleOpenNotes} isLoading={isFetchingNotes} />
+          <ActionButton icon={Send} label="Follow-up" onClick={() => setIsFollowUpOpen(true)} />
+          <ActionButton icon={History} label="History" onClick={() => setIsHistoryOpen(true)} />
+      </div>
+      
       <LeadNotesSheet 
         open={isNotesOpen}
         onOpenChange={setIsNotesOpen}
@@ -884,43 +583,6 @@ export default function LeadDetailPage() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
-      <AlertDialog open={isConfirmSaveOpen} onOpenChange={setIsConfirmSaveOpen}>
-        <AlertDialogContent className="sm:max-w-md">
-          <AlertDialogHeader>
-            <AlertDialogTitle>Confirm Changes</AlertDialogTitle>
-            <AlertDialogDescription>
-              Please review the changes before saving.
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <div className="space-y-4 text-sm max-h-60 overflow-y-auto pr-2">
-            <div>
-                <h4 className="font-semibold mb-2">Changes:</h4>
-                <ul className="list-disc list-inside space-y-1">
-                    {changeSummary.map(change => (
-                        <li key={change.field}>
-                            <span className="font-medium">{change.field}:</span> {formatValue(change.field, change.oldValue)} &rarr; {formatValue(change.field, change.newValue)}
-                        </li>
-                    ))}
-                </ul>
-            </div>
-            {suggestedStatus && (
-                <div className="p-3 bg-yellow-50 border border-yellow-200 rounded-md">
-                    <p className="text-yellow-800">Based on the updated property requirements, we suggest changing the lead priority from 
-                    <Badge variant="outline" className={cn("mx-1.5", getStatusBadgeClass(lead.temperature))}>{lead.temperature}</Badge> 
-                    to 
-                    <Badge variant="outline" className={cn("mx-1.5", getStatusBadgeClass(suggestedStatus))}>{suggestedStatus}</Badge>.</p>
-                </div>
-            )}
-          </div>
-          <AlertDialogFooter className="mt-4">
-            <AlertDialogCancel onClick={() => setIsConfirmSaveOpen(false)}>Cancel</AlertDialogCancel>
-            <AlertDialogAction onClick={confirmAndSaveChanges}>
-              {isSaving ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
-              Confirm & Save
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
        <Dialog open={isCropModalOpen} onOpenChange={setIsCropModalOpen}>
         <DialogContent>
             <DialogHeader>
@@ -952,7 +614,6 @@ export default function LeadDetailPage() {
         </DialogContent>
        </Dialog>
 
-       {/* Lead Stage Change Dialog */}
        <Dialog open={isLeadStageDialogOpen} onOpenChange={setIsLeadStageDialogOpen}>
         <DialogContent className="sm:max-w-2xl">
             <DialogHeader>
@@ -962,29 +623,76 @@ export default function LeadDetailPage() {
                 </DialogDescription>
             </DialogHeader>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-3 max-h-[60vh] overflow-y-auto p-1">
-                {LEAD_STAGES.map((stage) => (
-                    <button
-                        key={stage.value}
-                        onClick={() => handleLeadStageChange(stage.value)}
-                        className="w-full text-left p-4 rounded-lg border border-gray-200 hover:border-primary hover:bg-gray-50/50 transition-all focus:outline-none focus:ring-2 focus:ring-primary"
-                    >
-                        <div className="flex items-start gap-4">
-                            <div className={cn("mt-1 flex h-8 w-8 items-center justify-center rounded-full shrink-0", stage.color)}>
-                                <stage.icon className="h-5 w-5" />
+                {LEAD_STAGES.map((stage) => {
+                    const isCurrent = (lead as any).lead_stage === stage.value;
+                    return (
+                        <button
+                            key={stage.value}
+                            onClick={() => handleStageSelect(stage.value)}
+                            disabled={isCurrent}
+                            className={cn(
+                                "w-full text-left p-4 rounded-lg border-2 hover:border-primary transition-all focus:outline-none focus:ring-2 focus:ring-primary relative",
+                                isCurrent ? "border-primary bg-primary/5" : "border-gray-200 hover:bg-gray-50/50",
+                                isCurrent && "cursor-default"
+                            )}
+                        >
+                            {isCurrent && <Badge className="absolute -top-2 -right-2">Current</Badge>}
+                            <div className="flex items-start gap-4">
+                                <div className={cn("mt-1 flex h-8 w-8 items-center justify-center rounded-full shrink-0", stage.color)}>
+                                    <stage.icon className="h-5 w-5" />
+                                </div>
+                                <div className='flex-1'>
+                                    <p className="font-semibold">{stage.label}</p>
+                                    <p className="text-sm text-gray-500">{stage.description}</p>
+                                </div>
                             </div>
-                            <div className='flex-1'>
-                                <p className="font-semibold">{stage.label}</p>
-                                <p className="text-sm text-gray-500">{stage.description}</p>
-                            </div>
-                        </div>
-                    </button>
-                ))}
+                        </button>
+                    )
+                })}
             </div>
             <DialogFooter className="mt-4">
                 <Button variant="outline" onClick={() => setIsLeadStageDialogOpen(false)}>Cancel</Button>
             </DialogFooter>
         </DialogContent>
        </Dialog>
+
+       <AlertDialog open={isStageConfirmDialogOpen} onOpenChange={setIsStageConfirmDialogOpen}>
+        <AlertDialogContent>
+            <AlertDialogHeader>
+                <AlertDialogTitle>Confirm Status Change</AlertDialogTitle>
+                <AlertDialogDescription>
+                    Are you sure you want to change the lead status?
+                </AlertDialogDescription>
+            </AlertDialogHeader>
+            {currentStageInfo && selectedStageInfo && (
+                <div className="flex items-center justify-center gap-4 my-4">
+                    <div className="flex flex-col items-center gap-2">
+                        <div className={cn("flex h-10 w-10 items-center justify-center rounded-full shrink-0", currentStageInfo.color)}>
+                            <currentStageInfo.icon className="h-6 w-6" />
+                        </div>
+                        <span className="font-semibold text-sm">{currentStageInfo.label}</span>
+                    </div>
+                    <ArrowRight className="h-6 w-6 text-gray-400 shrink-0" />
+                    <div className="flex flex-col items-center gap-2">
+                        <div className={cn("flex h-10 w-10 items-center justify-center rounded-full shrink-0", selectedStageInfo.color)}>
+                            <selectedStageInfo.icon className="h-6 w-6" />
+                        </div>
+                        <span className="font-semibold text-sm">{selectedStageInfo.label}</span>
+                    </div>
+                </div>
+            )}
+            <AlertDialogFooter>
+                <AlertDialogCancel onClick={() => {
+                    setIsStageConfirmDialogOpen(false);
+                    setIsLeadStageDialogOpen(true);
+                }}>Cancel</AlertDialogCancel>
+                <AlertDialogAction onClick={confirmLeadStageChange}>
+                  Confirm
+                </AlertDialogAction>
+            </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
     </div>
   );
 }
@@ -993,165 +701,10 @@ function InfoItem({ label, value, className }: { label: string; value: React.Rea
   return (
     <div className={cn("grid gap-1", className)}>
       <p className="text-gray-500">{label}</p>
-      <div className="font-medium break-all">{Array.isArray(value) ? value.map(v => allLocations.find(l=>l.value === v)?.label || v).join(', ') : value}</div>
+      <div className="font-medium break-all">{value}</div>
     </div>
   );
 }
-
-function EditableInfoItem({ 
-  label, 
-  name, 
-  value, 
-  isEditing, 
-  onChange, 
-  onSelectChange,
-  onLocationRemove,
-  className, 
-  type = 'text', 
-  displayValue,
-  selectOptions,
-  multiSelect,
-  phoneCountryCode,
-  phoneNumber,
-}: { 
-  label: string; 
-  name?: string; 
-  value: string | number | string[] | null; 
-  isEditing: boolean; 
-  onChange?: (e: React.ChangeEvent<HTMLInputElement>) => void; 
-  onSelectChange?: (name: string, value: string | string[]) => void;
-  onLocationRemove?: (e: React.MouseEvent, locationValue: string) => void;
-  className?: string; 
-  type?: string; 
-  displayValue?: string;
-  selectOptions?: string[];
-  multiSelect?: boolean;
-  phoneCountryCode?: string;
-  phoneNumber?: string;
-}) {
-  if (isEditing && name) {
-    if (label === 'Temperature') {
-        return null
-    }
-
-    if (label === "Phone Number" && onChange && phoneCountryCode !== undefined && phoneNumber !== undefined) {
-      return (
-        <div className={cn("grid gap-1", className)}>
-          <p className="text-gray-500">{label}</p>
-          <div className="flex items-center gap-2">
-            <Input 
-              name="phone_country_code" 
-              value={phoneCountryCode} 
-              onChange={onChange} 
-              className="h-8 text-sm w-20" 
-              placeholder="+351"
-            />
-            <Input 
-              name="phone_number" 
-              type="tel"
-              value={phoneNumber} 
-              onChange={onChange} 
-              className="h-8 text-sm" 
-              placeholder="Phone Number"
-            />
-          </div>
-        </div>
-      )
-    }
-
-    if (multiSelect && onSelectChange && Array.isArray(value)) {
-       const handleLocationSelect = (locationValue: string) => {
-        if (!name) return;
-        const newLocations = value.includes(locationValue)
-            ? value.filter(loc => loc !== locationValue)
-            : [...value, locationValue];
-        onSelectChange(name, newLocations);
-    }
-
-    return (
-        <div className={cn("grid gap-1", className)}>
-            <p className="text-gray-500">{label}</p>
-            <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                    <Button
-                        variant="outline"
-                        className="w-full justify-between h-auto min-h-10 text-sm font-normal"
-                    >
-                        <div className="flex gap-1 flex-wrap items-center">
-                        {value.length > 0 ? (
-                            value.map(locValue => {
-                                const location = allLocations.find(l => l.value === locValue);
-                                return (
-                                    <Badge
-                                        key={locValue}
-                                        variant="secondary"
-                                        className="mr-1"
-                                    >
-                                        {location?.label || locValue}
-                                        <span role="button" aria-label={`Remove ${location?.label}`} className="ml-1 rounded-full outline-none ring-offset-background focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2" onMouseDown={(e) => e.preventDefault()} onClick={(e) => onLocationRemove?.(e, locValue)}><X className="h-3 w-3" /></span>
-                                    </Badge>
-                                )
-                            })
-                        ) : (
-                            <span className="text-muted-foreground">Select locations...</span>
-                        )}
-                        </div>
-                        <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
-                    </Button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent className="w-[--radix-dropdown-menu-trigger-width]">
-                    {allLocations.map((location) => (
-                        <DropdownMenuCheckboxItem
-                            key={location.value}
-                            checked={value.includes(location.value)}
-                            onSelect={(e) => e.preventDefault()}
-                            onClick={() => handleLocationSelect(location.value)}
-                        >
-                            {location.label}
-                        </DropdownMenuCheckboxItem>
-                    ))}
-                </DropdownMenuContent>
-            </DropdownMenu>
-        </div>
-    );
-    }
-    if (selectOptions && onSelectChange) {
-      return (
-        <div className={cn("grid gap-1", className)}>
-          <p className="text-gray-500">{label}</p>
-          <Select value={String(value)} onValueChange={(val) => onSelectChange(name, val)}>
-            <SelectTrigger className="h-8 text-sm">
-              <SelectValue placeholder={label} />
-            </SelectTrigger>
-            <SelectContent>
-              {selectOptions.map(option => (
-                <SelectItem key={option} value={option}>{option}</SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        </div>
-      )
-    }
-    
-    if (onChange) {
-      return (
-        <div className={cn("grid gap-1", className)}>
-          <p className="text-gray-500">{label}</p>
-          <Input 
-            name={name} 
-            type={type}
-            value={displayValue ?? String(value ?? '')} 
-            onChange={onChange} 
-            className="h-8 text-sm" 
-            placeholder={label}
-          />
-        </div>
-      )
-    }
-  }
-  return <InfoItem label={label} value={value} className={className} />
-}
-
 
 function ActionButton({ icon: Icon, label, onClick, isLoading }: { icon: React.ElementType; label: string, onClick?: () => void, isLoading?: boolean }) {
   return (
@@ -1254,7 +807,6 @@ function LeadNotesSheet({ open, onOpenChange, lead, currentNote, setCurrentNote,
 
     const handleNewNoteClick = () => {
         if (currentNote) {
-            // Check if the note is already in the history to avoid duplicates
             if (!notes.some(n => n.note_id === currentNote.note_id)) {
                 setNotes(prev => [currentNote, ...prev]);
             }
@@ -1533,5 +1085,7 @@ function LeadHistorySheet({ open, onOpenChange, lead, history }: LeadHistoryShee
 
 
 
+
+    
 
     
