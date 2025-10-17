@@ -452,6 +452,10 @@ export default function LeadDetailPage() {
             </Button>
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end">
+            <DropdownMenuItem onSelect={() => router.push(`/leads/${id}?edit=true`)}>
+              <Edit className="mr-2 h-4 w-4" />
+              <span>Edit Lead</span>
+            </DropdownMenuItem>
             <DropdownMenuItem onSelect={() => setIsStatusDialogOpen(true)}>
               <Zap className="mr-2 h-4 w-4" />
               <span>Priority (hot/warm/cold)</span>
