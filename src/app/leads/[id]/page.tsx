@@ -3,8 +3,8 @@
 
 import * as React from 'react';
 import { useState, useRef, useEffect, useMemo, useCallback } from 'react';
-import { useParams, useRouter, useSearchParams } from 'next/navigation';
-import { ArrowLeft, MoreVertical, Upload, History, FileText, Send, Edit, Save, X, Mic, Copy, RefreshCw, MessageSquare, Phone, Mail, Trash2, Zap, ChevronsUpDown, TrendingUp, Search, Handshake, Eye, Briefcase, DollarSign, FileSignature, CheckCircle2, XCircle, Ban, Target, BadgeHelp, ArrowRight, UserPlus, PhoneCall, UserCheck, Calendar, Home, Tag, MessageCircle, FileText as Contract, PartyPopper, ThumbsDown, UserX } from 'lucide-react';
+import { useParams, useRouter } from 'next/navigation';
+import { ArrowLeft, MoreVertical, Upload, History, FileText, Send, Edit, Save, X, Mic, Copy, RefreshCw, MessageSquare, Phone, Mail, Trash2, Zap, ChevronsUpDown, TrendingUp, Search, Handshake, Eye, Briefcase, DollarSign, FileSignature, CheckCircle2, XCircle, Ban, Target, BadgeHelp, ArrowRight, UserPlus, PhoneCall, UserCheck, Calendar, Home, Tag, MessageCircle as MessageCircleIcon, FileText as Contract, PartyPopper, ThumbsDown, UserX } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
@@ -95,7 +95,7 @@ const LEAD_STAGES: { value: LeadStage; label: string; color: string; description
   { value: 'Property Viewing Scheduled', label: 'Viewing Scheduled', color: 'bg-cyan-100 text-cyan-700', description: 'Property viewing appointment set', icon: Calendar },
   { value: 'Property Viewed', label: 'Property Viewed', color: 'bg-teal-100 text-teal-700', description: 'Lead has viewed property', icon: Home },
   { value: 'Offer Made', label: 'Offer Made', color: 'bg-orange-100 text-orange-700', description: 'Lead made an offer', icon: Tag },
-  { value: 'Negotiation', label: 'Negotiation', color: 'bg-yellow-100 text-yellow-700', description: 'In negotiation phase', icon: MessageCircle },
+  { value: 'Negotiation', label: 'Negotiation', color: 'bg-yellow-100 text-yellow-700', description: 'In negotiation phase', icon: MessageCircleIcon },
   { value: 'Under Contract', label: 'Under Contract', color: 'bg-lime-100 text-lime-700', description: 'Contract signed, pending closing', icon: FileSignature },
   { value: 'Converted', label: 'Converted', color: 'bg-green-100 text-green-700', description: 'Deal successfully closed', icon: PartyPopper },
   { value: 'Lost', label: 'Lost', color: 'bg-red-100 text-red-700', description: 'Deal lost', icon: ThumbsDown },
@@ -117,7 +117,6 @@ const allLocations = [
 
 export default function LeadDetailPage() {
   const params = useParams();
-  const searchParams = useSearchParams();
   const router = useRouter();
   const id = params.id as string;
   const [isEditing, setIsEditing] = useState(false);
@@ -207,12 +206,7 @@ export default function LeadDetailPage() {
 
   useEffect(() => {
     fetchLeadDetails();
-    const editMode = searchParams.get('edit') === 'true';
-    if(editMode) {
-        setIsEditing(true);
-        router.replace(`/leads/${id}`, undefined);
-    }
-  }, [fetchLeadDetails, searchParams, id, router]);
+  }, [fetchLeadDetails]);
 
   function getCroppedImg(image: HTMLImageElement, crop: Crop): Promise<string> {
     const canvas = document.createElement('canvas');
@@ -442,6 +436,91 @@ export default function LeadDetailPage() {
     }
   };
 
+  const prepareSaveChanges = () => {
+    if (!lead || !originalLead) return;
+  
+    const changes: ChangeSummary[] = [];
+    const fieldsToCompare = {
+      'Name': { path: ['name'] },
+      'Email': { path: ['contact', 'email'] },
+      'Phone': {
+        oldValue: `(${parsePhoneNumber(originalLead.contact.phone).code}) ${parsePhoneNumber(originalLead.contact.phone).number}`,
+        newValue: `(${phoneCountryCode}) ${phoneNumber}`
+      },
+      'Language': { path: ['contact', 'language'] },
+      'Property Type': { path: ['property', 'type'] },
+      'Budget': { path: ['property', 'budget'] },
+      'Bedrooms': { path: ['property', 'bedrooms'] },
+      'Locations': { path: ['property', 'locations'], isArray: true },
+    };
+  
+    const getNestedValue = (obj: any, path: string[]) => {
+      return path.reduce((o, key) => (o && o[key] !== 'undefined' ? o[key] : undefined), obj);
+    };
+  
+    for (const [field, config] of Object.entries(fieldsToCompare)) {
+      let oldValue, newValue;
+  
+      if ('path' in config) {
+        oldValue = getNestedValue(originalLead, config.path);
+        newValue = getNestedValue(lead, config.path);
+        if (config.isArray) {
+          if (JSON.stringify(oldValue) !== JSON.stringify(newValue)) {
+            changes.push({ field, oldValue: (oldValue || []).join(', '), newValue: (newValue || []).join(', ') });
+          }
+        } else if (String(oldValue || '') !== String(newValue || '')) {
+          changes.push({ field, oldValue, newValue });
+        }
+      } else {
+        oldValue = config.oldValue;
+        newValue = config.newValue;
+        if (String(oldValue || '') !== String(newValue || '')) {
+          changes.push({ field, oldValue, newValue });
+        }
+      }
+    }
+  
+    setChangeSummary(changes);
+  
+    if (changes.length > 0) {
+      setIsConfirmSaveOpen(true);
+    } else {
+      toast({ title: 'No Changes', description: 'No changes to save.' });
+      setIsEditing(false);
+    }
+  };
+
+  const handleSaveLeadChanges = async () => {
+    if (!lead) return;
+
+    setIsSaving(true);
+    setIsConfirmSaveOpen(false);
+
+    try {
+      const reconstructedPhone = `(${phoneCountryCode}) ${phoneNumber}`;
+
+      const updatedLeadData = {
+        ...lead,
+        contact: {
+          ...lead.contact,
+          phone: reconstructedPhone,
+        },
+      };
+
+      await callLeadApi('update_lead', { lead_id: id, ...updatedLeadData });
+
+      // Update original lead to match current state
+      setOriginalLead(JSON.parse(JSON.stringify(updatedLeadData)));
+
+      toast({ title: 'Success', description: 'Lead updated successfully!' });
+      setIsEditing(false);
+    } catch (error) {
+      toast({ variant: 'destructive', title: 'Error', description: 'Could not update lead.' });
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
   const handleOpenNotes = async () => {
     setIsFetchingNotes(true);
     try {
@@ -464,6 +543,10 @@ export default function LeadDetailPage() {
     }
   };
 
+  const handleEditClick = () => {
+    setIsEditing(true);
+  };
+
   // Map the 'status' field from API to lead_stage for display
   const leadStage = (lead as any)?.status || (lead as any)?.lead_stage;
   const currentStageInfo = LEAD_STAGES.find(s => s.value === leadStage);
@@ -478,34 +561,57 @@ export default function LeadDetailPage() {
               <ArrowLeft className="h-6 w-6" />
             </Button>
           </Link>
-          <h1 className="ml-4 text-xl font-semibold">Lead Details</h1>
+          <h1 className="ml-4 text-xl font-semibold">{isEditing ? 'Edit Lead' : 'Lead Details'}</h1>
         </div>
-        <DropdownMenu>
-          <DropdownMenuTrigger asChild>
-            <Button variant="ghost" size="icon">
-              <MoreVertical className="h-5 w-5" />
-            </Button>
-          </DropdownMenuTrigger>
-          <DropdownMenuContent align="end">
-            <DropdownMenuItem onSelect={() => router.push(`/leads/${id}?edit=true`)}>
-              <Edit className="mr-2 h-4 w-4" />
-              <span>Edit Lead</span>
-            </DropdownMenuItem>
-            <DropdownMenuItem onSelect={() => setIsStatusDialogOpen(true)}>
-              <Zap className="mr-2 h-4 w-4" />
-              <span>Priority (hot/warm/cold)</span>
-            </DropdownMenuItem>
-            <DropdownMenuItem onSelect={() => setIsLeadStageDialogOpen(true)}>
-              <TrendingUp className="mr-2 h-4 w-4" />
-              <span>Change Status</span>
-            </DropdownMenuItem>
-            <DropdownMenuSeparator />
-            <DropdownMenuItem onSelect={() => setIsDeleteDialogOpen(true)} className="text-red-600">
-              <Trash2 className="mr-2 h-4 w-4" />
-              <span>Delete Lead</span>
-            </DropdownMenuItem>
-          </DropdownMenuContent>
-        </DropdownMenu>
+        <div className="flex items-center gap-2">
+          {isEditing ? (
+            <>
+              <Button variant="outline" onClick={() => {
+                setLead(originalLead ? JSON.parse(JSON.stringify(originalLead)) : null);
+                if (originalLead) {
+                  const { code, number } = parsePhoneNumber(originalLead.contact.phone);
+                  setPhoneCountryCode(code);
+                  setPhoneNumber(number);
+                }
+                setIsEditing(false);
+              }}>
+                <X className="mr-2 h-4 w-4" />
+                Cancel
+              </Button>
+              <Button onClick={prepareSaveChanges} disabled={isSaving}>
+                {isSaving ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Save className="mr-2 h-4 w-4" />}
+                Save Changes
+              </Button>
+            </>
+          ) : (
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="ghost" size="icon">
+                  <MoreVertical className="h-5 w-5" />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end">
+                <DropdownMenuItem onSelect={handleEditClick}>
+                    <Edit className="mr-2 h-4 w-4" />
+                    <span>Edit Lead</span>
+                </DropdownMenuItem>
+                <DropdownMenuItem onSelect={() => setIsStatusDialogOpen(true)}>
+                  <Zap className="mr-2 h-4 w-4" />
+                  <span>Priority (hot/warm/cold)</span>
+                </DropdownMenuItem>
+                <DropdownMenuItem onSelect={() => setIsLeadStageDialogOpen(true)}>
+                  <TrendingUp className="mr-2 h-4 w-4" />
+                  <span>Change Status</span>
+                </DropdownMenuItem>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem onSelect={() => setIsDeleteDialogOpen(true)} className="text-red-600">
+                  <Trash2 className="mr-2 h-4 w-4" />
+                  <span>Delete Lead</span>
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+          )}
+        </div>
       </header>
 
       <main className="flex-1 overflow-y-auto p-4 pb-40">
@@ -561,10 +667,51 @@ export default function LeadDetailPage() {
             </CardHeader>
             <CardContent>
               <div className="grid grid-cols-2 gap-y-4 gap-x-8 text-sm">
-                 <InfoItem label="Name" value={lead.name} className="col-span-2" />
-                 <InfoItem label="Email" value={lead.contact.email} className="col-span-2" />
-                 <InfoItem label="Phone Number" value={String(lead.contact.phone || '')} className="col-span-2" />
-                 <InfoItem label="Language" value={lead.contact.language} />
+                 {isEditing ? (
+                   <>
+                     <EditableField
+                       label="Name"
+                       value={lead.name}
+                       onChange={(value) => setLead(prev => prev ? {...prev, name: value} : null)}
+                       className="col-span-2"
+                     />
+                     <EditableField
+                       label="Email"
+                       value={lead.contact.email}
+                       onChange={(value) => setLead(prev => prev ? {...prev, contact: {...prev.contact, email: value}} : null)}
+                       className="col-span-2"
+                     />
+                     <div className="col-span-2 grid gap-1">
+                       <p className="text-gray-500">Phone Number</p>
+                       <div className="flex gap-2">
+                         <Input
+                           value={phoneCountryCode}
+                           onChange={(e) => setPhoneCountryCode(e.target.value)}
+                           className="w-24"
+                           placeholder="+351"
+                         />
+                         <Input
+                           value={phoneNumber}
+                           onChange={(e) => setPhoneNumber(e.target.value)}
+                           className="flex-1"
+                           placeholder="Phone number"
+                         />
+                       </div>
+                     </div>
+                     <EditableField
+                       label="Language"
+                       value={lead.contact.language}
+                       onChange={(value) => setLead(prev => prev ? {...prev, contact: {...prev.contact, language: value}} : null)}
+                     />
+                   </>
+                 ) : (
+                   <>
+                     <InfoItem label="Name" value={lead.name} className="col-span-2" />
+                     <InfoItem label="Email" value={lead.contact.email} className="col-span-2" />
+                     <InfoItem label="Phone Number" value={String(lead.contact.phone || '')} className="col-span-2" />
+                     <InfoItem label="Language" value={lead.contact.language} />
+                   </>
+                 )}
               </div>
             </CardContent>
           </Card>
@@ -575,10 +722,38 @@ export default function LeadDetailPage() {
             </CardHeader>
             <CardContent>
               <div className="grid grid-cols-2 gap-y-4 gap-x-8 text-sm">
-                 <InfoItem label="Property Type" value={lead.property.type} />
-                 <InfoItem label="Budget" value={lead.property.budget_formatted} />
-                 <InfoItem label="Bedrooms" value={lead.property.bedrooms} />
-                 <InfoItem label="Locations" value={lead.property.locations.join(', ')} className="col-span-2" />
+                 {isEditing ? (
+                   <>
+                     <EditableField
+                       label="Property Type"
+                       value={lead.property.type}
+                       onChange={(value) => setLead(prev => prev ? {...prev, property: {...prev.property, type: value}} : null)}
+                     />
+                     <EditableField
+                       label="Budget"
+                       value={String(lead.property.budget)}
+                       onChange={(value) => setLead(prev => prev ? {...prev, property: {...prev.property, budget: Number(value)}} : null)}
+                     />
+                     <EditableField
+                       label="Bedrooms"
+                       value={String(lead.property.bedrooms)}
+                       onChange={(value) => setLead(prev => prev ? {...prev, property: {...prev.property, bedrooms: Number(value)}} : null)}
+                     />
+                     <EditableField
+                       label="Locations"
+                       value={lead.property.locations.join(', ')}
+                       onChange={(value) => setLead(prev => prev ? {...prev, property: {...prev.property, locations: value.split(',').map(l => l.trim())}} : null)}
+                       className="col-span-2"
+                     />
+                   </>
+                 ) : (
+                   <>
+                     <InfoItem label="Property Type" value={lead.property.type} />
+                     <InfoItem label="Budget" value={lead.property.budget_formatted} />
+                     <InfoItem label="Bedrooms" value={lead.property.bedrooms} />
+                     <InfoItem label="Locations" value={lead.property.locations.join(', ')} className="col-span-2" />
+                   </>
+                 )}
               </div>
             </CardContent>
           </Card>
@@ -746,6 +921,36 @@ export default function LeadDetailPage() {
         </AlertDialogContent>
       </AlertDialog>
 
+      <AlertDialog open={isConfirmSaveOpen} onOpenChange={setIsConfirmSaveOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Confirm Changes</AlertDialogTitle>
+            <AlertDialogDescription>
+              You are about to update the following fields:
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <div className="max-h-60 overflow-y-auto">
+            {changeSummary.map((change, index) => (
+              <div key={index} className="py-2 border-b last:border-b-0">
+                <p className="font-semibold text-sm">{change.field}</p>
+                <div className="flex items-center gap-2 text-xs">
+                  <span className="text-gray-500">{String(change.oldValue)}</span>
+                  <ArrowRight className="h-3 w-3 text-gray-400" />
+                  <span className="text-primary font-medium">{String(change.newValue)}</span>
+                </div>
+              </div>
+            ))}
+          </div>
+          <AlertDialogFooter>
+            <AlertDialogCancel onClick={() => setIsConfirmSaveOpen(false)}>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={handleSaveLeadChanges} disabled={isSaving}>
+              {isSaving ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
+              Confirm & Save
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
     </div>
   );
 }
@@ -755,6 +960,19 @@ function InfoItem({ label, value, className }: { label: string; value: React.Rea
     <div className={cn("grid gap-1", className)}>
       <p className="text-gray-500">{label}</p>
       <div className="font-medium break-all">{value}</div>
+    </div>
+  );
+}
+
+function EditableField({ label, value, onChange, className }: { label: string; value: string | number | null | undefined; onChange: (value: string) => void; className?: string }) {
+  return (
+    <div className={cn("grid gap-1", className)}>
+      <p className="text-gray-500">{label}</p>
+      <Input
+        value={value ?? ''}
+        onChange={(e) => onChange(e.target.value)}
+        className="font-medium"
+      />
     </div>
   );
 }
@@ -1142,3 +1360,4 @@ function LeadHistorySheet({ open, onOpenChange, lead, history }: LeadHistoryShee
     
 
     
+
