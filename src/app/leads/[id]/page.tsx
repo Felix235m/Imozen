@@ -216,6 +216,60 @@ export default function LeadDetailPage() {
   useEffect(() => {
     fetchLeadDetails();
   }, [fetchLeadDetails]);
+  
+  if (!lead) {
+      return (
+          <div className="flex items-center justify-center h-screen">
+              <Loader2 className="h-8 w-8 animate-spin" />
+          </div>
+      )
+  }
+
+  const prepareSaveChanges = useCallback(() => {
+    if (!lead || !originalLead) return;
+  
+    const findChanges = (
+      original: Record<string, any>,
+      current: Record<string, any>,
+      prefix = ''
+    ): ChangeSummary[] => {
+      let changes: ChangeSummary[] = [];
+  
+      for (const key in original) {
+        if (['row_number', 'lead_id', 'created_at', 'created_at_formatted', 'next_follow_up', 'image_url', 'communication_history', 'management', 'purchase', 'status'].includes(key)) continue;
+  
+        const originalValue = original[key];
+        let currentValue = current[key];
+        const fieldName = prefix ? `${prefix}.${key}` : key;
+  
+        if (fieldName === 'contact.phone') {
+          currentValue = `(${phoneCountryCode}) ${phoneNumber}`;
+        }
+        
+        if (typeof originalValue === 'object' && originalValue !== null && !Array.isArray(originalValue)) {
+            changes = changes.concat(findChanges(originalValue, currentValue, fieldName));
+        } else if (JSON.stringify(originalValue) !== JSON.stringify(currentValue)) {
+            changes.push({
+                field: fieldName.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase()),
+                oldValue: Array.isArray(originalValue) ? originalValue.join(', ') : originalValue,
+                newValue: Array.isArray(currentValue) ? currentValue.join(', ') : currentValue,
+            });
+        }
+      }
+      return changes;
+    };
+  
+    const changes = findChanges(originalLead, { ...lead, contact: { ...lead.contact, phone: `(${phoneCountryCode}) ${phoneNumber}` }});
+  
+    setChangeSummary(changes);
+  
+    if (changes.length > 0) {
+      setIsConfirmSaveOpen(true);
+    } else {
+      toast({ title: 'No Changes', description: 'No changes to save.' });
+      setIsEditing(false);
+    }
+  }, [lead, originalLead, phoneCountryCode, phoneNumber]);
 
   function getCroppedImg(image: HTMLImageElement, crop: Crop): Promise<string> {
     const canvas = document.createElement('canvas');
@@ -409,52 +463,6 @@ export default function LeadDetailPage() {
     }
   };
 
-  const prepareSaveChanges = useCallback(() => {
-    if (!lead || !originalLead) return;
-  
-    const findChanges = (
-      original: Record<string, any>,
-      current: Record<string, any>,
-      prefix = ''
-    ): ChangeSummary[] => {
-      let changes: ChangeSummary[] = [];
-  
-      for (const key in original) {
-        if (['row_number', 'lead_id', 'created_at', 'created_at_formatted', 'next_follow_up', 'image_url', 'communication_history', 'management', 'purchase', 'status'].includes(key)) continue;
-  
-        const originalValue = original[key];
-        let currentValue = current[key];
-        const fieldName = prefix ? `${prefix}.${key}` : key;
-  
-        if (fieldName === 'contact.phone') {
-          currentValue = `(${phoneCountryCode}) ${phoneNumber}`;
-        }
-        
-        if (typeof originalValue === 'object' && originalValue !== null && !Array.isArray(originalValue)) {
-            changes = changes.concat(findChanges(originalValue, currentValue, fieldName));
-        } else if (JSON.stringify(originalValue) !== JSON.stringify(currentValue)) {
-            changes.push({
-                field: fieldName.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase()),
-                oldValue: Array.isArray(originalValue) ? originalValue.join(', ') : originalValue,
-                newValue: Array.isArray(currentValue) ? currentValue.join(', ') : currentValue,
-            });
-        }
-      }
-      return changes;
-    };
-  
-    const changes = findChanges(originalLead, { ...lead, contact: { ...lead.contact, phone: `(${phoneCountryCode}) ${phoneNumber}` }});
-  
-    setChangeSummary(changes);
-  
-    if (changes.length > 0) {
-      setIsConfirmSaveOpen(true);
-    } else {
-      toast({ title: 'No Changes', description: 'No changes to save.' });
-      setIsEditing(false);
-    }
-  }, [lead, originalLead, phoneCountryCode, phoneNumber]);
-
   const handleSaveLeadChanges = async () => {
     if (!lead) return;
 
@@ -511,14 +519,6 @@ export default function LeadDetailPage() {
     setIsEditing(true);
   };
   
-  if (!lead) {
-      return (
-          <div className="flex items-center justify-center h-screen">
-              <Loader2 className="h-8 w-8 animate-spin" />
-          </div>
-      )
-  }
-
   const isBedroomsDisabled = lead.property.type === 'Commercial' || lead.property.type === 'Land';
 
   useEffect(() => {
@@ -1417,6 +1417,7 @@ function LeadHistorySheet({ open, onOpenChange, lead, history }: LeadHistoryShee
     
 
     
+
 
 
 
