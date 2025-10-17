@@ -264,10 +264,13 @@ export default function LeadDetailPage() {
   }, [fetchLeadDetails]);
 
   useEffect(() => {
-    if (isEditing && lead && (lead.property.type === 'Commercial' || lead.property.type === 'Land') && lead.property.bedrooms !== 0) {
-      setLead(prev => prev ? {...prev, property: {...prev.property, bedrooms: 0}} : null);
+    if (isEditing && lead) {
+        const isBedroomsDisabled = lead.property.type === 'Commercial' || lead.property.type === 'Land';
+        if (isBedroomsDisabled && lead.property.bedrooms !== 0) {
+            setLead(prev => prev ? {...prev, property: {...prev.property, bedrooms: 0}} : null);
+        }
     }
-  }, [isEditing, lead]);
+  }, [isEditing, lead?.property.type]);
   
 
   if (!lead) {
@@ -790,6 +793,7 @@ export default function LeadDetailPage() {
                                             checked={lead.property.locations.includes(location.value)}
                                             onSelect={(e) => e.preventDefault()}
                                             onClick={() => {
+                                                if (!lead) return;
                                                 const currentLocations = lead.property.locations || [];
                                                 const newLocations = currentLocations.includes(location.value)
                                                     ? currentLocations.filter(loc => loc !== location.value)
