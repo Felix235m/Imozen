@@ -6,12 +6,14 @@ const LEAD_OPERATIONS_URL = 'https://eurekagathr.app.n8n.cloud/webhook/domain/le
 const LEAD_STATUS_URL = 'https://eurekagathr.app.n8n.cloud/webhook/domain/lead-status';
 const FOLLOW_UP_URL = 'https://eurekagathr.app.n8n.cloud/webhook/follow-up_message';
 const LEAD_COMMUNICATION_URL = 'https://eurekagathr.app.n8n.cloud/webhook/domain/notes';
+const TASK_OPERATIONS_URL = ''; // To be provided later
 
 
 type Operation = 'login' | 'password_reset_request' | 'password_reset_complete' | 'onboard_agent' | 'update_agent' | 'validate_session';
 type LeadOperation = 'get_dashboard' | 'get_all_leads' | 'get_lead_details' | 'edit_lead' | 'delete_lead' | 'upload_lead_image' | 'delete_lead_image' | 'add_new_note' | 'save_note' | 'get_notes';
 type LeadStatus = 'active' | 'inactive';
 type FollowUpOperation = 'regenerate_follow-up_message';
+type TaskOperation = 'reschedule_task' | 'cancel_task' | 'mark_task_done' | 'edit_follow_up_message';
 
 async function callApi(url: string, body: any) {
     const headers: HeadersInit = {
@@ -178,4 +180,14 @@ export async function callLeadStatusApi(
             return callLeadApi('edit_lead', { lead_id: leadId, temperature: details.new_priority, note: details.note });
         }
     }
+}
+
+export async function callTaskApi(operation: TaskOperation, payload: any = {}) {
+    const body = { operation, ...payload };
+
+    console.log('🟣 callTaskApi - Operation:', operation);
+    console.log('🟣 callTaskApi - URL:', TASK_OPERATIONS_URL);
+    console.log('🟣 callTaskApi - Body:', JSON.stringify(body, null, 2));
+
+    return callApi(TASK_OPERATIONS_URL, body);
 }

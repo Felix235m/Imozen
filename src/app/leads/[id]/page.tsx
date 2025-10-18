@@ -4,7 +4,7 @@
 
 import * as React from 'react';
 import { useState, useRef, useEffect, useMemo, useCallback } from 'react';
-import { useParams, useRouter } from 'next/navigation';
+import { useParams, useRouter, useSearchParams } from 'next/navigation';
 import { ArrowLeft, MoreVertical, Upload, History, FileText, Send, Edit, Save, X, Mic, Copy, RefreshCw, MessageSquare, Phone, Mail, Trash2, Zap, ChevronsUpDown, TrendingUp, Search, Handshake, Eye, Briefcase, DollarSign, FileSignature, CheckCircle2, XCircle, Ban, Target, BadgeHelp, ArrowRight, UserPlus, PhoneCall, UserCheck, Calendar, Home, Tag, MessageCircle as MessageCircleIcon, FileText as Contract, PartyPopper, ThumbsDown, UserX, Building, Warehouse, Mountain, Minus, Plus } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -127,6 +127,7 @@ const propertyTypes = [
 export default function LeadDetailPage() {
   const params = useParams();
   const router = useRouter();
+  const searchParams = useSearchParams();
   const id = params.id as string;
   const [isEditing, setIsEditing] = useState(false);
 
@@ -181,6 +182,18 @@ export default function LeadDetailPage() {
     return { code: '+351', number: phoneStr };
   }, []);
 
+  // Normalize location names to match dropdown values
+  const normalizeLocations = useCallback((locations: string[]) => {
+    return locations.map(loc => {
+      const normalized = loc.toLowerCase();
+      // Find matching location in allLocations array
+      const match = allLocations.find(
+        l => l.label.toLowerCase() === normalized || l.value.toLowerCase() === normalized
+      );
+      return match ? match.value : normalized;
+    });
+  }, []);
+
   const fetchLeadDetails = useCallback(async () => {
     try {
       const response = await callLeadApi('get_lead_details', { lead_id: id });
@@ -189,15 +202,20 @@ export default function LeadDetailPage() {
       if (!currentLeadData) {
         throw new Error('Lead not found');
       }
-      
+
+      // Normalize locations to match dropdown values
+      if (currentLeadData.property?.locations) {
+        currentLeadData.property.locations = normalizeLocations(currentLeadData.property.locations);
+      }
+
       setLead(currentLeadData);
-      setOriginalLead(JSON.parse(JSON.stringify(currentLeadData))); 
+      setOriginalLead(JSON.parse(JSON.stringify(currentLeadData)));
       setAvatarPreview(currentLeadData.image_url);
 
       const { code, number } = parsePhoneNumber(currentLeadData.contact.phone);
       setPhoneCountryCode(code);
       setPhoneNumber(number);
-      
+
       const history = (currentLeadData.notes || [])
         .filter((item: any) => item.type === 'note' && item.description !== currentLeadData.management.agent_notes)
         .map((item: any) => ({
@@ -211,7 +229,7 @@ export default function LeadDetailPage() {
        toast({ variant: 'destructive', title: 'Error', description: 'Could not load lead details.' });
        router.push('/leads');
     }
-  }, [id, toast, router, parsePhoneNumber]);
+  }, [id, toast, router, parsePhoneNumber, normalizeLocations]);
   
   const prepareSaveChanges = useCallback(() => {
     if (!lead || !originalLead) return;
@@ -262,6 +280,15 @@ export default function LeadDetailPage() {
   useEffect(() => {
     fetchLeadDetails();
   }, [fetchLeadDetails]);
+
+  useEffect(() => {
+    const editMode = searchParams.get('edit') === 'true';
+    if (editMode) {
+      setIsEditing(true);
+      // Remove the query parameter from URL without triggering a page reload
+      router.replace(`/leads/${id}`, { scroll: false });
+    }
+  }, [searchParams, id, router]);
 
   useEffect(() => {
     if (isEditing && lead) {
@@ -490,7 +517,7 @@ export default function LeadDetailPage() {
         },
       };
 
-      await callLeadApi('update_lead', { lead_id: id, ...updatedLeadData });
+      await callLeadApi('edit_lead', updatedLeadData);
 
       setOriginalLead(JSON.parse(JSON.stringify(updatedLeadData)));
 
@@ -726,11 +753,19 @@ export default function LeadDetailPage() {
 
                         <div>
                             <p className="text-gray-500 text-sm mb-2">Budget</p>
-                            <Input
-                                type="number"
-                                value={lead.property.budget ?? ''}
-                                onChange={(e) => setLead(prev => prev ? {...prev, property: {...prev.property, budget: Number(e.target.value)}} : null)}
-                            />
+                            <div className="relative">
+                                <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500 font-medium">€</span>
+                                <Input
+                                    type="number"
+                                    value={lead.property.budget || ''}
+                                    onChange={(e) => {
+                                        const value = e.target.value === '' ? null : Number(e.target.value);
+                                        setLead(prev => prev ? {...prev, property: {...prev.property, budget: value}} : null);
+                                    }}
+                                    className="pl-8"
+                                    placeholder="0"
+                                />
+                            </div>
                         </div>
 
                         <div>
@@ -762,60 +797,68 @@ export default function LeadDetailPage() {
                             <p className="text-gray-500 text-sm mb-2">Locations</p>
                             <DropdownMenu>
                                 <DropdownMenuTrigger asChild>
-                                    <Button variant="outline" className="w-full justify-between h-auto min-h-10">
-                                        <div className="flex gap-1 flex-wrap items-center">
-                                            {lead.property.locations.length > 0 ? (
-                                                lead.property.locations.map(locValue => (
-                                                    <Badge
-                                                        key={locValue}
-                                                        variant="secondary"
-                                                        className="mr-1"
-                                                        onClick={(e) => {
-                                                            e.stopPropagation();
-                                                            setLead(prev => {
-                                                                if (!prev) return null;
-                                                                const newLocations = prev.property.locations.filter(l => l !== locValue);
-                                                                return {...prev, property: {...prev.property, locations: newLocations}};
-                                                            });
-                                                        }}
-                                                    >
-                                                        {allLocations.find(l => l.value === locValue)?.label || locValue}
-                                                        <X className="ml-1 h-3 w-3" />
-                                                    </Badge>
-                                                ))
-                                            ) : (
-                                                <span className="text-muted-foreground">Select locations...</span>
-                                            )}
-                                        </div>
+                                    <Button variant="outline" className="w-full justify-between">
+                                        <span className="text-muted-foreground">
+                                            {lead.property.locations.length > 0
+                                                ? `${lead.property.locations.length} location${lead.property.locations.length > 1 ? 's' : ''} selected`
+                                                : 'Select locations...'}
+                                        </span>
                                         <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
                                     </Button>
                                 </DropdownMenuTrigger>
                                 <DropdownMenuContent className="w-[--radix-dropdown-menu-trigger-width]">
-                                    {allLocations.map((location) => (
-                                        <DropdownMenuCheckboxItem
-                                            key={location.value}
-                                            checked={lead.property.locations.includes(location.value)}
-                                            onSelect={(e) => e.preventDefault()}
-                                            onClick={() => {
-                                                if (!lead) return;
-                                                const currentLocations = lead.property.locations || [];
-                                                const isSelected = currentLocations.includes(location.value);
-                                                
-                                                let newLocations;
-                                                if (isSelected) {
-                                                    newLocations = currentLocations.filter(loc => loc !== location.value);
-                                                } else {
-                                                    newLocations = [...currentLocations, location.value];
-                                                }
+                                    {allLocations.map((location) => {
+                                        const currentLocations = lead.property.locations || [];
+                                        const isSelected = currentLocations.includes(location.value);
 
-                                                setLead(prev => prev ? {...prev, property: {...prev.property, locations: newLocations}} : null);
-                                            }}
-                                        >
-                                            {location.label}
-                                        </DropdownMenuCheckboxItem>
-                                    ))}
+                                        return (
+                                            <DropdownMenuCheckboxItem
+                                                key={location.value}
+                                                checked={isSelected}
+                                                onSelect={(e) => e.preventDefault()}
+                                                onClick={() => {
+                                                    if (!lead) return;
+
+                                                    let newLocations;
+                                                    if (isSelected) {
+                                                        // Remove this location
+                                                        newLocations = currentLocations.filter(loc => loc !== location.value);
+                                                    } else {
+                                                        // Add this location
+                                                        newLocations = [...currentLocations, location.value];
+                                                    }
+
+                                                    setLead(prev => prev ? {...prev, property: {...prev.property, locations: newLocations}} : null);
+                                                }}
+                                            >
+                                                {location.label}
+                                            </DropdownMenuCheckboxItem>
+                                        );
+                                    })}
                                 </DropdownMenuContent>
                             </DropdownMenu>
+
+                            {lead.property.locations.length > 0 && (
+                                <div className="flex gap-2 flex-wrap mt-3">
+                                    {lead.property.locations.map(locValue => (
+                                        <Badge
+                                            key={locValue}
+                                            variant="secondary"
+                                            className="px-3 py-1.5 flex items-center gap-2 cursor-pointer hover:bg-secondary/80"
+                                            onClick={() => {
+                                                setLead(prev => {
+                                                    if (!prev) return null;
+                                                    const newLocations = prev.property.locations.filter(l => l !== locValue);
+                                                    return {...prev, property: {...prev.property, locations: newLocations}};
+                                                });
+                                            }}
+                                        >
+                                            {allLocations.find(l => l.value === locValue)?.label || locValue}
+                                            <X className="h-3 w-3" />
+                                        </Badge>
+                                    ))}
+                                </div>
+                            )}
                         </div>
                     </div>
                 ) : (

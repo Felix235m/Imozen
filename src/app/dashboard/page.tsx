@@ -1,31 +1,22 @@
 
 "use client";
 
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo, useCallback } from 'react';
 import {
-  Mail,
-  Phone,
-  Calendar,
-  Home,
-  ChevronRight,
   ClipboardList,
   Flame,
   TrendingUp,
   Users,
-  MessageSquare,
-  Briefcase,
   Plus,
   Loader2,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
-import { LeadFollowUpSheet } from '@/components/leads/lead-follow-up-sheet';
-import { allLeadsData, type LeadData } from '@/lib/leads-data';
-import { cn } from '@/lib/utils';
 import { useRouter } from 'next/navigation';
 import { useToast } from '@/hooks/use-toast';
 import { callAuthApi, callLeadApi } from '@/lib/auth-api';
 import { format, isToday, isTomorrow, isValid } from 'date-fns';
+import { TaskCard } from '@/components/dashboard/task-card';
 
 const initialStats = [
   { title: 'Leads for Follow-up', value: '0', icon: Users },
@@ -34,25 +25,39 @@ const initialStats = [
   { title: 'Conversion Rate', value: '0%', icon: TrendingUp, color: "text-green-500" },
 ];
 
-const iconMap: { [key: string]: React.ElementType } = {
-  email: Mail,
-  phone: Phone,
-  calendar: Calendar,
-  home: Home,
-  whatsapp: MessageSquare,
-  briefcase: Briefcase,
-  default: ClipboardList,
-};
-
 export default function AgentDashboardPage() {
-  const [isFollowUpOpen, setIsFollowUpOpen] = useState(false);
-  const [selectedLead, setSelectedLead] = useState<LeadData | null>(null);
   const [isCheckingSession, setIsCheckingSession] = useState(false);
   const [agentName, setAgentName] = useState('');
   const [dashboardData, setDashboardData] = useState<any>(null);
   const [isLoading, setIsLoading] = useState(true);
   const router = useRouter();
   const { toast } = useToast();
+
+  const fetchDashboardData = useCallback(async () => {
+    setIsLoading(true);
+    try {
+        const response = await callLeadApi('get_dashboard');
+        const data = Array.isArray(response) ? response[0] : response;
+
+        if (data && data.success) {
+            setDashboardData(data);
+        } else {
+             toast({
+                variant: "destructive",
+                title: "Error",
+                description: "Could not load dashboard data.",
+            });
+        }
+    } catch (error) {
+        toast({
+            variant: "destructive",
+            title: "Error",
+            description: "Could not load dashboard data.",
+        });
+    } finally {
+        setIsLoading(false);
+    }
+  }, [toast]);
 
   useEffect(() => {
     const agentDataString = localStorage.getItem('agent_data');
@@ -65,46 +70,10 @@ export default function AgentDashboardPage() {
         setAgentName('Agent');
       }
     }
-    
-    const fetchDashboardData = async () => {
-        setIsLoading(true);
-        try {
-            const response = await callLeadApi('get_dashboard');
-            const data = Array.isArray(response) ? response[0] : response;
-            
-            if (data && data.success) {
-                setDashboardData(data);
-            } else {
-                 toast({
-                    variant: "destructive",
-                    title: "Error",
-                    description: "Could not load dashboard data.",
-                });
-            }
-        } catch (error) {
-            toast({
-                variant: "destructive",
-                title: "Error",
-                description: "Could not load dashboard data.",
-            });
-        } finally {
-            setIsLoading(false);
-        }
-    };
-    fetchDashboardData();
-  }, [toast]);
 
-  const handleTaskClick = (leadId: string, icon: React.ElementType) => {
-    if (icon === MessageSquare) {
-      const lead = allLeadsData.find(l => l.id === leadId);
-      if (lead) {
-        setSelectedLead(lead);
-        setIsFollowUpOpen(true);
-      }
-    } else {
-        router.push(`/leads/${leadId}`);
-    }
-  };
+    fetchDashboardData();
+  }, [fetchDashboardData]);
+
 
   const handleAddNewLead = async () => {
     setIsCheckingSession(true);
@@ -212,27 +181,14 @@ export default function AgentDashboardPage() {
             <div key={group.date}>
               <h4 className="font-semibold text-gray-600 mb-2">{group.formattedDate}</h4>
               <div className="space-y-3">
-                {group.items.map((task: any) => {
-                  const Icon = iconMap[task.type] || iconMap.default;
-                  return (
-                    <Card 
-                      key={task.id} 
-                      className={cn("shadow-sm hover:shadow-md transition-shadow cursor-pointer")}
-                      onClick={() => handleTaskClick(task.leadId, Icon)}
-                    >
-                      <CardContent className="flex items-center gap-4 p-4">
-                        <div className="bg-blue-100 p-3 rounded-full">
-                           <Icon className="h-5 w-5 text-primary" />
-                        </div>
-                        <div className="flex-1">
-                          <p className="font-semibold">{task.name}</p>
-                          <p className="text-sm text-gray-500">{task.description}</p>
-                        </div>
-                        <ChevronRight className="h-5 w-5 text-gray-400" />
-                      </CardContent>
-                    </Card>
-                  )
-                })}
+                {group.items.map((task: any) => (
+                  <TaskCard
+                    key={task.id}
+                    task={task}
+                    date={group.date}
+                    onTaskComplete={fetchDashboardData}
+                  />
+                ))}
               </div>
             </div>
           ))}
@@ -243,12 +199,6 @@ export default function AgentDashboardPage() {
           )}
         </div>
       </section>
-
-      <LeadFollowUpSheet 
-        open={isFollowUpOpen}
-        onOpenChange={setIsFollowUpOpen}
-        lead={selectedLead}
-      />
     </div>
   );
 }
