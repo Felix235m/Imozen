@@ -258,6 +258,7 @@ export function TaskCard({ task, date, isExpanded, onExpand, onTaskComplete }: T
         try {
             const response = await callFollowUpApi('regenerate_follow-up_message', { 
                 lead_id: task.leadId,
+                task_id: task.id,
             });
             const responseData = Array.isArray(response) ? response[0] : null;
 
