@@ -12,6 +12,7 @@ import {
   Briefcase,
   ClipboardList,
   ChevronDown,
+  ChevronUp,
   Edit,
   Copy,
   Save,
@@ -68,8 +69,7 @@ interface TaskCardProps {
 }
 
 export function TaskCard({ task, date, isExpanded, onExpand, onTaskComplete }: TaskCardProps) {
-  const [aiMessage, setAiMessage] = useState("");
-  const [isLoadingAI, setIsLoadingAI] = useState(false);
+  const [currentMessage, setCurrentMessage] = useState(task.followUpMessage);
   const [isEditing, setIsEditing] = useState(false);
   const [editedMessage, setEditedMessage] = useState("");
   const [isSavingEdit, setIsSavingEdit] = useState(false);
@@ -82,47 +82,14 @@ export function TaskCard({ task, date, isExpanded, onExpand, onTaskComplete }: T
   const { toast } = useToast();
   const Icon = iconMap[task.type] || iconMap.default;
 
-  // Determine if this task type should show AI message
   const showsAIMessage = task.type === "whatsapp" || task.type === "email";
 
-  // Fetch AI message when expanding (only for whatsapp/email tasks)
-  const handleExpand = async () => {
-    // Call the onExpand passed from parent to manage accordion state
+  const handleExpand = () => {
     onExpand();
-
-    if (!isExpanded && showsAIMessage && !aiMessage) {
-      setIsLoadingAI(true);
-      try {
-        // Get language from lead data or default to English
-        const language = "English"; // You can fetch this from lead details if needed
-
-        const response = await callFollowUpApi("regenerate_follow-up_message", {
-          lead_id: task.leadId,
-          language: language,
-        });
-
-        const responseData = Array.isArray(response) ? response[0] : response;
-
-        if (responseData && responseData["AI-Generated Message"]) {
-          setAiMessage(responseData["AI-Generated Message"]);
-        } else {
-          throw new Error("Failed to generate AI message");
-        }
-      } catch (error: any) {
-        toast({
-          variant: "destructive",
-          title: "Error",
-          description: error.message || "Could not load AI message",
-        });
-      } finally {
-        setIsLoadingAI(false);
-      }
-    }
   };
 
-  // Handle edit message
   const handleEditMessage = () => {
-    setEditedMessage(aiMessage);
+    setEditedMessage(currentMessage);
     setIsEditing(true);
   };
 
@@ -135,7 +102,7 @@ export function TaskCard({ task, date, isExpanded, onExpand, onTaskComplete }: T
         edited_message: editedMessage,
       });
 
-      setAiMessage(editedMessage);
+      setCurrentMessage(editedMessage);
       setIsEditing(false);
 
       toast({
@@ -158,9 +125,8 @@ export function TaskCard({ task, date, isExpanded, onExpand, onTaskComplete }: T
     setIsEditing(false);
   };
 
-  // Handle copy message
   const handleCopyMessage = async () => {
-    const success = await copyToClipboard(aiMessage);
+    const success = await copyToClipboard(currentMessage);
     if (success) {
       toast({
         title: "Copied!",
@@ -175,10 +141,9 @@ export function TaskCard({ task, date, isExpanded, onExpand, onTaskComplete }: T
     }
   };
 
-  // Handle send to WhatsApp
   const handleSendWhatsApp = () => {
     if (task.leadContact?.phone) {
-      openWhatsApp(task.leadContact.phone, aiMessage);
+      openWhatsApp(task.leadContact.phone, currentMessage);
     } else {
       toast({
         variant: "destructive",
@@ -188,11 +153,10 @@ export function TaskCard({ task, date, isExpanded, onExpand, onTaskComplete }: T
     }
   };
 
-  // Handle send email
   const handleSendEmail = () => {
     if (task.leadContact?.email) {
       const subject = generateEmailSubject(task.name);
-      openEmail(task.leadContact.email, subject, aiMessage);
+      openEmail(task.leadContact.email, subject, currentMessage);
     } else {
       toast({
         variant: "destructive",
@@ -202,40 +166,6 @@ export function TaskCard({ task, date, isExpanded, onExpand, onTaskComplete }: T
     }
   };
 
-  // Handle regenerate message
-  const handleRegenerateMessage = async () => {
-    setIsLoadingAI(true);
-    try {
-      const language = "English";
-
-      const response = await callFollowUpApi("regenerate_follow-up_message", {
-        lead_id: task.leadId,
-        language: language,
-      });
-
-      const responseData = Array.isArray(response) ? response[0] : response;
-
-      if (responseData && responseData["AI-Generated Message"]) {
-        setAiMessage(responseData["AI-Generated Message"]);
-        toast({
-          title: "Message regenerated",
-          description: "A new follow-up message has been generated",
-        });
-      } else {
-        throw new Error("Failed to regenerate AI message");
-      }
-    } catch (error: any) {
-      toast({
-        variant: "destructive",
-        title: "Error",
-        description: error.message || "Could not regenerate message",
-      });
-    } finally {
-      setIsLoadingAI(false);
-    }
-  };
-
-  // Handle reschedule
   const handleReschedule = async (newDate: Date, newTime: string, note: string) => {
     setIsRescheduling(true);
     try {
@@ -265,7 +195,6 @@ export function TaskCard({ task, date, isExpanded, onExpand, onTaskComplete }: T
     }
   };
 
-  // Handle cancel
   const handleCancel = async (reason: string, note: string) => {
     setIsCancelling(true);
     try {
@@ -294,7 +223,6 @@ export function TaskCard({ task, date, isExpanded, onExpand, onTaskComplete }: T
     }
   };
 
-  // Handle mark as done
   const handleMarkDone = async () => {
     setIsMarkingDone(true);
     try {
@@ -348,7 +276,6 @@ export function TaskCard({ task, date, isExpanded, onExpand, onTaskComplete }: T
         onClick={handleExpand}
       >
         <CardContent className="p-4">
-          {/* Collapsed State - Always Visible */}
           <div className="flex items-start gap-3">
             <div className="bg-blue-100 p-3 rounded-full flex-shrink-0">
               <Icon className="h-6 w-6 text-blue-600" />
@@ -362,19 +289,16 @@ export function TaskCard({ task, date, isExpanded, onExpand, onTaskComplete }: T
                 {task.description}
               </p>
             </div>
-
-            <ChevronDown
-              className={cn(
-                "h-5 w-5 text-gray-400 flex-shrink-0 transition-transform duration-300",
-                isExpanded && "rotate-180"
-              )}
-            />
+            
+            {isExpanded ? (
+              <ChevronUp className="h-5 w-5 text-gray-400 flex-shrink-0" />
+            ) : (
+              <ChevronDown className="h-5 w-5 text-gray-400 flex-shrink-0" />
+            )}
           </div>
 
-          {/* Expanded State */}
           {isExpanded && (
             <div className="mt-4 pt-4 border-t border-gray-100 space-y-4" onClick={(e) => e.stopPropagation()}>
-              {/* Lead Information */}
               <div className="space-y-2">
                 <div className="flex items-center gap-2 flex-wrap">
                   <Badge variant="outline" className="text-sm">
@@ -407,19 +331,14 @@ export function TaskCard({ task, date, isExpanded, onExpand, onTaskComplete }: T
                 </div>
               </div>
 
-              {/* AI Message Section - Only for WhatsApp/Email */}
               {showsAIMessage && (
                 <div className="space-y-3">
                   <div className="bg-gradient-to-br from-blue-50 to-blue-100 border border-blue-200 rounded-lg p-4">
                     <h4 className="text-sm font-semibold text-blue-900 mb-3 flex items-center gap-2">
-                      🤖 AI Follow-up Suggestion
+                      Follow-up Message
                     </h4>
 
-                    {isLoadingAI ? (
-                      <div className="flex items-center justify-center py-8">
-                        <Loader2 className="h-6 w-6 animate-spin text-blue-600" />
-                      </div>
-                    ) : isEditing ? (
+                    {isEditing ? (
                       <div className="space-y-3">
                         <Textarea
                           value={editedMessage}
@@ -456,11 +375,10 @@ export function TaskCard({ task, date, isExpanded, onExpand, onTaskComplete }: T
                       <>
                         <div className="bg-white rounded-md p-3 mb-3">
                           <p className="text-sm text-gray-800 whitespace-pre-wrap">
-                            {aiMessage || "No message generated yet"}
+                            {currentMessage || "No message available."}
                           </p>
                         </div>
 
-                        {/* Message Action Buttons */}
                         <div className="grid grid-cols-3 gap-2">
                           <Button
                             size="sm"
@@ -502,29 +420,12 @@ export function TaskCard({ task, date, isExpanded, onExpand, onTaskComplete }: T
                             Copy
                           </Button>
                         </div>
-
-                        {/* Regenerate Button */}
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          onClick={handleRegenerateMessage}
-                          disabled={isLoadingAI}
-                          className="w-full h-9 text-xs mt-2"
-                        >
-                          {isLoadingAI ? (
-                            <Loader2 className="h-3 w-3 mr-1 animate-spin" />
-                          ) : (
-                            <RefreshCw className="h-3 w-3 mr-1" />
-                          )}
-                          Regenerate Message
-                        </Button>
                       </>
                     )}
                   </div>
                 </div>
               )}
 
-              {/* Primary Action Buttons */}
               <div className="grid grid-cols-3 gap-3 pt-2">
                 <Button
                   variant="outline"
@@ -565,7 +466,6 @@ export function TaskCard({ task, date, isExpanded, onExpand, onTaskComplete }: T
         </CardContent>
       </Card>
 
-      {/* Reschedule Modal */}
       <RescheduleModal
         open={showReschedule}
         onOpenChange={setShowReschedule}
@@ -575,7 +475,6 @@ export function TaskCard({ task, date, isExpanded, onExpand, onTaskComplete }: T
         isLoading={isRescheduling}
       />
 
-      {/* Cancel Dialog */}
       <CancelTaskDialog
         open={showCancel}
         onOpenChange={setShowCancel}
