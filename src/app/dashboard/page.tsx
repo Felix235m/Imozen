@@ -30,6 +30,7 @@ export default function AgentDashboardPage() {
   const [agentName, setAgentName] = useState('');
   const [dashboardData, setDashboardData] = useState<any>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [expandedTaskId, setExpandedTaskId] = useState<string | null>(null);
   const router = useRouter();
   const { toast } = useToast();
 
@@ -141,6 +142,10 @@ export default function AgentDashboardPage() {
     }));
   }, [dashboardData]);
   
+  const handleToggleExpand = (taskId: string) => {
+    setExpandedTaskId(prevId => (prevId === taskId ? null : taskId));
+  };
+  
   if (isLoading) {
     return (
         <div className="flex h-full items-center justify-center">
@@ -186,6 +191,8 @@ export default function AgentDashboardPage() {
                     key={task.id}
                     task={task}
                     date={group.date}
+                    isExpanded={expandedTaskId === task.id}
+                    onExpand={() => handleToggleExpand(task.id)}
                     onTaskComplete={fetchDashboardData}
                   />
                 ))}

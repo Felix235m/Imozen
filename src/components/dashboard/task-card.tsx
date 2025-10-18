@@ -11,7 +11,7 @@ import {
   MessageSquare,
   Briefcase,
   ClipboardList,
-  ChevronRight,
+  ChevronDown,
   Edit,
   Copy,
   Save,
@@ -50,7 +50,7 @@ interface TaskItem {
   leadId: string;
   followUpMessage: string;
   time: string;
-  leadContact: {
+  leadContact?: {
     email: string;
     phone: string;
   };
@@ -62,11 +62,12 @@ interface TaskItem {
 interface TaskCardProps {
   task: TaskItem;
   date: string;
+  isExpanded: boolean;
+  onExpand: () => void;
   onTaskComplete: () => void;
 }
 
-export function TaskCard({ task, date, onTaskComplete }: TaskCardProps) {
-  const [isExpanded, setIsExpanded] = useState(false);
+export function TaskCard({ task, date, isExpanded, onExpand, onTaskComplete }: TaskCardProps) {
   const [aiMessage, setAiMessage] = useState("");
   const [isLoadingAI, setIsLoadingAI] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
@@ -86,6 +87,9 @@ export function TaskCard({ task, date, onTaskComplete }: TaskCardProps) {
 
   // Fetch AI message when expanding (only for whatsapp/email tasks)
   const handleExpand = async () => {
+    // Call the onExpand passed from parent to manage accordion state
+    onExpand();
+
     if (!isExpanded && showsAIMessage && !aiMessage) {
       setIsLoadingAI(true);
       try {
@@ -114,7 +118,6 @@ export function TaskCard({ task, date, onTaskComplete }: TaskCardProps) {
         setIsLoadingAI(false);
       }
     }
-    setIsExpanded(!isExpanded);
   };
 
   // Handle edit message
@@ -360,10 +363,10 @@ export function TaskCard({ task, date, onTaskComplete }: TaskCardProps) {
               </p>
             </div>
 
-            <ChevronRight
+            <ChevronDown
               className={cn(
                 "h-5 w-5 text-gray-400 flex-shrink-0 transition-transform duration-300",
-                isExpanded && "rotate-90"
+                isExpanded && "rotate-180"
               )}
             />
           </div>
