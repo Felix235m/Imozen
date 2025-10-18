@@ -198,13 +198,13 @@ export function TaskCard({ task, date, isExpanded, onExpand, onTaskComplete }: T
     }
   };
 
-  const handleCancel = async (reason: string, note: string) => {
+  const handleCancel = async (note: string) => {
     setIsCancelling(true);
     try {
       await callTaskApi("cancel_task", {
         task_id: task.id,
         lead_id: task.leadId,
-        reason: reason,
+        reason: "", // Reason is no longer collected
         note: note,
       });
 

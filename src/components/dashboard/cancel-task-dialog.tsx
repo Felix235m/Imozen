@@ -1,3 +1,4 @@
+
 "use client";
 
 import * as React from "react";
@@ -12,28 +13,13 @@ import {
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
 
 interface CancelTaskDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  onConfirm: (reason: string, note: string) => void;
+  onConfirm: (note: string) => void;
   isLoading?: boolean;
 }
-
-const CANCEL_REASONS = [
-  "Lead not interested",
-  "Already contacted",
-  "Duplicate task",
-  "Property sold/unavailable",
-  "Other",
-];
 
 export function CancelTaskDialog({
   open,
@@ -41,19 +27,17 @@ export function CancelTaskDialog({
   onConfirm,
   isLoading = false,
 }: CancelTaskDialogProps) {
-  const [reason, setReason] = React.useState<string>("");
   const [note, setNote] = React.useState<string>("");
 
   // Reset form when modal opens
   React.useEffect(() => {
     if (open) {
-      setReason("");
       setNote("");
     }
   }, [open]);
 
   const handleConfirm = () => {
-    onConfirm(reason, note);
+    onConfirm(note);
   };
 
   return (
@@ -86,29 +70,10 @@ export function CancelTaskDialog({
             </p>
           </div>
 
-          {/* Reason Dropdown */}
-          <div className="space-y-2">
-            <Label htmlFor="reason" className="text-sm font-medium text-gray-700">
-              📝 Reason (Optional)
-            </Label>
-            <Select value={reason} onValueChange={setReason}>
-              <SelectTrigger className="w-full h-12 bg-gray-50 border-gray-200">
-                <SelectValue placeholder="Select a reason" />
-              </SelectTrigger>
-              <SelectContent>
-                {CANCEL_REASONS.map((r) => (
-                  <SelectItem key={r} value={r} className="hover:bg-gray-100">
-                    {r}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-
-          {/* Additional Note */}
+          {/* Note */}
           <div className="space-y-2">
             <Label htmlFor="note" className="text-sm font-medium text-gray-700">
-              Additional Note (Optional)
+              Note (Optional)
             </Label>
             <Textarea
               id="note"
