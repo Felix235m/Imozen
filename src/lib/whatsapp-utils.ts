@@ -9,13 +9,8 @@
 export function formatPhoneForWhatsApp(phone: string): string {
   if (!phone) return '';
 
-  // Remove all non-digit characters except the leading +
-  let cleaned = phone.replace(/[^\d+]/g, '');
-
-  // Remove + if present, we'll add it back
-  cleaned = cleaned.replace('+', '');
-
-  return cleaned;
+  // Remove all non-digit characters
+  return phone.replace(/\D/g, '');
 }
 
 /**
