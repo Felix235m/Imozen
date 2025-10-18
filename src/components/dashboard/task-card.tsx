@@ -78,6 +78,7 @@ export function TaskCard({ task, date, isExpanded, onExpand, onTaskComplete }: T
   const [isRescheduling, setIsRescheduling] = useState(false);
   const [isCancelling, setIsCancelling] = useState(false);
   const [isMarkingDone, setIsMarkingDone] = useState(false);
+  const [isRegenerating, setIsRegenerating] = useState(false);
 
   const { toast } = useToast();
   const Icon = iconMap[task.type] || iconMap.default;
@@ -252,6 +253,31 @@ export function TaskCard({ task, date, isExpanded, onExpand, onTaskComplete }: T
     }
   };
 
+    const handleRegenerate = async () => {
+        setIsRegenerating(true);
+        try {
+            const response = await callFollowUpApi('regenerate_follow-up_message', { 
+                lead_id: task.leadId,
+            });
+            const responseData = Array.isArray(response) ? response[0] : null;
+
+            if (responseData && responseData["AI-Generated Message"] && responseData.lead_id === task.leadId) {
+                setCurrentMessage(responseData["AI-Generated Message"]);
+                toast({ title: 'Message regenerated successfully!' });
+            } else {
+                throw new Error('Invalid response from server.');
+            }
+        } catch (error: any) {
+            toast({
+                variant: 'destructive',
+                title: 'Error',
+                description: error.message || 'Could not regenerate message.',
+            });
+        } finally {
+            setIsRegenerating(false);
+        }
+    };
+
   const getPriorityColor = (priority: string) => {
     switch (priority) {
       case "Hot":
@@ -393,10 +419,11 @@ export function TaskCard({ task, date, isExpanded, onExpand, onTaskComplete }: T
                           <Button
                             size="sm"
                             variant="outline"
-                            onClick={() => { /* No-op */ }}
+                            onClick={handleRegenerate}
+                            disabled={isRegenerating}
                             className="h-9 text-xs bg-white hover:bg-gray-50"
                           >
-                            <RefreshCw className="h-3 w-3 mr-1" />
+                            {isRegenerating ? <Loader2 className="h-3 w-3 mr-1 animate-spin" /> : <RefreshCw className="h-3 w-3 mr-1" />}
                             Regenerate
                           </Button>
 
