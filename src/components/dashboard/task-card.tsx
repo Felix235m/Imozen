@@ -32,6 +32,7 @@ import { openEmail, generateEmailSubject } from "@/lib/email-utils";
 import { copyToClipboard } from "@/lib/task-utils";
 import { RescheduleModal } from "./reschedule-modal";
 import { CancelTaskDialog } from "./cancel-task-dialog";
+import { CompleteTaskDialog } from "./complete-task-dialog";
 
 const iconMap: { [key: string]: React.ElementType } = {
   email: Mail,
@@ -75,6 +76,7 @@ export function TaskCard({ task, date, isExpanded, onExpand, onTaskComplete }: T
   const [isSavingEdit, setIsSavingEdit] = useState(false);
   const [showReschedule, setShowReschedule] = useState(false);
   const [showCancel, setShowCancel] = useState(false);
+  const [showComplete, setShowComplete] = useState(false);
   const [isRescheduling, setIsRescheduling] = useState(false);
   const [isCancelling, setIsCancelling] = useState(false);
   const [isMarkingDone, setIsMarkingDone] = useState(false);
@@ -224,7 +226,7 @@ export function TaskCard({ task, date, isExpanded, onExpand, onTaskComplete }: T
     }
   };
 
-  const handleMarkDone = async () => {
+  const handleMarkDone = async (note: string) => {
     setIsMarkingDone(true);
     try {
       const token = localStorage.getItem("auth_token");
@@ -233,6 +235,7 @@ export function TaskCard({ task, date, isExpanded, onExpand, onTaskComplete }: T
         task_id: task.id,
         lead_id: task.leadId,
         operation: "task_completed",
+        note: note,
         session_token: token,
       });
 
@@ -240,7 +243,8 @@ export function TaskCard({ task, date, isExpanded, onExpand, onTaskComplete }: T
         title: "Task completed!",
         description: "The follow-up task has been marked as done",
       });
-
+      
+      setShowComplete(false);
       onTaskComplete(); // Refresh dashboard
     } catch (error: any) {
       toast({
@@ -484,7 +488,7 @@ export function TaskCard({ task, date, isExpanded, onExpand, onTaskComplete }: T
 
                 <Button
                   variant="outline"
-                  onClick={handleMarkDone}
+                  onClick={() => setShowComplete(true)}
                   disabled={isMarkingDone}
                   className="h-20 flex flex-col items-center justify-center gap-2 border-2 hover:border-green-500 hover:bg-green-50"
                 >
@@ -517,6 +521,13 @@ export function TaskCard({ task, date, isExpanded, onExpand, onTaskComplete }: T
         onOpenChange={setShowCancel}
         onConfirm={handleCancel}
         isLoading={isCancelling}
+      />
+      
+      <CompleteTaskDialog
+        open={showComplete}
+        onOpenChange={setShowComplete}
+        onConfirm={handleMarkDone}
+        isLoading={isMarkingDone}
       />
     </>
   );
