@@ -30,11 +30,17 @@ export function DatePicker({
   className,
   disablePastDates = true,
 }: DatePickerProps) {
+  const [open, setOpen] = React.useState(false);
   const today = new Date();
   today.setHours(0, 0, 0, 0);
 
+  const handleSelect = (date: Date | undefined) => {
+    onChange(date);
+    setOpen(false);
+  };
+
   return (
-    <Popover>
+    <Popover open={open} onOpenChange={setOpen}>
       <PopoverTrigger asChild>
         <Button
           variant="outline"
@@ -53,7 +59,7 @@ export function DatePicker({
         <Calendar
           mode="single"
           selected={value}
-          onSelect={onChange}
+          onSelect={handleSelect}
           disabled={disablePastDates ? (date) => date < today : undefined}
           initialFocus
         />

@@ -175,8 +175,8 @@ export function TaskCard({ task, date, isExpanded, onExpand, onTaskComplete }: T
       await callTaskApi("reschedule_task", {
         task_id: task.id,
         lead_id: task.leadId,
-        new_date: newDate.toISOString(),
-        new_time: newTime,
+        date: newDate.toISOString(),
+        time: newTime,
         note: note,
       });
 
@@ -204,7 +204,6 @@ export function TaskCard({ task, date, isExpanded, onExpand, onTaskComplete }: T
       await callTaskApi("cancel_task", {
         task_id: task.id,
         lead_id: task.leadId,
-        reason: "", // Reason is no longer collected
         note: note,
       });
 
@@ -229,14 +228,10 @@ export function TaskCard({ task, date, isExpanded, onExpand, onTaskComplete }: T
   const handleMarkDone = async (note: string) => {
     setIsMarkingDone(true);
     try {
-      const token = localStorage.getItem("auth_token");
-
-      await callTaskApi("mark_task_done", {
+      await callTaskApi("mark_done", {
         task_id: task.id,
         lead_id: task.leadId,
-        operation: "task_completed",
         note: note,
-        session_token: token,
       });
 
       toast({

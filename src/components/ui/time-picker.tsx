@@ -38,7 +38,7 @@ export function TimePicker({ value, onChange, className }: TimePickerProps) {
     <div className={cn("flex gap-2", className)}>
       {/* Hour Selector */}
       <Select
-        value={hour}
+        value={String(parseInt(hour, 10))} // Ensure value is a string and handle leading zeros
         onValueChange={(h) => updateTime(h, minute, period)}
       >
         <SelectTrigger className="w-[80px] bg-gray-50">
@@ -47,7 +47,7 @@ export function TimePicker({ value, onChange, className }: TimePickerProps) {
         <SelectContent>
           {hours.map((h) => (
             <SelectItem key={h} value={h}>
-              {h}
+              {h.padStart(2, '0')}
             </SelectItem>
           ))}
         </SelectContent>
