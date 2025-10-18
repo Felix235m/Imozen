@@ -389,6 +389,16 @@ export function TaskCard({ task, date, isExpanded, onExpand, onTaskComplete }: T
                             <Edit className="h-3 w-3 mr-1" />
                             Edit
                           </Button>
+                          
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            onClick={() => { /* No-op */ }}
+                            className="h-9 text-xs bg-white hover:bg-gray-50"
+                          >
+                            <RefreshCw className="h-3 w-3 mr-1" />
+                            Regenerate
+                          </Button>
 
                           {task.type === "whatsapp" ? (
                             <Button
@@ -409,17 +419,16 @@ export function TaskCard({ task, date, isExpanded, onExpand, onTaskComplete }: T
                               Email
                             </Button>
                           )}
-
-                          <Button
-                            size="sm"
-                            variant="outline"
-                            onClick={handleCopyMessage}
-                            className="h-9 text-xs bg-white hover:bg-gray-50"
-                          >
-                            <Copy className="h-3 w-3 mr-1" />
-                            Copy
-                          </Button>
                         </div>
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={handleCopyMessage}
+                          className="w-full h-9 text-xs bg-white hover:bg-gray-50 mt-2"
+                        >
+                          <Copy className="h-3 w-3 mr-1" />
+                          Copy Message
+                        </Button>
                       </>
                     )}
                   </div>
