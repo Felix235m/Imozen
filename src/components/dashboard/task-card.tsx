@@ -301,11 +301,11 @@ export function TaskCard({ task, date, isExpanded, onExpand, onTaskComplete }: T
             <div className="mt-4 pt-4 border-t border-gray-100 space-y-4" onClick={(e) => e.stopPropagation()}>
               <div className="space-y-2">
                 <div className="flex items-center gap-2 flex-wrap">
-                  <Badge variant="outline" className="text-sm">
-                    {task.leadStatus}
-                  </Badge>
                   <Badge variant="outline" className={cn("text-sm", getPriorityColor(task.leadPriority))}>
                     {task.leadPriority}
+                  </Badge>
+                  <Badge variant="outline" className="text-sm">
+                    {task.leadStatus}
                   </Badge>
                 </div>
 
