@@ -4,13 +4,24 @@
 
 /**
  * Format phone number for WhatsApp by removing non-digit characters
- * and ensuring it has the correct international format
+ * and ensuring it has the correct international format with + prefix
  */
 export function formatPhoneForWhatsApp(phone: string): string {
   if (!phone) return '';
 
-  // Remove all non-digit characters
-  return phone.replace(/\D/g, '');
+  // Remove all non-digit characters except +
+  let cleaned = phone.replace(/[^\d+]/g, '');
+
+  // Remove any + signs that are not at the beginning
+  const parts = cleaned.split('+');
+  cleaned = parts.filter(p => p).join(''); // Remove empty parts and join
+
+  // Ensure the number starts with +
+  if (!cleaned.startsWith('+')) {
+    cleaned = `+${cleaned}`;
+  }
+
+  return cleaned;
 }
 
 /**

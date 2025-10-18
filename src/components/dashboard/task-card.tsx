@@ -310,13 +310,13 @@ export function TaskCard({ task, date, isExpanded, onExpand, onTaskComplete }: T
                 </div>
 
                 <div className="space-y-1 text-sm text-gray-600">
-                  {task.leadContact?.email && (
+                  {task.leadContact && task.leadContact.email && (
                     <p className="flex items-center gap-2">
                       <Mail className="h-4 w-4" />
                       {task.leadContact.email}
                     </p>
                   )}
-                  {task.leadContact?.phone && (
+                  {task.leadContact && task.leadContact.phone && (
                     <p className="flex items-center gap-2">
                       <Phone className="h-4 w-4" />
                       {task.leadContact.phone}
@@ -349,7 +349,7 @@ export function TaskCard({ task, date, isExpanded, onExpand, onTaskComplete }: T
                           <Button
                             size="sm"
                             onClick={handleSaveEdit}
-                            disabled={isSavingEdit}
+                            disabled={isSavingEdit || editedMessage === currentMessage}
                             className="flex-1 bg-blue-600 hover:bg-blue-700"
                           >
                             {isSavingEdit ? (
