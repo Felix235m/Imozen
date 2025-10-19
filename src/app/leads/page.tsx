@@ -34,7 +34,30 @@ import {
   DialogFooter
 } from '@/components/ui/dialog';
 import { callLeadApi, callLeadStatusApi, callAuthApi } from '@/lib/auth-api';
+import { transformWebhookResponseToLeadListItem } from '@/lib/lead-transformer';
+import { format, isValid } from 'date-fns';
 
+// Helper function to safely format follow-up dates
+function formatFollowUpDate(dateValue: string | null | undefined): string {
+  // Handle null, undefined, empty string, or "-"
+  if (!dateValue || dateValue === '-' || dateValue.trim() === '') {
+    return 'Not set';
+  }
+
+  try {
+    const parsedDate = new Date(dateValue);
+
+    // Check if the date is valid
+    if (isValid(parsedDate)) {
+      return format(parsedDate, 'MMM d, yyyy');
+    } else {
+      return 'Not set';
+    }
+  } catch (error) {
+    // If any error occurs during parsing/formatting, return "Not set"
+    return 'Not set';
+  }
+}
 
 type LeadTemperature = 'Hot' | 'Warm' | 'Cold';
 type LeadStatus = 'Active' | 'Inactive';
@@ -284,21 +307,49 @@ export default function LeadsPage() {
     setIsStatusDialogOpen(true);
   };
 
-  const handleStatusSave = (leadId: string, newStatus: LeadTemperature, note: string) => {
-    callLeadStatusApi(leadId, "change_priority", { new_priority: newStatus, note }).then(() => {
-        setLeads(prevLeads =>
-          prevLeads.map(lead =>
-            lead.lead_id === leadId ? { ...lead, temperature: newStatus } : lead
-          )
-        );
+  const handleStatusSave = async (leadId: string, newStatus: LeadTemperature, note: string) => {
+    try {
+        // Construct payload for the status change API
+        const payload = {
+            lead_id: leadId,
+            operation: 'change_priority',
+            new_priority: newStatus,
+            note: note,
+        };
+
+        // Call the status change API
+        const response = await callApi(LEAD_STATUS_URL, payload);
+
+        // Transform the webhook response to match the frontend lead list item format
+        const transformedLead = transformWebhookResponseToLeadListItem(response);
+
+        if (transformedLead) {
+            // Update the leads list with the fresh data from the server
+            setLeads(prevLeads =>
+              prevLeads.map(lead =>
+                lead.lead_id === leadId ? { ...lead, ...transformedLead } : lead
+              )
+            );
+        } else {
+            // Fallback: If transformation fails, just update the temperature locally
+            setLeads(prevLeads =>
+              prevLeads.map(lead =>
+                lead.lead_id === leadId ? { ...lead, temperature: newStatus } : lead
+              )
+            );
+        }
+
         toast({
           title: 'Priority Updated',
           description: `Lead priority changed to ${newStatus} and note was added.`,
         });
+        
+    } catch (error: any) {
+         console.error('Priority update error:', error);
+         toast({ variant: "destructive", title: "Error", description: error.message || "Could not update lead priority." });
+    } finally {
         setIsStatusDialogOpen(false);
-    }).catch(() => {
-         toast({ variant: "destructive", title: "Error", description: "Could not update lead priority." });
-    })
+    }
   };
   
   const handleStageSelect = (newStage: LeadStage) => {
@@ -328,23 +379,39 @@ export default function LeadsPage() {
             status: selectedStage
         };
 
-        const response = await fetch(webhookUrl, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
-            body: JSON.stringify(webhookPayload)
-        });
+        let response;
+        try {
+            response = await fetch(webhookUrl, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+                body: JSON.stringify(webhookPayload)
+            });
+        } catch (fetchError: any) {
+            // Network errors: connection refused, DNS failure, timeout, etc.
+            if (fetchError.name === 'TypeError' || fetchError.message.includes('fetch')) {
+                throw new Error('Server is busy or could not be reached. Please check your connection and try again.');
+            }
+            if (fetchError.name === 'AbortError') {
+                throw new Error('Request timed out. The server is taking too long to respond.');
+            }
+            throw new Error('Network error occurred. Please check your connection and try again.');
+        }
 
         if (!response.ok) {
+            // Handle server errors (5xx)
+            if (response.status >= 500) {
+                throw new Error('Server error occurred. Please try again later.');
+            }
             const errorText = await response.text();
             throw new Error(errorText || 'Failed to update lead status');
         }
 
-        setLeads(prevLeads => prevLeads.map(l => 
-            l.lead_id === selectedLeadForStageChange.lead_id 
-            ? { ...l, lead_stage: selectedStage, status: selectedStage as any } 
+        setLeads(prevLeads => prevLeads.map(l =>
+            l.lead_id === selectedLeadForStageChange.lead_id
+            ? { ...l, lead_stage: selectedStage, status: selectedStage as any }
             : l
         ));
-        
+
         toast({
             title: "Status Updated",
             description: `Lead status changed to "${selectedStage}".`,
@@ -410,17 +477,13 @@ export default function LeadsPage() {
               <div className="flex items-center gap-2 flex-wrap">
                 <Badge variant="outline" className={cn("text-xs", getStatusBadgeClass(lead.temperature))}>{lead.temperature}</Badge>
                 {stageInfo && (
-                  <Badge variant="outline" className={cn("text-xs", stageInfo.color)}>{stageInfo.label}</Badge>
+                  <Badge variant="outline" className="text-xs bg-gray-100 text-gray-700 border-gray-300">{stageInfo.label}</Badge>
                 )}
                 <p className="text-sm text-gray-500">
                   Next follow-up:
-                  {lead.next_follow_up.date ? (
-                    <span className="text-red-500 font-medium ml-1">_</span>
-                  ) : (
-                    <span className={cn(lead.next_follow_up.status === 'Overdue' && "text-red-500 font-medium ml-1")}>
-                      {' '}{lead.next_follow_up.status}
-                    </span>
-                  )}
+                  <span className="ml-1">
+                    {formatFollowUpDate(lead.next_follow_up.date)}
+                  </span>
                 </p>
               </div>
             </div>
@@ -665,5 +728,3 @@ export default function LeadsPage() {
     </div>
   );
 }
-
-    

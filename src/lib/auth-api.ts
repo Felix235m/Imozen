@@ -6,7 +6,7 @@ const LEAD_OPERATIONS_URL = 'https://eurekagathr.app.n8n.cloud/webhook/domain/le
 const LEAD_STATUS_URL = 'https://eurekagathr.app.n8n.cloud/webhook/domain/lead-status';
 const FOLLOW_UP_URL = 'https://eurekagathr.app.n8n.cloud/webhook/follow-up_message';
 const LEAD_COMMUNICATION_URL = 'https://eurekagathr.app.n8n.cloud/webhook/domain/notes';
-const TASK_OPERATIONS_URL = 'https://eurekagathr.app.n8n.cloud/webhook-test/task-operation';
+const TASK_OPERATIONS_URL = 'https://eurekagathr.app.n8n.cloud/webhook/task-operation';
 
 
 type Operation = 'login' | 'password_reset_request' | 'password_reset_complete' | 'onboard_agent' | 'update_agent' | 'validate_session';
@@ -15,7 +15,7 @@ type LeadStatus = 'active' | 'inactive';
 type FollowUpOperation = 'regenerate_follow-up_message';
 type TaskOperation = 'reschedule_task' | 'cancel_task' | 'mark_task_done' | 'edit_follow_up_message';
 
-async function callApi(url: string, body: any) {
+export async function callApi(url: string, body: any) {
     const headers: HeadersInit = {
         'Content-Type': 'application/json',
     };
@@ -33,11 +33,25 @@ async function callApi(url: string, body: any) {
     console.log('🟢 callApi - Headers:', headers);
     console.log('🟢 callApi - Request body:', body);
 
-    const response = await fetch(url, {
-        method: 'POST',
-        headers,
-        body: JSON.stringify(body),
-    });
+    let response;
+    try {
+        response = await fetch(url, {
+            method: 'POST',
+            headers,
+            body: JSON.stringify(body),
+        });
+    } catch (error: any) {
+        // Network errors: connection refused, DNS failure, timeout, etc.
+        console.error('❌ callApi - Network error:', error);
+
+        if (error.name === 'TypeError' || error.message.includes('fetch')) {
+            throw new Error('Server is busy or could not be reached. Please check your connection and try again.');
+        }
+        if (error.name === 'AbortError') {
+            throw new Error('Request timed out. The server is taking too long to respond.');
+        }
+        throw new Error('Network error occurred. Please check your connection and try again.');
+    }
 
     console.log('🟢 callApi - Response status:', response.status, response.statusText);
 
@@ -46,6 +60,13 @@ async function callApi(url: string, body: any) {
 
     if (!response.ok) {
         console.error('❌ callApi - Request failed:', response.status);
+
+        // Handle server errors (5xx)
+        if (response.status >= 500) {
+            throw new Error('Server error occurred. Please try again later.');
+        }
+
+        // Handle client errors (4xx) - try to parse error message from response
         try {
             const errorData = JSON.parse(text);
             throw new Error(errorData.error?.message || errorData.message || 'API request failed');
@@ -164,21 +185,9 @@ export async function callLeadStatusApi(
         console.log('🔵 callLeadStatusApi - Updating lead with payload:', updatePayload);
         return callLeadApi('edit_lead', updatePayload);
     } else if (status === 'change_priority' && detailsOrFullPayload) {
-        // Check if we have full payload for priority change
-        if (isFullPayload) {
-            const updatePayload = {
-                ...detailsOrFullPayload,
-                lead_id: leadId,
-                temperature: detailsOrFullPayload.temperature || detailsOrFullPayload.new_priority
-            };
-            console.log('🔵 callLeadStatusApi - Updating lead with full payload for priority change:', updatePayload);
-            return callLeadApi('edit_lead', updatePayload);
-        } else {
-            // Legacy: Only temperature and note (should be avoided)
-            const details = detailsOrFullPayload as { new_priority?: 'Hot' | 'Warm' | 'Cold', note?: string };
-            console.warn('⚠️ callLeadStatusApi - Using incomplete payload for priority change. This may clear other fields!');
-            return callLeadApi('edit_lead', { lead_id: leadId, temperature: details.new_priority, note: details.note });
-        }
+        // When priority changes, the status webhook *may* return the full object.
+        // We return this directly instead of making a second call.
+        return callApi(LEAD_STATUS_URL, statusLogBody);
     }
 }
 

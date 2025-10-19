@@ -51,6 +51,7 @@ import 'react-image-crop/dist/ReactCrop.css'
 import { type LeadData } from '@/lib/leads-data';
 import { LeadFollowUpSheet } from '@/components/leads/lead-follow-up-sheet';
 import { callLeadApi, callLeadStatusApi } from '@/lib/auth-api';
+import { transformWebhookResponseToLeadData } from '@/lib/lead-transformer';
 
 type Note = {
     id?: string;
@@ -425,15 +426,15 @@ export default function LeadDetailPage() {
     };
 
     callLeadStatusApi(leadId, "change_priority", fullPayload).then((response) => {
-        if (response && Array.isArray(response) && response.length > 0) {
-            const updatedLeadFromServer = response[0];
-            const transformedLead = {
-                ...lead,
-                temperature: newStatus,
-            };
+        // Transform webhook response to frontend LeadData format
+        const transformedLead = transformWebhookResponseToLeadData(response);
+
+        if (transformedLead) {
+            // Update lead with all server data
             setLead(transformedLead);
             setOriginalLead(JSON.parse(JSON.stringify(transformedLead)));
         } else {
+            // Fallback: update only temperature if transformation fails
             setLead(prev => prev ? ({ ...prev, temperature: newStatus }) : null);
             setOriginalLead(prev => prev ? JSON.parse(JSON.stringify({ ...prev, temperature: newStatus })) : null);
         }
@@ -451,6 +452,7 @@ export default function LeadDetailPage() {
         });
         setIsStatusDialogOpen(false);
     }).catch((error) => {
+        console.error('Priority update error:', error);
         toast({ variant: 'destructive', title: 'Error', description: 'Could not update priority.' });
     });
   };
@@ -632,41 +634,40 @@ export default function LeadDetailPage() {
               <AvatarImage src={avatarPreview || undefined} alt={lead.name} />
               <AvatarFallback>{lead.name.split(' ').map(n => n[0]).join('')}</AvatarFallback>
             </Avatar>
-            <Button 
-              variant="outline" 
-              size="icon" 
+            <Button
+              variant="outline"
+              size="icon"
               className="absolute bottom-0 right-0 h-8 w-8 rounded-full bg-white shadow-md"
               onClick={() => fileInputRef.current?.click()}
             >
               <Upload className="h-4 w-4" />
             </Button>
-            <Input 
-              type="file" 
-              ref={fileInputRef} 
-              className="hidden" 
-              accept="image/*" 
+            <Input
+              type="file"
+              ref={fileInputRef}
+              className="hidden"
+              accept="image/*"
               onChange={handleAvatarChange}
             />
           </div>
-          <div className='flex items-center gap-3'>
-            {currentStageInfo && (
-              <div className={cn("flex h-12 w-12 items-center justify-center rounded-full shrink-0", currentStageInfo.color)}>
-                <currentStageInfo.icon className="h-6 w-6" />
-              </div>
-            )}
-            <div className='flex flex-col gap-1'>
+          <div className='flex flex-col items-center gap-1'>
+            <div className='relative flex justify-center'>
               <h2 className="text-2xl font-bold">{lead.name}</h2>
-              <div className='flex items-center gap-2'>
-                <Badge variant="outline" className={cn("text-xs", getStatusBadgeClass(lead.temperature))}>{lead.temperature}</Badge>
-                {currentStageInfo && (
-                  <Badge variant="outline" className={cn("text-xs", currentStageInfo.color)}>{currentStageInfo.label}</Badge>
-                )}
-              </div>
+              {currentStageInfo && (
+                <div className={cn("absolute left-full ml-2 flex h-8 w-8 items-center justify-center rounded-full shadow-md", currentStageInfo.color)}>
+                  <currentStageInfo.icon className="h-4 w-4" />
+                </div>
+              )}
+            </div>
+            <div className='flex items-center gap-2'>
+              <Badge variant="outline" className={cn("text-xs", getStatusBadgeClass(lead.temperature))}>{lead.temperature}</Badge>
+              {currentStageInfo && (
+                <Badge variant="outline" className="text-xs bg-gray-100 text-gray-700 border-gray-300">{currentStageInfo.label}</Badge>
+              )}
             </div>
           </div>
-          <div className='flex items-center gap-2 text-sm text-gray-500 mt-1'>
+          <div className='w-full flex items-center justify-between text-sm text-gray-500 mt-1 px-4'>
             <span>ID: {lead.lead_id}</span>
-            <span>&bull;</span>
             <span>Created: {lead.created_at_formatted}</span>
           </div>
         </section>
@@ -874,11 +875,13 @@ export default function LeadDetailPage() {
         </div>
       </main>
 
-      <div className="fixed bottom-20 right-4 z-20 flex flex-col items-end gap-4">
+      {!isEditing && (
+        <div className="fixed bottom-20 right-4 z-20 flex flex-col items-end gap-4">
           <ActionButton icon={FileText} label="Notes" onClick={handleOpenNotes} isLoading={isFetchingNotes} />
           <ActionButton icon={Send} label="Follow-up" onClick={() => setIsFollowUpOpen(true)} />
           <ActionButton icon={History} label="History" onClick={() => setIsHistoryOpen(true)} />
-      </div>
+        </div>
+      )}
       
       <LeadNotesSheet 
         open={isNotesOpen}

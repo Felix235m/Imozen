@@ -265,6 +265,11 @@ export default function NewLeadStep2Page() {
                                     placeholder="Enter budget"
                                     {...field}
                                     onChange={e => field.onChange(Number(e.target.value))}
+                                    onFocus={(e) => {
+                                        if (field.value === 0) {
+                                            e.target.select();
+                                        }
+                                    }}
                                 />
                             </FormControl>
                         )}
