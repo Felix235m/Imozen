@@ -670,13 +670,8 @@ export default function LeadDetailPage() {
           <div className='flex flex-col items-center gap-1'>
           <div className='relative flex justify-center items-center gap-2'>
               <h2 className="text-2xl font-bold">{lead.name}</h2>
-              <a href={`tel:${lead.contact.phone}`}>
-                  <Button variant="default" size="icon" className="rounded-full h-10 w-10 bg-gradient-to-br from-purple-500 to-indigo-600 shadow-lg">
-                      <Phone className="h-5 w-5 text-white" />
-                  </Button>
-              </a>
               {currentStageInfo && (
-                <div className={cn("absolute left-full ml-12 flex h-8 w-8 items-center justify-center rounded-full shadow-md", currentStageInfo.color)}>
+                <div className={cn("absolute left-full ml-4 flex h-8 w-8 items-center justify-center rounded-full shadow-md", currentStageInfo.color)}>
                   <currentStageInfo.icon className="h-4 w-4" />
                 </div>
               )}
@@ -1358,7 +1353,7 @@ function LeadNotesSheet({ open, onOpenChange, lead, currentNote, setCurrentNote,
                                     </>
                                 )}
                                 {!isAddingNewNote && !isNoteChanged && (
-                                    <Button size="sm" onClick={handleNewNoteClick} disabled={!currentNote}>
+                                    <Button size="sm" onClick={handleNewNoteClick} disabled={!currentNote && isAddingNewNote}>
                                         Add New Note
                                     </Button>
                                 )}
