@@ -1,5 +1,4 @@
 
-
 "use client";
 
 import * as React from 'react';
@@ -458,7 +457,7 @@ export default function LeadDetailPage() {
   };
   
   const handleStageSelect = (newStage: LeadStage) => {
-    if (newStage !== (lead as any).lead_stage) {
+    if (newStage !== ((lead as any).lead_stage || (lead as any).status)) {
       setSelectedStage(newStage);
       setIsStageConfirmDialogOpen(true);
       setIsLeadStageDialogOpen(false);
@@ -561,9 +560,14 @@ export default function LeadDetailPage() {
   const isBedroomsDisabled = lead.property.type === 'Commercial' || lead.property.type === 'Land';
 
   // Map the 'status' field from API to lead_stage for display
-  const leadStage = (lead as any)?.status || (lead as any)?.lead_stage;
-  const currentStageInfo = LEAD_STAGES.find(s => s.value === leadStage);
-  const selectedStageInfo = LEAD_STAGES.find(s => s.value === selectedStage);
+  const getLeadStage = (leadData: LeadData | null): LeadStage | undefined => {
+    const stage = (leadData as any)?.status || (leadData as any)?.lead_stage;
+    return stage;
+  };
+  
+  const currentLeadStage = getLeadStage(lead);
+  const currentStageInfo = currentLeadStage ? LEAD_STAGES.find(s => s.value === currentLeadStage) : undefined;
+  const selectedStageInfo = selectedStage ? LEAD_STAGES.find(s => s.value === selectedStage) : undefined;
 
   return (
     <div className="flex h-screen flex-col bg-gray-50">
@@ -967,7 +971,7 @@ export default function LeadDetailPage() {
             </DialogHeader>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-3 max-h-[60vh] overflow-y-auto p-1">
                 {LEAD_STAGES.map((stage) => {
-                    const isCurrent = leadStage === stage.value;
+                    const isCurrent = currentLeadStage === stage.value;
                     return (
                         <button
                             key={stage.value}
@@ -1436,3 +1440,5 @@ function LeadHistorySheet({ open, onOpenChange, lead, history }: LeadHistoryShee
         </Sheet>
     );
 }
+
+    
