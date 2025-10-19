@@ -8,7 +8,7 @@ type WebhookLeadData = {
   row_number?: number;
   lead_id: string;
   created_at?: string;
-  Status?: string;
+  Stage?: string;
   'Hot/Warm/Cold'?: string;
   name?: string;
   email?: string | number;
@@ -52,8 +52,8 @@ export function transformWebhookResponseToLeadListItem(response: any): any {
     lead_id: data.lead_id,
     name: data.name || '',
     temperature: data['Hot/Warm/Cold'] || data.temperature || 'Cold',
-    status: mapStatusToFrontend(data.Status),
-    lead_stage: data.Status || 'New Lead',
+    stage: data.Stage || 'New Lead',
+    lead_stage: data.Stage || 'New Lead',
     next_follow_up: {
       status: data['follow-up_task'] || '',
       date: data['next follow-up date'] || null,
@@ -82,8 +82,8 @@ export function transformWebhookResponseToLeadData(response: any): any {
     lead_id: data.lead_id,
     name: data.name || '',
     temperature: data['Hot/Warm/Cold'] || data.temperature || 'Cold',
-    status: mapStatusToFrontend(data.Status),
-    lead_stage: data.Status || 'New Lead',
+    stage: data.Stage || 'New Lead',
+    lead_stage: data.Stage || 'New Lead',
     next_follow_up: {
       date: data['next follow-up date'] || null,
       status: data['follow-up_task'] || '',
@@ -125,25 +125,6 @@ export function transformWebhookResponseToLeadData(response: any): any {
   };
 }
 
-/**
- * Map webhook Status field to frontend status/lead_stage
- * Handles variations in status naming
- */
-function mapStatusToFrontend(status?: string): 'Active' | 'Inactive' {
-  if (!status) return 'Active';
-
-  const lowerStatus = status.toLowerCase();
-
-  // Map inactive statuses
-  if (lowerStatus.includes('lost') ||
-      lowerStatus.includes('not interested') ||
-      lowerStatus.includes('converted')) {
-    return 'Inactive';
-  }
-
-  // Default to Active for all other statuses
-  return 'Active';
-}
 
 /**
  * Format ISO date string to readable format

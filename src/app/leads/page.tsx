@@ -60,7 +60,6 @@ function formatFollowUpDate(dateValue: string | null | undefined): string {
 }
 
 type LeadTemperature = 'Hot' | 'Warm' | 'Cold';
-type LeadStatus = 'Active' | 'Inactive';
 
 type LeadStage =
   | 'New Lead'
@@ -79,7 +78,7 @@ type Lead = {
   lead_id: string;
   name: string;
   temperature: LeadTemperature;
-  status: LeadStatus;
+  stage: LeadStage;
   lead_stage?: LeadStage;
   next_follow_up: {
     status: string;
@@ -129,7 +128,7 @@ export default function LeadsPage() {
     setIsLoading(true);
     try {
         const response = await callLeadApi('get_all_leads');
-        
+
         let data;
         if (Array.isArray(response) && response.length > 0) {
             data = response[0];
@@ -138,7 +137,12 @@ export default function LeadsPage() {
         }
 
         if (data && Array.isArray(data.leads)) {
-            setLeads(data.leads);
+            // Transform leads to ensure lead_stage field exists
+            const transformedLeads = data.leads.map((lead: any) => ({
+                ...lead,
+                lead_stage: lead.lead_stage || lead.Stage || 'New Lead'
+            }));
+            setLeads(transformedLeads);
         } else {
             setLeads([]);
         }
@@ -375,8 +379,8 @@ export default function LeadsPage() {
         const webhookUrl = 'https://eurekagathr.app.n8n.cloud/webhook/domain/lead-status';
         const webhookPayload = {
             lead_id: selectedLeadForStageChange.lead_id,
-            operation: 'status_change',
-            status: selectedStage
+            operation: 'stage_change',
+            stage: selectedStage
         };
 
         let response;
@@ -403,24 +407,24 @@ export default function LeadsPage() {
                 throw new Error('Server error occurred. Please try again later.');
             }
             const errorText = await response.text();
-            throw new Error(errorText || 'Failed to update lead status');
+            throw new Error(errorText || 'Failed to update lead stage');
         }
 
         setLeads(prevLeads => prevLeads.map(l =>
             l.lead_id === selectedLeadForStageChange.lead_id
-            ? { ...l, lead_stage: selectedStage, status: selectedStage as any }
+            ? { ...l, lead_stage: selectedStage, stage: selectedStage as any }
             : l
         ));
 
         toast({
-            title: "Status Updated",
-            description: `Lead status changed to "${selectedStage}".`,
+            title: "Stage Updated",
+            description: `Lead stage changed to "${selectedStage}".`,
         });
     } catch (error: any) {
         toast({
             variant: 'destructive',
             title: 'Error',
-            description: error.message || 'Could not update lead status.'
+            description: error.message || 'Could not update lead stage.'
         });
     } finally {
         setIsStageConfirmDialogOpen(false);
@@ -444,8 +448,8 @@ export default function LeadsPage() {
   const selectedStageInfo = LEAD_STAGES.find(s => s.value === selectedStage);
   
   const LeadCard = ({lead}: {lead: Lead }) => {
-    // Map the 'status' field from API to lead_stage for display
-    const leadStage = (lead as any).status || lead.lead_stage;
+    // Map the 'stage' field from API to lead_stage for display
+    const leadStage = (lead as any).stage || lead.lead_stage;
     const stageInfo = leadStage ? LEAD_STAGES.find(s => s.value === leadStage) : null;
     const StageIcon = stageInfo?.icon;
 
@@ -470,9 +474,6 @@ export default function LeadsPage() {
             <div className="grid gap-0.5">
               <div className='flex items-center gap-2'>
                 <span className={cn("font-semibold", isBulkEditing && 'cursor-pointer')}>{lead.name}</span>
-                {lead.status === 'Inactive' && (
-                    <Badge variant="secondary">Inactive</Badge>
-                )}
               </div>
               <div className="flex items-center gap-2 flex-wrap">
                 <Badge variant="outline" className={cn("text-xs", getStatusBadgeClass(lead.temperature))}>{lead.temperature}</Badge>
@@ -579,7 +580,7 @@ export default function LeadsPage() {
                       </DropdownMenuItem>
                       <DropdownMenuItem onSelect={() => openLeadStageDialog(lead)}>
                         <TrendingUp className="mr-2 h-4 w-4" />
-                        <span>Change Status</span>
+                        <span>Change Stage</span>
                       </DropdownMenuItem>
                       <DropdownMenuSeparator />
                       <DropdownMenuItem onSelect={() => confirmDeleteSingleLead(lead.lead_id)} className="text-red-500">
@@ -647,9 +648,9 @@ export default function LeadsPage() {
        <Dialog open={isLeadStageDialogOpen} onOpenChange={setIsLeadStageDialogOpen}>
         <DialogContent className="sm:max-w-2xl">
             <DialogHeader>
-                <DialogTitle>Change Lead Status</DialogTitle>
+                <DialogTitle>Change Lead Stage</DialogTitle>
                 <DialogDescription>
-                    Select the new status for this lead in the sales pipeline.
+                    Select the new stage for this lead in the sales pipeline.
                 </DialogDescription>
             </DialogHeader>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-3 max-h-[60vh] overflow-y-auto p-1">
@@ -689,11 +690,11 @@ export default function LeadsPage() {
        <AlertDialog open={isStageConfirmDialogOpen} onOpenChange={setIsStageConfirmDialogOpen}>
         <AlertDialogContent>
             <AlertDialogHeader>
-                <AlertDialogTitle>Confirm Status Change</AlertDialogTitle>
+                <AlertDialogTitle>Confirm Stage Change</AlertDialogTitle>
                 <AlertDialogDescription>
                     {currentStageInfo && selectedStageInfo
-                        ? `Change status from "${currentStageInfo.label}" to "${selectedStageInfo.label}"`
-                        : 'Are you sure you want to change the lead status?'}
+                        ? `Change stage from "${currentStageInfo.label}" to "${selectedStageInfo.label}"`
+                        : 'Are you sure you want to change the lead stage?'}
                 </AlertDialogDescription>
             </AlertDialogHeader>
             {currentStageInfo && selectedStageInfo && (

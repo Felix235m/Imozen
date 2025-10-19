@@ -3,7 +3,8 @@ export type LeadData = {
     lead_id: string;
     name: string;
     temperature: 'Hot' | 'Warm' | 'Cold';
-    status: 'Active' | 'Inactive';
+    stage: string;
+    lead_stage?: string;
     next_follow_up: {
         date: string | null;
         status: string;

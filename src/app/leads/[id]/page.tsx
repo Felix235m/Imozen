@@ -1,4 +1,5 @@
 
+
 "use client";
 
 import * as React from 'react';
@@ -205,6 +206,11 @@ export default function LeadDetailPage() {
         throw new Error('Lead not found');
       }
 
+      // Ensure lead_stage field exists
+      if (!currentLeadData.lead_stage && currentLeadData.Stage) {
+        currentLeadData.lead_stage = currentLeadData.Stage;
+      }
+
       // Normalize locations to match dropdown values
       if (currentLeadData.property?.locations) {
         currentLeadData.property.locations = normalizeLocations(currentLeadData.property.locations);
@@ -244,7 +250,7 @@ export default function LeadDetailPage() {
       let changes: ChangeSummary[] = [];
   
       for (const key in original) {
-        if (['row_number', 'lead_id', 'created_at', 'created_at_formatted', 'next_follow_up', 'image_url', 'communication_history', 'management', 'purchase', 'status'].includes(key)) continue;
+        if (['row_number', 'lead_id', 'created_at', 'created_at_formatted', 'next_follow_up', 'image_url', 'communication_history', 'management', 'purchase', 'stage'].includes(key)) continue;
   
         const originalValue = original[key];
         let currentValue = current[key];
@@ -470,39 +476,41 @@ export default function LeadDetailPage() {
 
   const confirmLeadStageChange = async () => {
     if (!lead || !selectedStage) return;
-
+  
+    const currentStage = getLeadStage(lead);
+  
     try {
-        const token = localStorage.getItem('auth_token') || sessionStorage.getItem('sessionToken');
-        if (!token) throw new Error('No authentication token found');
-
-        const webhookUrl = 'https://eurekagathr.app.n8n.cloud/webhook/domain/lead-status';
-        const webhookPayload = {
-            lead_id: lead.lead_id,
-            operation: 'status_change',
-            status: selectedStage,
-            note: stageChangeNote
-        };
-
-        const response = await fetch(webhookUrl, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
-            body: JSON.stringify(webhookPayload)
-        });
-
-        if (!response.ok) {
-            const errorText = await response.text();
-            throw new Error(errorText || 'Failed to update lead status');
-        }
-        
-        setLead(prev => prev ? ({ ...prev, status: selectedStage, lead_stage: selectedStage } as any) : null);
-        setOriginalLead(prev => prev ? JSON.parse(JSON.stringify({ ...prev, status: selectedStage, lead_stage: selectedStage })) : null);
-
-        toast({ title: "Status Updated", description: `Lead status changed to "${selectedStage}".` });
+      const token = localStorage.getItem('auth_token') || sessionStorage.getItem('sessionToken');
+      if (!token) throw new Error('No authentication token found');
+  
+      const webhookUrl = 'https://eurekagathr.app.n8n.cloud/webhook/domain/lead-status';
+      const webhookPayload = {
+        lead_id: lead.lead_id,
+        operation: 'stage_change',
+        stage: selectedStage,
+        note: stageChangeNote
+      };
+  
+      const response = await fetch(webhookUrl, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+        body: JSON.stringify(webhookPayload)
+      });
+  
+      if (!response.ok) {
+        const errorText = await response.text();
+        throw new Error(errorText || 'Failed to update lead stage');
+      }
+  
+      setLead(prev => prev ? ({ ...prev, stage: selectedStage, lead_stage: selectedStage } as any) : null);
+      setOriginalLead(prev => prev ? JSON.parse(JSON.stringify({ ...prev, stage: selectedStage, lead_stage: selectedStage })) : null);
+  
+      toast({ title: "Stage Updated", description: `Lead stage changed to "${selectedStage}".` });
     } catch (error: any) {
-        toast({ variant: 'destructive', title: 'Error', description: error.message || 'Could not update lead status.' });
+      toast({ variant: 'destructive', title: 'Error', description: error.message || 'Could not update lead stage.' });
     } finally {
-        setIsStageConfirmDialogOpen(false);
-        setSelectedStage(null);
+      setIsStageConfirmDialogOpen(false);
+      setSelectedStage(null);
     }
   };
 
@@ -564,9 +572,9 @@ export default function LeadDetailPage() {
   
   const isBedroomsDisabled = lead.property.type === 'Commercial' || lead.property.type === 'Land';
 
-  // Map the 'status' field from API to lead_stage for display
+  // Map the 'stage' field from API to lead_stage for display
   const getLeadStage = (leadData: LeadData | null): LeadStage | undefined => {
-    const stage = (leadData as any)?.status || (leadData as any)?.lead_stage;
+    const stage = (leadData as any)?.stage || (leadData as any)?.lead_stage;
     return stage;
   };
   
@@ -623,7 +631,7 @@ export default function LeadDetailPage() {
                 </DropdownMenuItem>
                 <DropdownMenuItem onSelect={() => setIsLeadStageDialogOpen(true)}>
                   <TrendingUp className="mr-2 h-4 w-4" />
-                  <span>Change Status</span>
+                  <span>Change Stage</span>
                 </DropdownMenuItem>
                 <DropdownMenuSeparator />
                 <DropdownMenuItem onSelect={() => setIsDeleteDialogOpen(true)} className="text-red-600">
@@ -660,10 +668,15 @@ export default function LeadDetailPage() {
             />
           </div>
           <div className='flex flex-col items-center gap-1'>
-            <div className='relative flex justify-center'>
+          <div className='relative flex justify-center items-center gap-2'>
               <h2 className="text-2xl font-bold">{lead.name}</h2>
+              <a href={`tel:${lead.contact.phone}`}>
+                  <Button variant="default" size="icon" className="rounded-full h-10 w-10 bg-gradient-to-br from-purple-500 to-indigo-600 shadow-lg">
+                      <Phone className="h-5 w-5 text-white" />
+                  </Button>
+              </a>
               {currentStageInfo && (
-                <div className={cn("absolute left-full ml-2 flex h-8 w-8 items-center justify-center rounded-full shadow-md", currentStageInfo.color)}>
+                <div className={cn("absolute left-full ml-12 flex h-8 w-8 items-center justify-center rounded-full shadow-md", currentStageInfo.color)}>
                   <currentStageInfo.icon className="h-4 w-4" />
                 </div>
               )}
@@ -969,9 +982,9 @@ export default function LeadDetailPage() {
        <Dialog open={isLeadStageDialogOpen} onOpenChange={setIsLeadStageDialogOpen}>
         <DialogContent className="sm:max-w-2xl">
             <DialogHeader>
-                <DialogTitle>Change Lead Status</DialogTitle>
+                <DialogTitle>Change Lead Stage</DialogTitle>
                 <DialogDescription>
-                    Select the new status for this lead in the sales pipeline.
+                    Select the new stage for this lead in the sales pipeline.
                 </DialogDescription>
             </DialogHeader>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-3 max-h-[60vh] overflow-y-auto p-1">
@@ -983,9 +996,10 @@ export default function LeadDetailPage() {
                             onClick={() => handleStageSelect(stage.value)}
                             disabled={isCurrent}
                             className={cn(
-                                "w-full text-left p-4 rounded-lg border-2 hover:border-primary transition-all focus:outline-none focus:ring-2 focus:ring-primary relative",
-                                isCurrent ? "border-primary bg-primary/5" : "border-gray-200 hover:bg-gray-50/50",
-                                isCurrent && "cursor-default"
+                                "w-full text-left p-4 rounded-lg border-2 transition-all focus:outline-none relative",
+                                isCurrent
+                                    ? "border-primary bg-primary/5 cursor-default"
+                                    : "border-gray-200 hover:border-gray-400 hover:bg-gray-50"
                             )}
                         >
                             {isCurrent && <Badge className="absolute -top-2 -right-2">Current</Badge>}
@@ -1011,11 +1025,11 @@ export default function LeadDetailPage() {
        <AlertDialog open={isStageConfirmDialogOpen} onOpenChange={setIsStageConfirmDialogOpen}>
         <AlertDialogContent>
             <AlertDialogHeader>
-                <AlertDialogTitle>Confirm Status Change</AlertDialogTitle>
+                <AlertDialogTitle>Confirm Stage Change</AlertDialogTitle>
                 <AlertDialogDescription>
                     {currentStageInfo && selectedStageInfo
-                        ? `Change status from "${currentStageInfo.label}" to "${selectedStageInfo.label}"`
-                        : 'Are you sure you want to change the lead status?'}
+                        ? `Change stage from "${currentStageInfo.label}" to "${selectedStageInfo.label}"`
+                        : 'Are you sure you want to change the lead stage?'}
                 </AlertDialogDescription>
             </AlertDialogHeader>
             {currentStageInfo && selectedStageInfo && (
@@ -1039,7 +1053,7 @@ export default function LeadDetailPage() {
               <Label htmlFor="stage-change-note">Note (Optional)</Label>
               <Textarea
                 id="stage-change-note"
-                placeholder="Add a note about this status change..."
+                placeholder="Add a note about this stage change..."
                 value={stageChangeNote}
                 onChange={(e) => setStageChangeNote(e.target.value)}
               />
@@ -1153,13 +1167,16 @@ function LeadNotesSheet({ open, onOpenChange, lead, currentNote, setCurrentNote,
     const [movedNoteId, setMovedNoteId] = useState<string | null>(null);
     
     useEffect(() => {
-        if (open && currentNote) {
-            setNoteContent(currentNote.note || '');
-            setOriginalNoteContent(currentNote.note || '');
-            setIsAddingNewNote(false);
-        } else if (open) {
-            setNoteContent('');
-            setOriginalNoteContent('');
+        if (open) {
+            if (currentNote) {
+                setNoteContent(currentNote.note || '');
+                setOriginalNoteContent(currentNote.note || '');
+                setIsAddingNewNote(false);
+            } else {
+                setNoteContent('');
+                setOriginalNoteContent('');
+                setIsAddingNewNote(true);
+            }
         }
     }, [open, currentNote]);
 
@@ -1226,6 +1243,7 @@ function LeadNotesSheet({ open, onOpenChange, lead, currentNote, setCurrentNote,
 
     const handleCancelNewNote = () => {
         setIsAddingNewNote(false);
+        setNoteContent('');
         if (movedNoteId) {
             const movedNote = notes.find(n => n.note_id === movedNoteId);
             if (movedNote) {
@@ -1320,20 +1338,15 @@ function LeadNotesSheet({ open, onOpenChange, lead, currentNote, setCurrentNote,
                                 className="border-0 focus-visible:ring-0 min-h-[100px] p-0 resize-none overflow-hidden"
                                 value={noteContent}
                                 onChange={(e) => setNoteContent(e.target.value)}
-                                readOnly={!currentNote && !isAddingNewNote}
                             />
                              <div className="flex gap-2 justify-end mt-2">
-                                {isAddingNewNote ? (
-                                    <>
-                                        <Button variant="outline" size="sm" onClick={handleCancelNewNote}>
-                                            Cancel
-                                        </Button>
-                                        <Button size="sm" onClick={() => handleSaveNote('add_new_note')} disabled={isSaving || noteContent.trim() === ''}>
-                                            {isSaving ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
-                                            Save Note
-                                        </Button>
-                                    </>
-                                ) : isNoteChanged ? (
+                                {isAddingNewNote && noteContent.trim() && (
+                                    <Button size="sm" onClick={() => handleSaveNote('add_new_note')} disabled={isSaving}>
+                                        {isSaving ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
+                                        Save Note
+                                    </Button>
+                                )}
+                                {!isAddingNewNote && isNoteChanged && (
                                      <>
                                         <Button variant="outline" size="sm" onClick={() => currentNote && setNoteContent(originalNoteContent)}>
                                             Cancel
@@ -1343,7 +1356,8 @@ function LeadNotesSheet({ open, onOpenChange, lead, currentNote, setCurrentNote,
                                             Save Changes
                                         </Button>
                                     </>
-                                ) : (
+                                )}
+                                {!isAddingNewNote && !isNoteChanged && (
                                     <Button size="sm" onClick={handleNewNoteClick} disabled={!currentNote}>
                                         Add New Note
                                     </Button>
@@ -1454,6 +1468,8 @@ function LeadHistorySheet({ open, onOpenChange, lead, history }: LeadHistoryShee
         </Sheet>
     );
 }
+
+    
 
     
 
