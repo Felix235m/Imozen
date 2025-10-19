@@ -51,6 +51,7 @@ import { type LeadData } from '@/lib/leads-data';
 import { LeadFollowUpSheet } from '@/components/leads/lead-follow-up-sheet';
 import { callLeadApi, callLeadStatusApi } from '@/lib/auth-api';
 import { transformWebhookResponseToLeadData } from '@/lib/lead-transformer';
+import { Label } from '@/components/ui/label';
 
 type Note = {
     id?: string;
@@ -161,6 +162,7 @@ export default function LeadDetailPage() {
   const [phoneCountryCode, setPhoneCountryCode] = useState('');
   const [phoneNumber, setPhoneNumber] = useState('');
   const [isFetchingNotes, setIsFetchingNotes] = useState(false);
+  const [stageChangeNote, setStageChangeNote] = useState('');
   
   const communicationHistory = useMemo(() => lead?.communication_history || [], [lead]);
   
@@ -457,10 +459,12 @@ export default function LeadDetailPage() {
   };
   
   const handleStageSelect = (newStage: LeadStage) => {
-    if (newStage !== ((lead as any).lead_stage || (lead as any).status)) {
+    const currentStage = getLeadStage(lead);
+    if (newStage !== currentStage) {
       setSelectedStage(newStage);
       setIsStageConfirmDialogOpen(true);
       setIsLeadStageDialogOpen(false);
+      setStageChangeNote(''); // Reset note on new selection
     }
   };
 
@@ -475,7 +479,8 @@ export default function LeadDetailPage() {
         const webhookPayload = {
             lead_id: lead.lead_id,
             operation: 'status_change',
-            status: selectedStage
+            status: selectedStage,
+            note: stageChangeNote
         };
 
         const response = await fetch(webhookUrl, {
@@ -1030,6 +1035,15 @@ export default function LeadDetailPage() {
                     </div>
                 </div>
             )}
+             <div className="space-y-2">
+              <Label htmlFor="stage-change-note">Note (Optional)</Label>
+              <Textarea
+                id="stage-change-note"
+                placeholder="Add a note about this status change..."
+                value={stageChangeNote}
+                onChange={(e) => setStageChangeNote(e.target.value)}
+              />
+            </div>
             <AlertDialogFooter>
                 <AlertDialogCancel onClick={() => {
                     setIsStageConfirmDialogOpen(false);
@@ -1440,5 +1454,7 @@ function LeadHistorySheet({ open, onOpenChange, lead, history }: LeadHistoryShee
         </Sheet>
     );
 }
+
+    
 
     
