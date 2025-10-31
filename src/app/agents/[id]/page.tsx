@@ -107,12 +107,21 @@ export default function AgentDetailPage() {
           </Link>
           <h1 className="ml-4 text-xl font-semibold">Agent Details</h1>
         </div>
-        <div>
+        <div className="flex items-center">
           {isEditing ? (
-             <Button size="sm" className="bg-primary" onClick={handleSave} disabled={isSaving}>
-              {isSaving ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Save className="mr-2 h-4 w-4" />}
-              Save
-            </Button>
+            <div className="flex items-center space-x-2">
+              <Button variant="outline" size="sm" onClick={handleCancel} disabled={isSaving}>
+                Cancel
+              </Button>
+              <Button size="sm" className="bg-primary" onClick={handleSave} disabled={isSaving}>
+                {isSaving ? (
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                ) : (
+                  <Save className="mr-2 h-4 w-4" />
+                )}
+                Save
+              </Button>
+            </div>
           ) : (
             <Button variant="ghost" size="icon" onClick={() => setIsEditing(true)}>
               <Edit className="h-5 w-5" />
@@ -199,8 +208,8 @@ export default function AgentDetailPage() {
       <footer className="grid grid-cols-2 gap-4 border-t bg-white p-4">
         {isEditing ? (
           <>
-            <Button variant="outline" size="lg" onClick={handleCancel} disabled={isSaving}>Cancel</Button>
-             <Button variant="default" size="lg" className="bg-red-500 hover:bg-red-600">Deactivate</Button>
+            <div />
+            <Button variant="default" size="lg" className="bg-red-500 hover:bg-red-600">Deactivate</Button>
           </>
         ) : (
           <>

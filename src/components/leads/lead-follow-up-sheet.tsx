@@ -14,6 +14,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import type { LeadData } from '@/lib/leads-data';
 import { callFollowUpApi } from '@/lib/auth-api';
 import { useToast } from '@/hooks/use-toast';
+import { useLanguage } from '@/hooks/useLanguage';
 import { Input } from '../ui/input';
 
 type LeadFollowUpSheetProps = {
@@ -26,6 +27,7 @@ export function LeadFollowUpSheet({ open, onOpenChange, lead }: LeadFollowUpShee
     const [language, setLanguage] = useState('English');
     const [isRegenerating, setIsRegenerating] = useState(false);
     const { toast } = useToast();
+    const { t } = useLanguage();
     const [aiMessage, setAiMessage] = useState('');
 
     useEffect(() => {
@@ -89,10 +91,10 @@ export function LeadFollowUpSheet({ open, onOpenChange, lead }: LeadFollowUpShee
                          <Button variant="ghost" size="icon" onClick={() => onOpenChange(false)} className="mr-2">
                            <ArrowLeft className="h-6 w-6" />
                          </Button>
-                        <SheetTitle>Send to WhatsApp</SheetTitle>
+                        <SheetTitle>{t.leads.sendToWhatsApp}</SheetTitle>
                      </div>
                      <SheetDescription className="sr-only">
-                       Send an AI-generated follow-up message to {lead.name}.
+                       {t.leads.sendToWhatsApp} - {lead.name}
                     </SheetDescription>
                 </SheetHeader>
 
@@ -109,17 +111,17 @@ export function LeadFollowUpSheet({ open, onOpenChange, lead }: LeadFollowUpShee
                             </div>
                             <p className="text-sm text-gray-500">{String(lead.contact.phone || '')}</p>
                             <p className="text-sm text-gray-500">{lead.contact.email}</p>
-                            <p className="text-xs text-gray-400 mt-1">Source: {lead.management.source} | Created: {lead.created_at_formatted}</p>
+                            <p className="text-xs text-gray-400 mt-1">{t.leads.source} {lead.management.source} | {t.leads.created} {lead.created_at_formatted}</p>
                         </div>
                     </div>
                     
                     <div className="space-y-2">
-                        <Label htmlFor="language">Message Language</Label>
+                        <Label htmlFor="language">{t.leads.messageLanguage}</Label>
                         <Input id="language" value={language} readOnly className="bg-gray-100" />
                     </div>
 
                     <div>
-                        <h4 className="text-lg font-semibold mb-2">AI-Generated Follow-up Message</h4>
+                        <h4 className="text-lg font-semibold mb-2">{t.leads.aiGeneratedMessage}</h4>
                          <Card className="bg-blue-50 border-blue-200">
                             <CardContent className="p-4">
                                 <p className="text-blue-900 whitespace-pre-wrap">{aiMessage}</p>
@@ -130,12 +132,12 @@ export function LeadFollowUpSheet({ open, onOpenChange, lead }: LeadFollowUpShee
                     <div className="space-y-3">
                          <Button variant="outline" className="w-full h-12" onClick={handleRegenerate} disabled={isRegenerating}>
                             {isRegenerating ? <Loader2 className="mr-2 h-5 w-5 animate-spin" /> : <RefreshCw className="mr-2 h-5 w-5" />}
-                            Regenerate Message
-                        </Button>
+                            {t.leads.regenerateMessage}
+                         </Button>
                          <Button className="w-full h-12 bg-green-500 hover:bg-green-600 text-white" onClick={handleSendToWhatsApp}>
                             <MessageSquare className="mr-2 h-5 w-5" />
-                            Send to WhatsApp
-                        </Button>
+                            {t.leads.sendToWhatsApp}
+                         </Button>
                     </div>
                 </div>
             </SheetContent>

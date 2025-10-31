@@ -10,11 +10,15 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useToast } from '@/hooks/use-toast';
+import { useLanguage } from '@/hooks/useLanguage';
+import { callAuthApi } from '@/lib/auth-api';
+import { LANGUAGE_MAP } from '@/types/agent';
 
 type ProfileData = {
   name: string;
   email: string;
-  phone: string;
+  phoneCountryCode: string;
+  phoneNumber: string;
   language: string;
   avatar?: string;
 };
@@ -27,6 +31,7 @@ export default function ProfilePage() {
   const [avatarPreview, setAvatarPreview] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const { toast } = useToast();
+  const { t, setLanguage } = useLanguage();
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
@@ -34,10 +39,29 @@ export default function ProfilePage() {
       const agentDataString = localStorage.getItem('agent_data');
       if (agentDataString) {
         const agentData = JSON.parse(agentDataString);
+
+        // Parse phone into country code and number
+        const fullPhone = agentData.agent_phone || '';
+        let phoneCountryCode = '';
+        let phoneNumber = '';
+
+        if (fullPhone) {
+          // Try to extract country code (e.g., "+351" or "(+351)")
+          const countryCodeMatch = fullPhone.match(/^\(?(\+\d+)\)?/);
+          if (countryCodeMatch) {
+            phoneCountryCode = countryCodeMatch[1];
+            phoneNumber = fullPhone.replace(/^\(?(\+\d+)\)?\s*/, '').trim();
+          } else {
+            // If no country code found, treat entire string as phone number
+            phoneNumber = fullPhone;
+          }
+        }
+
         const profileData = {
           name: agentData.agent_name || '',
           email: agentData.agent_email || '',
-          phone: agentData.agent_phone || '',
+          phoneCountryCode,
+          phoneNumber,
           language: agentData.agent_language || 'English',
           avatar: agentData.agent_image_url || undefined,
         };
@@ -75,33 +99,76 @@ export default function ProfilePage() {
   };
 
   const handleSave = async () => {
+    if (!profile) return;
+
     setIsSaving(true);
-    // Simulate API call
-    await new Promise(resolve => setTimeout(resolve, 1000));
-    if (profile) {
-      const updatedProfile = { ...profile, avatar: avatarPreview || profile.avatar };
-      setOriginalProfile(updatedProfile);
-      setProfile(updatedProfile);
-      
-      // Also update localStorage
+
+    try {
+      // Get current agent data from localStorage
       const agentDataString = localStorage.getItem('agent_data');
-      if (agentDataString) {
-        const agentData = JSON.parse(agentDataString);
-        agentData.agent_name = updatedProfile.name;
-        agentData.agent_email = updatedProfile.email;
-        agentData.agent_phone = updatedProfile.phone;
-        agentData.agent_language = updatedProfile.language;
-        agentData.agent_image_url = updatedProfile.avatar;
-        localStorage.setItem('agent_data', JSON.stringify(agentData));
+      if (!agentDataString) {
+        throw new Error('Agent data not found');
       }
 
+      const agentData = JSON.parse(agentDataString);
+
+      // Combine phone fields
+      const combinedPhone = `${profile.phoneCountryCode} ${profile.phoneNumber}`.trim();
+
+      // Prepare update payload
+      const updatePayload = {
+        agent_id: agentData.agent_id,
+        agent_name: profile.name,
+        agent_email: profile.email,
+        agent_phone: combinedPhone,
+        agent_language: profile.language,
+        agent_image_url: avatarPreview || profile.avatar || '',
+        login_username: agentData.login_username,
+        sheet_url: agentData.sheet_url || '',
+      };
+
+      // Call update_agent webhook
+      const response = await callAuthApi('update_agent', updatePayload);
+
+      if (response.success) {
+        // Update localStorage with new data
+        const updatedAgentData = {
+          ...agentData,
+          agent_name: profile.name,
+          agent_email: profile.email,
+          agent_phone: combinedPhone,
+          agent_language: profile.language,
+          agent_image_url: avatarPreview || profile.avatar,
+        };
+        localStorage.setItem('agent_data', JSON.stringify(updatedAgentData));
+
+        // Update language context
+        const languageCode = LANGUAGE_MAP[profile.language] || 'pt';
+        setLanguage(languageCode);
+
+        const updatedProfile = { ...profile, avatar: avatarPreview || profile.avatar };
+        setOriginalProfile(updatedProfile);
+        setProfile(updatedProfile);
+
+        toast({
+          title: t.profile.messages.successTitle,
+          description: t.profile.messages.successDescription,
+        });
+
+        setIsEditing(false);
+      } else {
+        throw new Error('Failed to update profile');
+      }
+    } catch (error: any) {
+      console.error(error);
       toast({
-        title: "Success",
-        description: "Your profile has been updated.",
+        variant: "destructive",
+        title: t.profile.messages.errorTitle,
+        description: error.message || t.profile.messages.errorDescription,
       });
+    } finally {
+      setIsSaving(false);
     }
-    setIsEditing(false);
-    setIsSaving(false);
   };
 
   const handleCancel = () => {
@@ -131,17 +198,20 @@ export default function ProfilePage() {
   return (
     <div className="p-4 pb-20">
       <div className="flex items-center justify-between py-4">
-        <h2 className="text-2xl font-bold text-gray-800">My Profile</h2>
-        <div>
+        <h2 className="text-2xl font-bold text-gray-800">{t.profile.title}</h2>
+        <div className="flex gap-2">
           {isEditing ? (
-            <Button onClick={handleSave} disabled={isSaving}>
-              {isSaving ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Save className="mr-2 h-4 w-4" />}
-              Save
-            </Button>
+            <>
+              <Button variant="outline" onClick={handleCancel} disabled={isSaving}>{t.profile.cancel}</Button>
+              <Button onClick={handleSave} disabled={isSaving}>
+                {isSaving ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Save className="mr-2 h-4 w-4" />}
+                {t.profile.save}
+              </Button>
+            </>
           ) : (
             <Button variant="ghost" onClick={() => setIsEditing(true)}>
               <Edit className="mr-2 h-4 w-4" />
-              Edit
+              {t.profile.edit}
             </Button>
           )}
         </div>
@@ -155,7 +225,7 @@ export default function ProfilePage() {
                 <AvatarImage src={avatarPreview || undefined} alt={profile.name} />
                 <AvatarFallback>{profile.name ? profile.name.charAt(0).toUpperCase() : 'A'}</AvatarFallback>
               </Avatar>
-              {isEditing && (
+              {!isEditing && (
                 <>
                   <Button
                     variant="outline"
@@ -177,49 +247,75 @@ export default function ProfilePage() {
             </div>
             <div className="text-center">
                 <h3 className="text-xl font-bold">{profile.name}</h3>
-                <p className="text-sm text-muted-foreground">{profile.email}</p>
             </div>
           </div>
-          
-          <div className="space-y-6">
+
+          <div className="space-y-3">
             <div className="space-y-2">
-              <Label htmlFor="name">Full Name</Label>
-              <Input id="name" name="name" value={profile.name} onChange={handleInputChange} readOnly={!isEditing} />
+              <Label htmlFor="name">{t.profile.fullName}</Label>
+              {isEditing ? (
+                <Input id="name" name="name" value={profile.name} onChange={handleInputChange} />
+              ) : (
+                <p className="text-base py-2.5 text-gray-900">{profile.name}</p>
+              )}
             </div>
             <div className="space-y-2">
-              <Label htmlFor="phone">Phone Number</Label>
-              <Input id="phone" name="phone" type="tel" value={profile.phone} onChange={handleInputChange} readOnly={!isEditing} />
+              <Label htmlFor="phone">{t.profile.phoneNumber}</Label>
+              {isEditing ? (
+                <div className="flex gap-2">
+                  <Input
+                    id="phoneCountryCode"
+                    name="phoneCountryCode"
+                    type="tel"
+                    value={profile.phoneCountryCode}
+                    onChange={handleInputChange}
+                    placeholder="+351"
+                    className="w-28"
+                  />
+                  <Input
+                    id="phoneNumber"
+                    name="phoneNumber"
+                    type="tel"
+                    value={profile.phoneNumber}
+                    onChange={handleInputChange}
+                    placeholder="8072624362"
+                    className="flex-1"
+                  />
+                </div>
+              ) : (
+                <p className="text-base py-2.5 text-gray-900">
+                  {profile.phoneCountryCode} {profile.phoneNumber}
+                </p>
+              )}
             </div>
             <div className="space-y-2">
-              <Label htmlFor="email">Email Address</Label>
-              <Input id="email" name="email" type="email" value={profile.email} onChange={handleInputChange} readOnly={!isEditing} />
+              <Label htmlFor="email">{t.profile.emailAddress}</Label>
+              {isEditing ? (
+                <Input id="email" name="email" type="email" value={profile.email} onChange={handleInputChange} />
+              ) : (
+                <p className="text-base py-2.5 text-gray-900">{profile.email}</p>
+              )}
             </div>
             <div className="space-y-2">
-              <Label htmlFor="language">Language</Label>
+              <Label htmlFor="language">{t.profile.language}</Label>
               {isEditing ? (
                 <Select name="language" value={profile.language} onValueChange={handleLanguageChange}>
                   <SelectTrigger id="language">
-                    <SelectValue placeholder="Select a language" />
+                    <SelectValue placeholder={t.profile.selectLanguage} />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="English">English</SelectItem>
                     <SelectItem value="Portuguese">Portuguese</SelectItem>
-                    <SelectItem value="French">French</SelectItem>
+                    <SelectItem value="English">English</SelectItem>
                   </SelectContent>
                 </Select>
               ) : (
-                <Input id="language" name="language" value={profile.language} readOnly />
+                <p className="text-base py-2.5 text-gray-900">{profile.language}</p>
               )}
             </div>
           </div>
         </CardContent>
       </Card>
       
-      {isEditing && (
-        <div className="mt-6 flex justify-end gap-2">
-            <Button variant="outline" onClick={handleCancel} disabled={isSaving}>Cancel</Button>
-        </div>
-      )}
     </div>
   );
 }

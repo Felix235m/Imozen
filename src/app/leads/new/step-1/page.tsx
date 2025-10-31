@@ -27,22 +27,23 @@ import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/hooks/use-toast";
 import { useState, useEffect } from "react";
 import { Loader2 } from "lucide-react";
-
-const formSchema = z.object({
-  firstName: z.string().min(1, "First name is required"),
-  lastName: z.string().min(1, "Last name is required"),
-  countryCode: z.string().min(1, "Country code is required"),
-  phoneNumber: z.string().min(1, "Phone number is required"),
-  email: z.string().email("Invalid email address").optional().or(z.literal('')),
-  language: z.string().optional(),
-  leadSource: z.string().optional(),
-  initialMessage: z.string().optional(),
-});
+import { useLanguage } from "@/hooks/useLanguage";
 
 export default function NewLeadStep1Page() {
+  const { t } = useLanguage();
   const router = useRouter();
   const { toast } = useToast();
   const [isSubmitting, setIsSubmitting] = useState(false);
+
+  const formSchema = z.object({
+    firstName: z.string().min(1, t.newLead.validation.firstNameRequired),
+    lastName: z.string().min(1, t.newLead.validation.lastNameRequired),
+    countryCode: z.string().min(1, t.newLead.validation.countryCodeRequired),
+    phoneNumber: z.string().min(1, t.newLead.validation.phoneNumberRequired),
+    email: z.string().email(t.newLead.validation.invalidEmail).optional().or(z.literal('')),
+    language: z.string().optional(),
+    leadSource: z.string().optional(),
+  });
   
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
@@ -52,9 +53,8 @@ export default function NewLeadStep1Page() {
       countryCode: "+351",
       phoneNumber: "",
       email: "",
-      language: "English",
+      language: "Portuguese",
       leadSource: "",
-      initialMessage: "",
     },
   });
 
@@ -88,8 +88,8 @@ export default function NewLeadStep1Page() {
     } catch (error: any) {
         toast({
             variant: "destructive",
-            title: "Error",
-            description: "Could not save lead information.",
+            title: t.newLead.messages.errorTitle,
+            description: t.newLead.messages.errorSaving,
         });
     } finally {
         setIsSubmitting(false);
@@ -100,8 +100,8 @@ export default function NewLeadStep1Page() {
     <div className="p-4">
       <Card className="border-none shadow-none">
         <CardHeader>
-          <CardTitle>Create New Lead</CardTitle>
-          <CardDescription>Start by entering the lead&apos;s contact information.</CardDescription>
+          <CardTitle>{t.newLead.titles.createNewLead}</CardTitle>
+          <CardDescription>{t.newLead.titles.enterContactInfo}</CardDescription>
         </CardHeader>
         <CardContent>
           <Form {...form}>
@@ -111,9 +111,9 @@ export default function NewLeadStep1Page() {
                 name="firstName"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>First Name <span className="text-red-500">*</span></FormLabel>
+                    <FormLabel>{t.newLead.labels.firstName} <span className="text-red-500">*</span></FormLabel>
                     <FormControl>
-                      <Input placeholder="Enter first name" {...field} />
+                      <Input placeholder={t.newLead.placeholders.firstName} {...field} />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -124,16 +124,16 @@ export default function NewLeadStep1Page() {
                 name="lastName"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Last Name <span className="text-red-500">*</span></FormLabel>
+                    <FormLabel>{t.newLead.labels.lastName} <span className="text-red-500">*</span></FormLabel>
                     <FormControl>
-                      <Input placeholder="Enter last name" {...field} />
+                      <Input placeholder={t.newLead.placeholders.lastName} {...field} />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
                 )}
               />
               <FormItem>
-                <FormLabel>Phone <span className="text-red-500">*</span></FormLabel>
+                <FormLabel>{t.newLead.labels.phone} <span className="text-red-500">*</span></FormLabel>
                 <div className="flex items-center gap-2">
                   <FormField
                     control={form.control}
@@ -153,7 +153,7 @@ export default function NewLeadStep1Page() {
                     name="phoneNumber"
                     render={({ field }) => (
                       <FormControl>
-                        <Input type="tel" placeholder="Phone number" {...field} />
+                        <Input type="tel" placeholder={t.newLead.placeholders.phoneNumber} {...field} />
                       </FormControl>
                     )}
                   />
@@ -165,9 +165,9 @@ export default function NewLeadStep1Page() {
                 name="email"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Email</FormLabel>
+                    <FormLabel>{t.newLead.labels.email}</FormLabel>
                     <FormControl>
-                      <Input type="email" placeholder="Enter email address" {...field} />
+                      <Input type="email" placeholder={t.newLead.placeholders.email} {...field} />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -178,17 +178,17 @@ export default function NewLeadStep1Page() {
                 name="language"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Language</FormLabel>
+                    <FormLabel>{t.newLead.labels.language}</FormLabel>
                     <Select onValueChange={field.onChange} defaultValue={field.value}>
                       <FormControl>
                         <SelectTrigger>
-                          <SelectValue placeholder="Select a language" />
+                          <SelectValue placeholder={t.newLead.placeholders.selectLanguage} />
                         </SelectTrigger>
                       </FormControl>
                       <SelectContent>
-                        <SelectItem value="English">English</SelectItem>
-                        <SelectItem value="Portuguese">Portuguese</SelectItem>
-                        <SelectItem value="French">French</SelectItem>
+                        <SelectItem value="English">{t.newLead.languages.english}</SelectItem>
+                        <SelectItem value="Portuguese">{t.newLead.languages.portuguese}</SelectItem>
+                        <SelectItem value="French">{t.newLead.languages.french}</SelectItem>
                       </SelectContent>
                     </Select>
                     <FormMessage />
@@ -200,40 +200,23 @@ export default function NewLeadStep1Page() {
                 name="leadSource"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Lead Source</FormLabel>
+                    <FormLabel>{t.newLead.labels.leadSource}</FormLabel>
                     <Select onValueChange={field.onChange} defaultValue={field.value}>
                       <FormControl>
                         <SelectTrigger>
-                          <SelectValue placeholder="Select a source" />
+                          <SelectValue placeholder={t.newLead.placeholders.selectSource} />
                         </SelectTrigger>
                       </FormControl>
                       <SelectContent>
-                        <SelectItem value="referral">Referral</SelectItem>
-                        <SelectItem value="website">Website</SelectItem>
-                        <SelectItem value="casayes">CasaYes</SelectItem>
-                        <SelectItem value="idealista">Idealista</SelectItem>
-                        <SelectItem value="century-21-pt">CENTURY 21 (PT)</SelectItem>
-                        <SelectItem value="imovirtual">Imovirtual</SelectItem>
-                        <SelectItem value="social-media-campaign">Social Media Campaign</SelectItem>
+                        <SelectItem value="referral">{t.newLead.sources.referral}</SelectItem>
+                        <SelectItem value="website">{t.newLead.sources.website}</SelectItem>
+                        <SelectItem value="casayes">{t.newLead.sources.casayes}</SelectItem>
+                        <SelectItem value="idealista">{t.newLead.sources.idealista}</SelectItem>
+                        <SelectItem value="century-21-pt">{t.newLead.sources.century21}</SelectItem>
+                        <SelectItem value="imovirtual">{t.newLead.sources.imovirtual}</SelectItem>
+                        <SelectItem value="social-media-campaign">{t.newLead.sources.socialMedia}</SelectItem>
                       </SelectContent>
                     </Select>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-               <FormField
-                control={form.control}
-                name="initialMessage"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Initial Message</FormLabel>
-                    <FormControl>
-                      <Textarea
-                        placeholder="Enter the initial message from the buyer..."
-                        className="min-h-[100px]"
-                        {...field}
-                      />
-                    </FormControl>
                     <FormMessage />
                   </FormItem>
                 )}
@@ -241,11 +224,11 @@ export default function NewLeadStep1Page() {
               <div className="pt-6">
                  <div className="grid grid-cols-2 gap-4">
                     <Button variant="outline" type="button" size="lg" onClick={() => router.push('/leads')}>
-                        Cancel
+                        {t.common.cancel}
                     </Button>
                     <Button type="submit" size="lg" className="bg-primary" disabled={isSubmitting}>
                         {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                        Next
+                        {t.common.next}
                     </Button>
                 </div>
               </div>

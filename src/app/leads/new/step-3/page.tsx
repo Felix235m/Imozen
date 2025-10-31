@@ -19,6 +19,7 @@ import { useEffect } from "react";
 import { DollarSign, CreditCard } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useToast } from "@/hooks/use-toast";
+import { useLanguage } from "@/hooks/useLanguage";
 import { Checkbox } from "@/components/ui/checkbox";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 
@@ -33,7 +34,7 @@ const propertiesViewedOptions = ["No", "A few", "Many"];
 
 
 const formSchema = z.object({
-  financingType: z.string().min(1, "Financing type is required"),
+  financingType: z.string().optional(),
   creditPreApproval: z.boolean().default(false),
   purchaseTimeframe: z.string().optional(),
   searchDuration: z.string().optional(),
@@ -43,6 +44,7 @@ const formSchema = z.object({
 export default function NewLeadStep3Page() {
   const router = useRouter();
   const { toast } = useToast();
+  const { t } = useLanguage();
   
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
@@ -102,8 +104,8 @@ export default function NewLeadStep3Page() {
     <div className="p-4">
       <Card className="border-none shadow-none">
         <CardHeader>
-          <CardTitle>Qualification Details</CardTitle>
-          <CardDescription>Tell us more about the lead's qualifications.</CardDescription>
+          <CardTitle>{t.newLead.qualificationDetails}</CardTitle>
+          <CardDescription>{t.newLead.qualificationDescription}</CardDescription>
         </CardHeader>
         <CardContent>
           <Form {...form}>
@@ -113,7 +115,7 @@ export default function NewLeadStep3Page() {
                 name="financingType"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Financing Type <span className="text-red-500">*</span></FormLabel>
+                    <FormLabel>{t.newLead.financingType}</FormLabel>
                     <FormControl>
                       <div className="grid grid-cols-2 gap-4">
                         {financingTypes.map((type) => (
@@ -151,7 +153,7 @@ export default function NewLeadStep3Page() {
                     </FormControl>
                     <div className="space-y-1 leading-none">
                       <FormLabel className={cn(isCreditPreApprovalDisabled && "cursor-not-allowed")}>
-                        Credit Pre-approval
+                        {t.newLead.creditPreApproval}
                       </FormLabel>
                       <FormMessage />
                     </div>
@@ -164,7 +166,7 @@ export default function NewLeadStep3Page() {
                 name="purchaseTimeframe"
                 render={({ field }) => (
                   <FormItem className="space-y-3">
-                    <FormLabel>When are they planning to buy?</FormLabel>
+                    <FormLabel>{t.newLead.whenPlanning}</FormLabel>
                     <FormControl>
                       <RadioGroup
                         onValueChange={field.onChange}
@@ -191,7 +193,7 @@ export default function NewLeadStep3Page() {
                 name="searchDuration"
                 render={({ field }) => (
                   <FormItem className="space-y-3">
-                    <FormLabel>How long have they been looking?</FormLabel>
+                    <FormLabel>{t.newLead.howLongLooking}</FormLabel>
                     <FormControl>
                       <RadioGroup
                         onValueChange={field.onChange}
@@ -218,7 +220,7 @@ export default function NewLeadStep3Page() {
                 name="propertiesViewed"
                 render={({ field }) => (
                   <FormItem className="space-y-3">
-                    <FormLabel>Have they seen any other properties?</FormLabel>
+                    <FormLabel>{t.newLead.seenOtherProperties}</FormLabel>
                     <FormControl>
                       <RadioGroup
                         onValueChange={field.onChange}
@@ -243,13 +245,13 @@ export default function NewLeadStep3Page() {
               <div className="pt-6">
                  <div className="grid grid-cols-3 gap-4 max-w-md mx-auto">
                     <Button variant="outline" type="button" size="lg" onClick={() => router.back()}>
-                        Previous
+                        {t.newLead.previous}
                     </Button>
                     <Button variant="secondary" type="button" size="lg" onClick={handleSaveAsDraft}>
-                        Save as Draft
+                        {t.newLead.saveAsDraft}
                     </Button>
                     <Button type="submit" size="lg" className="bg-primary">
-                        Next
+                        {t.common.next}
                     </Button>
                 </div>
               </div>

@@ -17,6 +17,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { useRouter } from "next/navigation";
 import { useToast } from "@/hooks/use-toast";
+import { useLanguage } from "@/hooks/useLanguage";
 import { useEffect, useState } from "react";
 import { Loader2 } from "lucide-react";
 
@@ -27,6 +28,7 @@ const formSchema = z.object({
 export default function NewLeadStep4Page() {
   const router = useRouter();
   const { toast } = useToast();
+  const { t } = useLanguage();
   const [isSubmitting, setIsSubmitting] = useState(false);
   
   const form = useForm<z.infer<typeof formSchema>>({
@@ -132,8 +134,8 @@ export default function NewLeadStep4Page() {
     <div className="p-4">
       <Card className="border-none shadow-none">
         <CardHeader>
-          <CardTitle>Initial Note</CardTitle>
-          <CardDescription>Add any additional information about this lead for future reference.</CardDescription>
+          <CardTitle>{t.newLead.initialNote}</CardTitle>
+          <CardDescription>{t.newLead.initialNoteDescription}</CardDescription>
         </CardHeader>
         <CardContent>
           <Form {...form}>
@@ -143,7 +145,7 @@ export default function NewLeadStep4Page() {
                 name="initialNote"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Note</FormLabel>
+                    <FormLabel>{t.newLead.note}</FormLabel>
                     <FormControl>
                       <Textarea
                         placeholder="e.g., Client is very interested in properties with a backyard for their dog. Prefers modern architecture..."
@@ -158,14 +160,14 @@ export default function NewLeadStep4Page() {
               <div className="pt-6">
                  <div className="grid grid-cols-3 gap-4 max-w-md mx-auto">
                     <Button variant="outline" type="button" size="lg" onClick={() => router.back()}>
-                        Previous
+                        {t.newLead.previous}
                     </Button>
                     <Button variant="secondary" type="button" size="lg" onClick={handleSaveAsDraft}>
-                        Save as Draft
+                        {t.newLead.saveAsDraft}
                     </Button>
                     <Button type="submit" size="lg" className="bg-primary" disabled={isSubmitting}>
                         {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                        Create New Lead
+                        {t.newLead.createNewLead}
                     </Button>
                 </div>
               </div>

@@ -13,6 +13,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { DatePicker } from "@/components/ui/date-picker";
 import { TimePicker } from "@/components/ui/time-picker";
+import { useLanguage } from "@/hooks/useLanguage";
 
 interface RescheduleModalProps {
   open: boolean;
@@ -36,6 +37,7 @@ export function RescheduleModal({
   );
   const [selectedTime, setSelectedTime] = React.useState<string>(currentTime);
   const [note, setNote] = React.useState<string>("");
+  const { t } = useLanguage();
 
   // Reset form when modal opens
   React.useEffect(() => {
@@ -57,7 +59,7 @@ export function RescheduleModal({
       <DialogContent className="max-w-[90%] sm:max-w-[480px] rounded-2xl p-6">
         <DialogHeader>
           <DialogTitle className="text-xl font-semibold text-gray-800">
-            Reschedule Follow-up
+            {t.taskDialogs.rescheduleFollowUp}
           </DialogTitle>
         </DialogHeader>
 
@@ -66,7 +68,7 @@ export function RescheduleModal({
           <div className="space-y-2">
             <Label htmlFor="date" className="text-sm font-medium text-gray-700 flex items-center gap-2">
               <CalendarIcon className="h-4 w-4" />
-              Select New Date
+              {t.taskDialogs.selectNewDate}
             </Label>
             <DatePicker
               value={selectedDate}
@@ -88,7 +90,7 @@ export function RescheduleModal({
           {/* Note */}
           <div className="space-y-2">
             <Label htmlFor="note" className="text-sm font-medium text-gray-700 flex items-center gap-2">
-              📝 Note (Optional)
+              📝 {t.taskDialogs.noteOptional}
             </Label>
             <Textarea
               id="note"
@@ -108,14 +110,14 @@ export function RescheduleModal({
             disabled={isLoading}
             className="h-11 px-6 border-gray-200 text-gray-600 hover:bg-gray-50"
           >
-            Cancel
+            {t.common.cancel}
           </Button>
           <Button
             onClick={handleConfirm}
             disabled={!selectedDate || isLoading}
             className="h-11 px-6 bg-blue-600 hover:bg-blue-700 text-white disabled:bg-gray-300 disabled:cursor-not-allowed"
           >
-            {isLoading ? "Rescheduling..." : "Confirm"}
+            {isLoading ? t.taskDialogs.rescheduling : t.taskDialogs.confirm}
           </Button>
         </div>
       </DialogContent>

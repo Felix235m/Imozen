@@ -7,6 +7,7 @@ import {
   User,
   Bell,
   LogOut,
+  CalendarClock,
 } from 'lucide-react';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
@@ -23,21 +24,7 @@ import {
 import { ImoZenLogo } from '@/components/logo';
 import { cn } from '@/lib/utils';
 import { useEffect, useState } from 'react';
-
-
-const navItems = [
-    { href: '/dashboard', icon: LayoutGrid, label: 'Dashboard' },
-    { href: '/leads', icon: ClipboardList, label: 'Leads' },
-    { href: '/profile', icon: User, label: 'Profile' },
-];
-
-function getPageTitle(pathname: string) {
-    if (pathname.startsWith('/leads')) return 'Leads';
-    if (pathname.startsWith('/profile')) return 'Profile';
-    if (pathname.startsWith('/dashboard')) return 'Dashboard';
-    if (pathname.startsWith('/notifications')) return 'Notifications';
-    return '';
-}
+import { useLanguage } from '@/hooks/useLanguage';
 
 export default function DashboardLayout({
   children,
@@ -46,8 +33,24 @@ export default function DashboardLayout({
 }) {
   const pathname = usePathname();
   const router = useRouter();
+  const { t } = useLanguage();
   const [agentAvatar, setAgentAvatar] = useState<string | undefined>(undefined);
   const [agentInitial, setAgentInitial] = useState("A");
+
+  const navItems = [
+    { href: '/tasks', icon: CalendarClock, label: t.navigation.tasks },
+    { href: '/dashboard', icon: LayoutGrid, label: t.navigation.dashboard },
+    { href: '/leads', icon: ClipboardList, label: t.navigation.leads },
+  ];
+
+  const getPageTitle = (pathname: string) => {
+    if (pathname.startsWith('/tasks')) return t.navigation.tasks;
+    if (pathname.startsWith('/leads')) return t.navigation.leads;
+    if (pathname.startsWith('/profile')) return t.navigation.profile;
+    if (pathname.startsWith('/dashboard')) return t.navigation.dashboard;
+    if (pathname.startsWith('/notifications')) return t.navigation.notifications;
+    return '';
+  };
 
   useEffect(() => {
     try {
@@ -93,15 +96,15 @@ export default function DashboardLayout({
               </Avatar>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end">
-              <DropdownMenuLabel>My Account</DropdownMenuLabel>
+              <DropdownMenuLabel>{t.common.myAccount}</DropdownMenuLabel>
               <DropdownMenuSeparator />
               <DropdownMenuItem onClick={() => router.push('/profile')}>
                 <User className="mr-2 h-4 w-4" />
-                <span>Profile</span>
+                <span>{t.navigation.profile}</span>
               </DropdownMenuItem>
               <DropdownMenuItem onClick={handleLogout}>
                 <LogOut className="mr-2 h-4 w-4" />
-                <span>Log out</span>
+                <span>{t.common.logOut}</span>
               </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>

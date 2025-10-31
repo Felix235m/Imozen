@@ -1,27 +1,26 @@
 "use client";
 
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { AlertCircle, Home, RefreshCw } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { useToast } from '@/hooks/use-toast';
 
-export default function Error({
-  error,
-  reset,
-}: {
+type ErrorProps = {
   error: Error & { digest?: string };
   reset: () => void;
-}) {
+};
+
+const ErrorComponent = ({ error, reset }: ErrorProps) => {
   const router = useRouter();
   const { toast } = useToast();
+  const [isDevelopment, setIsDevelopment] = useState(false);
 
   useEffect(() => {
-    // Log error to console for debugging
+    setIsDevelopment(process.env.NODE_ENV === 'development');
     console.error('Error boundary caught:', error);
 
-    // Show toast notification
     toast({
       variant: 'destructive',
       title: 'Error',
@@ -46,7 +45,7 @@ export default function Error({
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
-          {process.env.NODE_ENV === 'development' && (
+          {isDevelopment && (
             <div className="bg-gray-100 p-3 rounded-md">
               <p className="text-xs text-gray-600 font-mono break-words">
                 {error.message}
@@ -74,4 +73,10 @@ export default function Error({
       </Card>
     </div>
   );
-}
+};
+
+ErrorComponent.defaultProps = {
+  error: new Error('An unexpected error occurred. Please try again.'),
+};
+
+export default ErrorComponent;

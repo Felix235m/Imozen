@@ -27,6 +27,7 @@ import { useEffect, useState } from "react";
 import { Home, Building, Warehouse, Mountain, Minus, Plus, X, ChevronsUpDown } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useToast } from "@/hooks/use-toast";
+import { useLanguage } from "@/hooks/useLanguage";
 import { Badge } from "@/components/ui/badge";
 import { DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuCheckboxItem } from "@/components/ui/dropdown-menu";
 
@@ -53,9 +54,9 @@ const allLocations = [
 
 
 const formSchema = z.object({
-  propertyType: z.string().min(1, "Property type is required"),
+  propertyType: z.string().optional(),
   locations: z.array(z.string()).optional(),
-  budget: z.number().min(1, "Budget is required"),
+  budget: z.number().optional(),
   budgetCurrency: z.string(),
   bedrooms: z.number().min(0, "Bedrooms cannot be negative"),
 });
@@ -63,6 +64,7 @@ const formSchema = z.object({
 export default function NewLeadStep2Page() {
   const router = useRouter();
   const { toast } = useToast();
+  const { t } = useLanguage();
   
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
@@ -144,8 +146,8 @@ export default function NewLeadStep2Page() {
     <div className="p-4">
       <Card className="border-none shadow-none">
         <CardHeader>
-          <CardTitle>Property Requirements</CardTitle>
-          <CardDescription>What is the lead looking for?</CardDescription>
+          <CardTitle>{t.leads.propertyRequirements}</CardTitle>
+          <CardDescription>{t.newLead.qualificationDescription}</CardDescription>
         </CardHeader>
         <CardContent>
           <Form {...form}>
@@ -155,7 +157,7 @@ export default function NewLeadStep2Page() {
                 name="propertyType"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Property Type <span className="text-red-500">*</span></FormLabel>
+                    <FormLabel>{t.leads.propertyType}</FormLabel>
                     <FormControl>
                       <div className="grid grid-cols-2 gap-4">
                         {propertyTypes.map((type) => (
@@ -184,7 +186,7 @@ export default function NewLeadStep2Page() {
                 name="locations"
                 render={({ field }) => (
                     <FormItem className="flex flex-col">
-                        <FormLabel>Location Preferences</FormLabel>
+                        <FormLabel>{t.newLead.locationPreferences}</FormLabel>
                         <DropdownMenu>
                             <DropdownMenuTrigger asChild>
                                 <Button
@@ -211,7 +213,7 @@ export default function NewLeadStep2Page() {
                                             )
                                         })
                                     ) : (
-                                        <span className="text-muted-foreground">Select locations...</span>
+                                        <span className="text-muted-foreground">{t.newLead.selectLocations}</span>
                                     )}
                                     </div>
                                     <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
@@ -236,7 +238,7 @@ export default function NewLeadStep2Page() {
               />
 
               <FormItem>
-                <FormLabel>Budget <span className="text-red-500">*</span></FormLabel>
+                <FormLabel>{t.leads.budget}</FormLabel>
                 <div className="flex items-center gap-2">
                     <FormField
                         control={form.control}
@@ -283,7 +285,7 @@ export default function NewLeadStep2Page() {
                 name="bedrooms"
                 render={({ field }) => (
                   <FormItem className={cn(isBedroomsDisabled && "opacity-50")}>
-                    <FormLabel>Number of Bedrooms</FormLabel>
+                    <FormLabel>{t.newLead.numberOfBedrooms}</FormLabel>
                     <FormControl>
                         <div className="flex items-center justify-center gap-4 p-2 border rounded-lg">
                             <Button
@@ -315,13 +317,13 @@ export default function NewLeadStep2Page() {
               <div className="pt-6">
                  <div className="grid grid-cols-3 gap-4 max-w-md mx-auto">
                     <Button variant="outline" type="button" size="lg" onClick={() => router.back()}>
-                        Previous
+                        {t.newLead.previous}
                     </Button>
                     <Button variant="secondary" type="button" size="lg" onClick={handleSaveAsDraft}>
-                        Save as Draft
+                        {t.newLead.saveAsDraft}
                     </Button>
                     <Button type="submit" size="lg" className="bg-primary">
-                        Next
+                        {t.common.next}
                     </Button>
                 </div>
               </div>

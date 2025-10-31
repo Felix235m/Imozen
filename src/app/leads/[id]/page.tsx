@@ -22,6 +22,7 @@ import {
   DropdownMenuCheckboxItem,
 } from '@/components/ui/dropdown-menu';
 import { useToast } from '@/hooks/use-toast';
+import { useLanguage } from '@/hooks/useLanguage';
 import { Loader2 } from 'lucide-react';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription } from '@/components/ui/sheet';
@@ -142,6 +143,7 @@ export default function LeadDetailPage() {
   const [isNotesOpen, setIsNotesOpen] = useState(false);
   const [isFollowUpOpen, setIsFollowUpOpen] = useState(false);
   const [isHistoryOpen, setIsHistoryOpen] = useState(false);
+  const { t } = useLanguage();
   const [isStatusDialogOpen, setIsStatusDialogOpen] = useState(false);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const [isConfirmSaveOpen, setIsConfirmSaveOpen] = useState(false);
@@ -417,6 +419,28 @@ export default function LeadDetailPage() {
     }
   };
 
+  const getPriorityLabel = (temperature: 'Hot' | 'Warm' | 'Cold' | null | undefined) => {
+    if (!temperature) return '';
+    switch (temperature) {
+      case 'Hot': return t.leads.priorityHot;
+      case 'Warm': return t.leads.priorityWarm;
+      case 'Cold': return t.leads.priorityCold;
+      default: return temperature;
+    }
+  };
+
+  const getStageLabel = (stage: LeadStage | undefined) => {
+    if (!stage) return '';
+    const stageKey = stage.replace(/\s+/g, '').replace(/^./, str => str.toLowerCase());
+    return t.leads.stages[stageKey as keyof typeof t.leads.stages] || stage;
+  };
+
+  const getStageDescription = (stage: LeadStage | undefined) => {
+    if (!stage) return '';
+    const stageKey = stage.replace(/\s+/g, '').replace(/^./, str => str.toLowerCase());
+    return t.leads.stageDescriptions[stageKey as keyof typeof t.leads.stageDescriptions] || '';
+  };
+
   const handleStatusSave = (leadId: string, newStatus: 'Hot' | 'Warm' | 'Cold', note: string) => {
     if (!lead || lead.lead_id !== leadId) return;
 
@@ -591,7 +615,7 @@ export default function LeadDetailPage() {
               <ArrowLeft className="h-6 w-6" />
             </Button>
           </Link>
-          <h1 className="ml-4 text-xl font-semibold">{isEditing ? 'Edit Lead' : 'Lead Details'}</h1>
+          <h1 className="ml-4 text-xl font-semibold">{isEditing ? t.leads.editLead : t.leads.leadDetails}</h1>
         </div>
         <div className="flex items-center gap-2">
           {isEditing ? (
@@ -606,11 +630,11 @@ export default function LeadDetailPage() {
                 setIsEditing(false);
               }}>
                 <X className="mr-2 h-4 w-4" />
-                Cancel
+                {t.common.cancel}
               </Button>
               <Button onClick={prepareSaveChanges} disabled={isSaving}>
                 {isSaving ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Save className="mr-2 h-4 w-4" />}
-                Save Changes
+                {t.common.save}
               </Button>
             </>
           ) : (
@@ -623,20 +647,20 @@ export default function LeadDetailPage() {
               <DropdownMenuContent align="end">
                 <DropdownMenuItem onSelect={handleEditClick}>
                     <Edit className="mr-2 h-4 w-4" />
-                    <span>Edit Lead</span>
+                    <span>{t.leads.editLead}</span>
                 </DropdownMenuItem>
                 <DropdownMenuItem onSelect={() => setIsStatusDialogOpen(true)}>
                   <Zap className="mr-2 h-4 w-4" />
-                  <span>Priority (hot/warm/cold)</span>
+                  <span>{t.leads.priority}</span>
                 </DropdownMenuItem>
                 <DropdownMenuItem onSelect={() => setIsLeadStageDialogOpen(true)}>
                   <TrendingUp className="mr-2 h-4 w-4" />
-                  <span>Change Stage</span>
+                  <span>{t.leads.changeStage}</span>
                 </DropdownMenuItem>
                 <DropdownMenuSeparator />
                 <DropdownMenuItem onSelect={() => setIsDeleteDialogOpen(true)} className="text-red-600">
                   <Trash2 className="mr-2 h-4 w-4" />
-                  <span>Delete Lead</span>
+                  <span>{t.leads.deleteLead}</span>
                 </DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>
@@ -677,41 +701,40 @@ export default function LeadDetailPage() {
               )}
             </div>
             <div className='flex items-center gap-2'>
-              <Badge variant="outline" className={cn("text-xs", getStatusBadgeClass(lead.temperature))}>{lead.temperature}</Badge>
+              <Badge variant="outline" className={cn("text-xs", getStatusBadgeClass(lead.temperature))}>{getPriorityLabel(lead.temperature)}</Badge>
               {currentStageInfo && (
-                <Badge variant="outline" className="text-xs bg-gray-100 text-gray-700 border-gray-300">{currentStageInfo.label}</Badge>
+                <Badge variant="outline" className="text-xs bg-gray-100 text-gray-700 border-gray-300">{getStageLabel(currentStageInfo.value)}</Badge>
               )}
             </div>
           </div>
-          <div className='w-full flex items-center justify-between text-sm text-gray-500 mt-1 px-4'>
-            <span>ID: {lead.lead_id}</span>
-            <span>Created: {lead.created_at_formatted}</span>
+          <div className='w-full flex items-center justify-end text-xs text-gray-500 mt-1 px-4'>
+            <span>{t.leads.created} {lead.created_at_formatted}</span>
           </div>
         </section>
 
         <div className="space-y-6">
           <Card>
             <CardHeader>
-              <CardTitle>Personal Information</CardTitle>
+              <CardTitle>{t.leads.personalInformation}</CardTitle>
             </CardHeader>
             <CardContent>
               <div className="grid grid-cols-2 gap-y-4 gap-x-8 text-sm">
                  {isEditing ? (
                    <>
                      <EditableField
-                       label="Name"
+                       label={t.leads.name}
                        value={lead.name}
                        onChange={(value) => setLead(prev => prev ? {...prev, name: value} : null)}
                        className="col-span-2"
                      />
                      <EditableField
-                       label="Email"
+                       label={t.leads.email}
                        value={lead.contact.email}
                        onChange={(value) => setLead(prev => prev ? {...prev, contact: {...prev.contact, email: value}} : null)}
                        className="col-span-2"
                      />
                      <div className="col-span-2 grid gap-1">
-                       <p className="text-gray-500">Phone Number</p>
+                       <p className="text-gray-500">{t.leads.phoneNumber}</p>
                        <div className="flex gap-2">
                          <Input
                            value={phoneCountryCode}
@@ -728,17 +751,17 @@ export default function LeadDetailPage() {
                        </div>
                      </div>
                      <EditableField
-                       label="Language"
+                       label={t.leads.language}
                        value={lead.contact.language}
                        onChange={(value) => setLead(prev => prev ? {...prev, contact: {...prev.contact, language: value}} : null)}
                      />
                    </>
                  ) : (
                    <>
-                     <InfoItem label="Name" value={lead.name} className="col-span-2" />
-                     <InfoItem label="Email" value={lead.contact.email} className="col-span-2" />
-                     <InfoItem label="Phone Number" value={String(lead.contact.phone || '')} className="col-span-2" />
-                     <InfoItem label="Language" value={lead.contact.language} />
+                     <InfoItem label={t.leads.name} value={lead.name} className="col-span-2" />
+                     <InfoItem label={t.leads.email} value={lead.contact.email} className="col-span-2" />
+                     <InfoItem label={t.leads.phoneNumber} value={String(lead.contact.phone || '')} className="col-span-2" />
+                     <InfoItem label={t.leads.language} value={lead.contact.language} />
                    </>
                  )}
               </div>
@@ -747,13 +770,13 @@ export default function LeadDetailPage() {
 
           <Card>
             <CardHeader>
-                <CardTitle>Property Requirements</CardTitle>
+                <CardTitle>{t.leads.propertyRequirements}</CardTitle>
             </CardHeader>
             <CardContent>
                 {isEditing ? (
                     <div className="space-y-6">
                         <div>
-                            <p className="text-gray-500 text-sm mb-2">Property Type</p>
+                            <p className="text-gray-500 text-sm mb-2">{t.leads.propertyType}</p>
                             <div className="grid grid-cols-2 gap-4">
                                 {propertyTypes.map((type) => (
                                     <Button
@@ -770,7 +793,7 @@ export default function LeadDetailPage() {
                         </div>
 
                         <div>
-                            <p className="text-gray-500 text-sm mb-2">Budget</p>
+                            <p className="text-gray-500 text-sm mb-2">{t.leads.budget}</p>
                             <div className="relative">
                                 <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500 font-medium">€</span>
                                 <Input
@@ -787,7 +810,7 @@ export default function LeadDetailPage() {
                         </div>
 
                         <div>
-                            <p className="text-gray-500 text-sm mb-2">Bedrooms</p>
+                            <p className="text-gray-500 text-sm mb-2">{t.leads.bedrooms}</p>
                             <div className={cn("flex items-center justify-center gap-4 p-2 border rounded-lg", isBedroomsDisabled && "opacity-50")}>
                                 <Button
                                     type="button"
@@ -812,7 +835,7 @@ export default function LeadDetailPage() {
                         </div>
 
                         <div>
-                            <p className="text-gray-500 text-sm mb-2">Locations</p>
+                            <p className="text-gray-500 text-sm mb-2">{t.leads.locations}</p>
                             <DropdownMenu>
                                 <DropdownMenuTrigger asChild>
                                     <Button variant="outline" className="w-full justify-between">
@@ -881,10 +904,10 @@ export default function LeadDetailPage() {
                     </div>
                 ) : (
                     <div className="grid grid-cols-2 gap-y-4 gap-x-8 text-sm">
-                        <InfoItem label="Property Type" value={lead.property.type} />
-                        <InfoItem label="Budget" value={lead.property.budget_formatted} />
-                        <InfoItem label="Bedrooms" value={lead.property.bedrooms} />
-                        <InfoItem label="Locations" value={lead.property.locations.join(', ')} className="col-span-2" />
+                        <InfoItem label={t.leads.propertyType} value={lead.property.type} />
+                        <InfoItem label={t.leads.budget} value={lead.property.budget_formatted} />
+                        <InfoItem label={t.leads.bedrooms} value={lead.property.bedrooms} />
+                        <InfoItem label={t.leads.locations} value={lead.property.locations.join(', ')} className="col-span-2" />
                     </div>
                 )}
             </CardContent>
@@ -894,9 +917,9 @@ export default function LeadDetailPage() {
 
       {!isEditing && (
         <div className="fixed bottom-20 right-4 z-20 flex flex-col items-end gap-4">
-          <ActionButton icon={FileText} label="Notes" onClick={handleOpenNotes} isLoading={isFetchingNotes} />
-          <ActionButton icon={Send} label="Follow-up" onClick={() => setIsFollowUpOpen(true)} />
-          <ActionButton icon={History} label="History" onClick={() => setIsHistoryOpen(true)} />
+          <ActionButton icon={FileText} label={t.leads.notes} onClick={handleOpenNotes} isLoading={isFetchingNotes} />
+          <ActionButton icon={Send} label={t.leads.followUp} onClick={() => setIsFollowUpOpen(true)} />
+          <ActionButton icon={History} label={t.leads.history} onClick={() => setIsHistoryOpen(true)} />
         </div>
       )}
       
@@ -977,9 +1000,9 @@ export default function LeadDetailPage() {
        <Dialog open={isLeadStageDialogOpen} onOpenChange={setIsLeadStageDialogOpen}>
         <DialogContent className="sm:max-w-2xl">
             <DialogHeader>
-                <DialogTitle>Change Lead Stage</DialogTitle>
+                <DialogTitle>{t.leads.dialogs.changeStageTitle}</DialogTitle>
                 <DialogDescription>
-                    Select the new stage for this lead in the sales pipeline.
+                    {t.leads.dialogs.changeStageDescription}
                 </DialogDescription>
             </DialogHeader>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-3 max-h-[60vh] overflow-y-auto p-1">
@@ -997,14 +1020,14 @@ export default function LeadDetailPage() {
                                     : "border-gray-200 hover:border-gray-400 hover:bg-gray-50"
                             )}
                         >
-                            {isCurrent && <Badge className="absolute -top-2 -right-2">Current</Badge>}
+                            {isCurrent && <Badge className="absolute -top-2 -right-2">{t.leads.dialogs.current}</Badge>}
                             <div className="flex items-start gap-4">
                                 <div className={cn("mt-1 flex h-8 w-8 items-center justify-center rounded-full shrink-0", stage.color)}>
                                     <stage.icon className="h-5 w-5" />
                                 </div>
                                 <div className='flex-1'>
-                                    <p className="font-semibold">{stage.label}</p>
-                                    <p className="text-sm text-gray-500">{stage.description}</p>
+                                    <p className="font-semibold">{getStageLabel(stage.value)}</p>
+                                    <p className="text-sm text-gray-500">{getStageDescription(stage.value)}</p>
                                 </div>
                             </div>
                         </button>
@@ -1012,7 +1035,7 @@ export default function LeadDetailPage() {
                 })}
             </div>
             <DialogFooter className="mt-4">
-                <Button variant="outline" onClick={() => setIsLeadStageDialogOpen(false)}>Cancel</Button>
+                <Button variant="outline" onClick={() => setIsLeadStageDialogOpen(false)}>{t.common.cancel}</Button>
             </DialogFooter>
         </DialogContent>
        </Dialog>
@@ -1020,11 +1043,11 @@ export default function LeadDetailPage() {
        <AlertDialog open={isStageConfirmDialogOpen} onOpenChange={setIsStageConfirmDialogOpen}>
         <AlertDialogContent>
             <AlertDialogHeader>
-                <AlertDialogTitle>Confirm Stage Change</AlertDialogTitle>
+                <AlertDialogTitle>{t.leads.dialogs.confirmStageChangeTitle}</AlertDialogTitle>
                 <AlertDialogDescription>
                     {currentStageInfo && selectedStageInfo
-                        ? `Change stage from "${currentStageInfo.label}" to "${selectedStageInfo.label}"`
-                        : 'Are you sure you want to change the lead stage?'}
+                        ? t.leads.dialogs.confirmStageChangeDescription.replace('{{from}}', getStageLabel(currentStageInfo.value)).replace('{{to}}', getStageLabel(selectedStageInfo.value))
+                        : t.leads.dialogs.confirmStageChangeTitle}
                 </AlertDialogDescription>
             </AlertDialogHeader>
             {currentStageInfo && selectedStageInfo && (
@@ -1033,22 +1056,22 @@ export default function LeadDetailPage() {
                         <div className={cn("flex h-10 w-10 items-center justify-center rounded-full shrink-0", currentStageInfo.color)}>
                             <currentStageInfo.icon className="h-6 w-6" />
                         </div>
-                        <span className="font-semibold text-sm">{currentStageInfo.label}</span>
+                        <span className="font-semibold text-sm">{getStageLabel(currentStageInfo.value)}</span>
                     </div>
                     <ArrowRight className="h-6 w-6 text-gray-400 shrink-0" />
                     <div className="flex flex-col items-center gap-2">
                         <div className={cn("flex h-10 w-10 items-center justify-center rounded-full shrink-0", selectedStageInfo.color)}>
                             <selectedStageInfo.icon className="h-6 w-6" />
                         </div>
-                        <span className="font-semibold text-sm">{selectedStageInfo.label}</span>
+                        <span className="font-semibold text-sm">{getStageLabel(selectedStageInfo.value)}</span>
                     </div>
                 </div>
             )}
              <div className="space-y-2">
-              <Label htmlFor="stage-change-note">Note (Optional)</Label>
+              <Label htmlFor="stage-change-note">{t.leads.noteOptional}</Label>
               <Textarea
                 id="stage-change-note"
-                placeholder="Add a note about this stage change..."
+                placeholder={t.leads.stageChangeNotePlaceholder}
                 value={stageChangeNote}
                 onChange={(e) => setStageChangeNote(e.target.value)}
               />
@@ -1057,9 +1080,9 @@ export default function LeadDetailPage() {
                 <AlertDialogCancel onClick={() => {
                     setIsStageConfirmDialogOpen(false);
                     setIsLeadStageDialogOpen(true);
-                }}>Cancel</AlertDialogCancel>
+                }}>{t.common.cancel}</AlertDialogCancel>
                 <AlertDialogAction onClick={confirmLeadStageChange}>
-                  Confirm
+                  {t.common.confirm}
                 </AlertDialogAction>
             </AlertDialogFooter>
         </AlertDialogContent>
@@ -1068,9 +1091,9 @@ export default function LeadDetailPage() {
       <AlertDialog open={isConfirmSaveOpen} onOpenChange={setIsConfirmSaveOpen}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Confirm Changes</AlertDialogTitle>
+            <AlertDialogTitle>{t.leads.confirmSaveDialogTitle}</AlertDialogTitle>
             <AlertDialogDescription>
-              You are about to update the following fields:
+              {t.leads.reviewChangesDescription}
             </AlertDialogDescription>
           </AlertDialogHeader>
           <div className="max-h-60 overflow-y-auto">
@@ -1086,10 +1109,10 @@ export default function LeadDetailPage() {
             ))}
           </div>
           <AlertDialogFooter>
-            <AlertDialogCancel onClick={() => setIsConfirmSaveOpen(false)}>Cancel</AlertDialogCancel>
+            <AlertDialogCancel onClick={() => setIsConfirmSaveOpen(false)}>{t.common.cancel}</AlertDialogCancel>
             <AlertDialogAction onClick={handleSaveLeadChanges} disabled={isSaving}>
               {isSaving ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
-              Confirm & Save
+              {t.leads.confirmAndSave}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
@@ -1154,12 +1177,23 @@ type LeadNotesSheetProps = {
 
 function LeadNotesSheet({ open, onOpenChange, lead, currentNote, setCurrentNote, notes, setNotes }: LeadNotesSheetProps) {
     const { toast } = useToast();
+    const { t } = useLanguage();
     const [noteContent, setNoteContent] = useState('');
     const [originalNoteContent, setOriginalNoteContent] = useState('');
     const textareaRef = useRef<HTMLTextAreaElement>(null);
     const [isSaving, setIsSaving] = useState(false);
     const [isAddingNewNote, setIsAddingNewNote] = useState(false);
     const [movedNoteId, setMovedNoteId] = useState<string | null>(null);
+
+    const getPriorityLabel = (temperature: 'Hot' | 'Warm' | 'Cold' | null | undefined) => {
+        if (!temperature) return '';
+        switch (temperature) {
+            case 'Hot': return t.leads.priorityHot;
+            case 'Warm': return t.leads.priorityWarm;
+            case 'Cold': return t.leads.priorityCold;
+            default: return temperature;
+        }
+    };
     
     useEffect(() => {
         if (open) {
@@ -1290,7 +1324,7 @@ function LeadNotesSheet({ open, onOpenChange, lead, currentNote, setCurrentNote,
                          <Button variant="ghost" size="icon" onClick={() => onOpenChange(false)} className="mr-2">
                            <X className="h-6 w-6" />
                          </Button>
-                        <SheetTitle>Lead Notes</SheetTitle>
+                        <SheetTitle>{t.leads.leadNotes}</SheetTitle>
                      </div>
                      <SheetDescription className="sr-only">
                        Manage notes for {lead.name}.
@@ -1306,21 +1340,21 @@ function LeadNotesSheet({ open, onOpenChange, lead, currentNote, setCurrentNote,
                         <div>
                             <div className="flex items-center gap-2">
                                 <h3 className="text-lg font-bold">{lead.name}</h3>
-                                <Badge variant="outline" className={cn("text-sm", getStatusBadgeClass(lead.temperature))}>{lead.temperature}</Badge>
+                                <Badge variant="outline" className={cn("text-sm", getStatusBadgeClass(lead.temperature))}>{getPriorityLabel(lead.temperature)}</Badge>
                             </div>
                             <p className="text-sm text-gray-500">{String(lead.contact.phone || '')}</p>
                             <p className="text-sm text-gray-500">{lead.contact.email}</p>
-                            <p className="text-xs text-gray-400 mt-1">Source: {lead.management.source} | Created: {lead.created_at_formatted}</p>
+                            <p className="text-xs text-gray-400 mt-1">{t.leads.created} {lead.created_at_formatted}</p>
                         </div>
                     </div>
 
                     <Card>
                         <CardHeader>
                              <div className="flex justify-between items-center">
-                                <CardTitle className="text-lg">Current Note</CardTitle>
+                                <CardTitle className="text-lg">{t.leads.currentNote}</CardTitle>
                                 {currentNote && (
                                     <div className="text-xs text-gray-500 text-right">
-                                        <p>Last updated: {currentNote.created_at_formatted}</p>
+                                        <p>{t.leads.lastUpdated} {currentNote.created_at_formatted}</p>
                                         <p className="hidden">By: {currentNote.created_by}</p>
                                     </div>
                                 )}
@@ -1329,32 +1363,39 @@ function LeadNotesSheet({ open, onOpenChange, lead, currentNote, setCurrentNote,
                         <CardContent>
                              <Textarea
                                 ref={textareaRef}
-                                placeholder="Start typing your note..."
+                                placeholder={t.leads.notePlaceholder}
                                 className="border-0 focus-visible:ring-0 min-h-[100px] p-0 resize-none overflow-hidden"
                                 value={noteContent}
                                 onChange={(e) => setNoteContent(e.target.value)}
                             />
                              <div className="flex gap-2 justify-end mt-2">
-                                {isAddingNewNote && noteContent.trim() && (
-                                    <Button size="sm" onClick={() => handleSaveNote('add_new_note')} disabled={isSaving}>
-                                        {isSaving ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
-                                        Save Note
-                                    </Button>
+                                {isAddingNewNote && (
+                                    <>
+                                        <Button variant="outline" size="sm" onClick={handleCancelNewNote}>
+                                            {t.common.cancel}
+                                        </Button>
+                                        {noteContent.trim() && (
+                                            <Button size="sm" onClick={() => handleSaveNote('add_new_note')} disabled={isSaving}>
+                                                {isSaving ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
+                                                {t.leads.saveNote}
+                                            </Button>
+                                        )}
+                                    </>
                                 )}
                                 {!isAddingNewNote && isNoteChanged && (
                                      <>
                                         <Button variant="outline" size="sm" onClick={() => currentNote && setNoteContent(originalNoteContent)}>
-                                            Cancel
+                                            {t.common.cancel}
                                         </Button>
                                         <Button size="sm" onClick={() => handleSaveNote('edit_note')} disabled={isSaving}>
                                             {isSaving ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
-                                            Save Changes
+                                            {t.common.save}
                                         </Button>
                                     </>
                                 )}
                                 {!isAddingNewNote && !isNoteChanged && (
                                     <Button size="sm" onClick={handleNewNoteClick} disabled={!currentNote && isAddingNewNote}>
-                                        Add New Note
+                                         {t.leads.addNewNote}
                                     </Button>
                                 )}
                             </div>
@@ -1362,7 +1403,7 @@ function LeadNotesSheet({ open, onOpenChange, lead, currentNote, setCurrentNote,
                     </Card>
                     
                     <div>
-                        <h4 className="text-lg font-semibold mb-4">Note History</h4>
+                        <h4 className="text-lg font-semibold mb-4">{t.leads.noteHistory}</h4>
                         <div className="space-y-4">
                             {notes.map((note, index) => {
                                 const key = note.note_id || `history-${index}`;
@@ -1419,6 +1460,7 @@ type LeadHistorySheetProps = {
 };
 
 function LeadHistorySheet({ open, onOpenChange, lead, history }: LeadHistorySheetProps) {
+    const { t } = useLanguage();
     return (
         <Sheet open={open} onOpenChange={onOpenChange}>
             <SheetContent side="bottom" className="h-[90vh] flex flex-col p-0">
@@ -1427,7 +1469,7 @@ function LeadHistorySheet({ open, onOpenChange, lead, history }: LeadHistoryShee
                          <Button variant="ghost" size="icon" onClick={() => onOpenChange(false)} className="mr-2">
                            <X className="h-6 w-6" />
                          </Button>
-                        <SheetTitle>Communication History</SheetTitle>
+                        <SheetTitle>{t.leads.communicationHistory}</SheetTitle>
                      </div>
                      <SheetDescription className="sr-only">
                        View the communication history for {lead.name}.

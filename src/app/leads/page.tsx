@@ -2,7 +2,7 @@
 "use client";
 
 import React, { useState, useMemo, useEffect, useCallback } from 'react';
-import { Search, Plus, MoreVertical, X, Edit, Zap, Trash2, Loader2, Users, UserPlus, PhoneCall, UserCheck, Calendar, Home, Tag, MessageCircle, FileSignature, PartyPopper, ThumbsDown, UserX, TrendingUp, ArrowRight } from 'lucide-react';
+import { Search, Plus, MoreVertical, X, Edit, Zap, Trash2, Loader2, Users, UserPlus, PhoneCall, UserCheck, Calendar, Home, Tag, MessageCircle, FileSignature, PartyPopper, ThumbsDown, UserX, TrendingUp, ArrowRight, ArrowUpDown, ArrowUp, ArrowDown } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent } from '@/components/ui/card';
@@ -11,10 +11,12 @@ import { Badge } from '@/components/ui/badge';
 import { cn } from '@/lib/utils';
 import Link from 'next/link';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuSeparator } from '@/components/ui/dropdown-menu';
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuSeparator, DropdownMenuLabel, DropdownMenuRadioGroup, DropdownMenuRadioItem, DropdownMenuCheckboxItem } from '@/components/ui/dropdown-menu';
 import { useToast } from '@/hooks/use-toast';
 import { useRouter } from 'next/navigation';
+import { useLanguage } from '@/hooks/useLanguage';
 import { LeadStatusDialog } from '@/components/leads/lead-status-dialog';
+import { ScheduleFollowUpDialog } from '@/components/leads/schedule-follow-up-dialog';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -37,27 +39,6 @@ import { callLeadApi, callLeadStatusApi, callAuthApi } from '@/lib/auth-api';
 import { transformWebhookResponseToLeadListItem } from '@/lib/lead-transformer';
 import { format, isValid } from 'date-fns';
 
-// Helper function to safely format follow-up dates
-function formatFollowUpDate(dateValue: string | null | undefined): string {
-  // Handle null, undefined, empty string, or "-"
-  if (!dateValue || dateValue === '-' || dateValue.trim() === '') {
-    return 'Not set';
-  }
-
-  try {
-    const parsedDate = new Date(dateValue);
-
-    // Check if the date is valid
-    if (isValid(parsedDate)) {
-      return format(parsedDate, 'MMM d, yyyy');
-    } else {
-      return 'Not set';
-    }
-  } catch (error) {
-    // If any error occurs during parsing/formatting, return "Not set"
-    return 'Not set';
-  }
-}
 
 type LeadTemperature = 'Hot' | 'Warm' | 'Cold';
 
@@ -86,19 +67,6 @@ type Lead = {
   };
 };
 
-const LEAD_STAGES: { value: LeadStage; label: string; color: string; description: string, icon: React.ElementType }[] = [
-  { value: 'New Lead', label: 'New Lead', color: 'bg-blue-100 text-blue-700', description: 'Just received, not yet contacted', icon: UserPlus },
-  { value: 'Contacted', label: 'Contacted', color: 'bg-purple-100 text-purple-700', description: 'Initial contact made', icon: PhoneCall },
-  { value: 'Qualified', label: 'Qualified', color: 'bg-indigo-100 text-indigo-700', description: 'Lead is qualified and interested', icon: UserCheck },
-  { value: 'Property Viewing Scheduled', label: 'Viewing Scheduled', color: 'bg-cyan-100 text-cyan-700', description: 'Property viewing appointment set', icon: Calendar },
-  { value: 'Property Viewed', label: 'Property Viewed', color: 'bg-teal-100 text-teal-700', description: 'Lead has viewed property', icon: Home },
-  { value: 'Offer Made', label: 'Offer Made', color: 'bg-orange-100 text-orange-700', description: 'Lead made an offer', icon: Tag },
-  { value: 'Negotiation', label: 'Negotiation', color: 'bg-yellow-100 text-yellow-700', description: 'In negotiation phase', icon: MessageCircle },
-  { value: 'Under Contract', label: 'Under Contract', color: 'bg-lime-100 text-lime-700', description: 'Contract signed, pending closing', icon: FileSignature },
-  { value: 'Converted', label: 'Converted', color: 'bg-green-100 text-green-700', description: 'Deal successfully closed', icon: PartyPopper },
-  { value: 'Lost', label: 'Lost', color: 'bg-red-100 text-red-700', description: 'Deal lost', icon: ThumbsDown },
-  { value: 'Not Interested', label: 'Not Interested', color: 'bg-gray-100 text-gray-700', description: 'Lead no longer interested', icon: UserX },
-];
 
 export default function LeadsPage() {
   const [searchTerm, setSearchTerm] = useState('');
@@ -109,6 +77,14 @@ export default function LeadsPage() {
   const [selectedLeads, setSelectedLeads] = useState<string[]>([]);
   const { toast } = useToast();
   const router = useRouter();
+  const { t } = useLanguage();
+
+  // Sort and filter state
+  const [sortBy, setSortBy] = useState<'name' | 'created' | 'followUp'>('name');
+  const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('asc');
+  const [showOverdue, setShowOverdue] = useState(false);
+  const [showUpcoming, setShowUpcoming] = useState(false);
+  const [showNoDate, setShowNoDate] = useState(false);
 
   const [isStatusDialogOpen, setIsStatusDialogOpen] = useState(false);
   const [selectedLeadForStatus, setSelectedLeadForStatus] = useState<Lead | null>(null);
@@ -123,6 +99,41 @@ export default function LeadsPage() {
   const [selectedStage, setSelectedStage] = useState<LeadStage | null>(null);
   const [selectedLeadForStageChange, setSelectedLeadForStageChange] = useState<Lead | null>(null);
 
+  const [isScheduleFollowUpDialogOpen, setIsScheduleFollowUpDialogOpen] = useState(false);
+  const [selectedLeadForSchedule, setSelectedLeadForSchedule] = useState<Lead | null>(null);
+
+
+  // Helper function to safely format follow-up dates
+  const formatFollowUpDate = (dateValue: string | null | undefined): string => {
+    if (!dateValue || dateValue === '-' || dateValue.trim() === '') {
+      return t.leads.notSet;
+    }
+
+    try {
+      const parsedDate = new Date(dateValue);
+      if (isValid(parsedDate)) {
+        return format(parsedDate, 'MMM d, yyyy');
+      } else {
+        return t.leads.notSet;
+      }
+    } catch (error) {
+      return t.leads.notSet;
+    }
+  };
+
+  const LEAD_STAGES: { value: LeadStage; label: string; color: string; description: string, icon: React.ElementType }[] = [
+    { value: 'New Lead', label: t.leads.stages.newLead, color: 'bg-blue-100 text-blue-700', description: t.leads.stageDescriptions.newLead, icon: UserPlus },
+    { value: 'Contacted', label: t.leads.stages.contacted, color: 'bg-purple-100 text-purple-700', description: t.leads.stageDescriptions.contacted, icon: PhoneCall },
+    { value: 'Qualified', label: t.leads.stages.qualified, color: 'bg-indigo-100 text-indigo-700', description: t.leads.stageDescriptions.qualified, icon: UserCheck },
+    { value: 'Property Viewing Scheduled', label: t.leads.stages.viewingScheduled, color: 'bg-cyan-100 text-cyan-700', description: t.leads.stageDescriptions.viewingScheduled, icon: Calendar },
+    { value: 'Property Viewed', label: t.leads.stages.propertyViewed, color: 'bg-teal-100 text-teal-700', description: t.leads.stageDescriptions.propertyViewed, icon: Home },
+    { value: 'Offer Made', label: t.leads.stages.offerMade, color: 'bg-orange-100 text-orange-700', description: t.leads.stageDescriptions.offerMade, icon: Tag },
+    { value: 'Negotiation', label: t.leads.stages.negotiation, color: 'bg-yellow-100 text-yellow-700', description: t.leads.stageDescriptions.negotiation, icon: MessageCircle },
+    { value: 'Under Contract', label: t.leads.stages.underContract, color: 'bg-lime-100 text-lime-700', description: t.leads.stageDescriptions.underContract, icon: FileSignature },
+    { value: 'Converted', label: t.leads.stages.converted, color: 'bg-green-100 text-green-700', description: t.leads.stageDescriptions.converted, icon: PartyPopper },
+    { value: 'Lost', label: t.leads.stages.lost, color: 'bg-red-100 text-red-700', description: t.leads.stageDescriptions.lost, icon: ThumbsDown },
+    { value: 'Not Interested', label: t.leads.stages.notInterested, color: 'bg-gray-100 text-gray-700', description: t.leads.stageDescriptions.notInterested, icon: UserX },
+  ];
 
   const fetchLeads = useCallback(async () => {
     setIsLoading(true);
@@ -137,7 +148,6 @@ export default function LeadsPage() {
         }
 
         if (data && Array.isArray(data.leads)) {
-            // Transform leads to ensure lead_stage field exists
             const transformedLeads = data.leads.map((lead: any) => ({
                 ...lead,
                 lead_stage: lead.lead_stage || lead.Stage || 'New Lead'
@@ -149,14 +159,14 @@ export default function LeadsPage() {
     } catch (error) {
         toast({
             variant: "destructive",
-            title: "Error",
-            description: "Could not load leads.",
+            title: t.leads.messages.errorLoadingLeads,
+            description: t.leads.messages.errorLoadingLeads,
         });
         setLeads([]);
     } finally {
         setIsLoading(false);
     }
-  }, [toast]);
+  }, [toast, t]);
 
   useEffect(() => {
     fetchLeads();
@@ -189,8 +199,8 @@ export default function LeadsPage() {
     } catch (error: any) {
       toast({
         variant: "destructive",
-        title: "Session Expired",
-        description: "Your session has expired. Please log in again.",
+        title: t.leads.messages.sessionExpired,
+        description: t.leads.messages.sessionExpiredDescription,
       });
       localStorage.removeItem('auth_token');
       localStorage.removeItem('agent_data');
@@ -202,18 +212,77 @@ export default function LeadsPage() {
 
   const filteredLeads = useMemo(() => {
     if (!Array.isArray(leads)) return [];
-    
-    let results = leads.filter(lead => 
+
+    // 1. Search filter
+    let results = leads.filter(lead =>
         lead.name.toLowerCase().includes(searchTerm.toLowerCase())
     );
 
+    // 2. Temperature filter (existing tabs)
     if (activeTab !== 'All Leads') {
       const temperature = activeTab.replace(' Leads', '') as LeadTemperature;
       results = results.filter(lead => lead.temperature === temperature);
     }
 
+    // 3. Follow-up date filters
+    const now = new Date();
+    const sevenDaysFromNow = new Date(now.getTime() + 7 * 24 * 60 * 60 * 1000);
+
+    if (showOverdue || showUpcoming || showNoDate) {
+      results = results.filter(lead => {
+        const followUpDate = lead.next_follow_up.date;
+
+        if (showNoDate && (!followUpDate || followUpDate === '-')) return true;
+
+        if (followUpDate && followUpDate !== '-') {
+          const date = new Date(followUpDate);
+          if (isValid(date)) {
+            if (showOverdue && date < now) return true;
+            if (showUpcoming && date >= now && date <= sevenDaysFromNow) return true;
+          }
+        }
+
+        return false;
+      });
+    }
+
+    // 4. Sorting
+    results.sort((a, b) => {
+      let comparison = 0;
+
+      switch (sortBy) {
+        case 'name':
+          comparison = a.name.localeCompare(b.name);
+          break;
+
+        case 'created':
+          // Sort by lead_id (assuming it contains creation timestamp)
+          comparison = a.lead_id.localeCompare(b.lead_id);
+          break;
+
+        case 'followUp':
+          const dateA = a.next_follow_up.date;
+          const dateB = b.next_follow_up.date;
+
+          // Handle null/empty dates (push to end)
+          if (!dateA || dateA === '-') return 1;
+          if (!dateB || dateB === '-') return -1;
+
+          const parsedA = new Date(dateA);
+          const parsedB = new Date(dateB);
+
+          if (!isValid(parsedA)) return 1;
+          if (!isValid(parsedB)) return -1;
+
+          comparison = parsedA.getTime() - parsedB.getTime();
+          break;
+      }
+
+      return sortDirection === 'asc' ? comparison : -comparison;
+    });
+
     return results;
-  }, [searchTerm, activeTab, leads]);
+  }, [searchTerm, activeTab, leads, sortBy, sortDirection, showOverdue, showUpcoming, showNoDate]);
 
   const leadToDeleteName = useMemo(() => {
     if (!leadToDelete) return '';
@@ -240,8 +309,8 @@ export default function LeadsPage() {
     } catch (error) {
         toast({
             variant: "destructive",
-            title: "Error",
-            description: "Could not load lead details. The lead may have been deleted.",
+            title: t.common.loading,
+            description: t.leads.messages.errorLoadingDetails,
         });
         setIsNavigating(null);
     }
@@ -277,11 +346,11 @@ export default function LeadsPage() {
         await callLeadApi('delete_lead', { lead_id: leadToDelete });
         setLeads(prev => prev.filter(lead => lead.lead_id !== leadToDelete));
         toast({
-          title: "Success",
-          description: "Lead deleted.",
+          title: t.common.delete,
+          description: t.leads.messages.leadDeleted,
         });
     } catch(error) {
-        toast({ variant: "destructive", title: "Error", description: "Could not delete lead." });
+        toast({ variant: "destructive", title: t.common.delete, description: t.leads.messages.errorDeletingLead });
     }
     setLeadToDelete(null);
   }
@@ -296,12 +365,12 @@ export default function LeadsPage() {
         await Promise.all(leadsToDelete.map(id => callLeadApi('delete_lead', { lead_id: id })));
         setLeads(prev => prev.filter(lead => !leadsToDelete.includes(lead.lead_id)));
         toast({
-            title: "Success",
-            description: `${leadsToDelete.length} lead(s) deleted.`,
+            title: t.common.delete,
+            description: t.leads.messages.leadsDeleted.replace('{{count}}', leadsToDelete.length.toString()),
         });
         setSelectedLeads([]);
     } catch (error) {
-        toast({ variant: "destructive", title: "Error", description: "Could not delete selected leads." });
+        toast({ variant: "destructive", title: t.common.delete, description: t.leads.messages.errorDeletingLeads });
     }
     setLeadsToDelete(null);
   }
@@ -367,6 +436,11 @@ export default function LeadsPage() {
   const openLeadStageDialog = (lead: Lead) => {
     setSelectedLeadForStageChange(lead);
     setIsLeadStageDialogOpen(true);
+  };
+
+  const openScheduleFollowUpDialog = (lead: Lead) => {
+    setSelectedLeadForSchedule(lead);
+    setIsScheduleFollowUpDialogOpen(true);
   };
 
   const confirmLeadStageChange = async () => {
@@ -443,6 +517,15 @@ export default function LeadsPage() {
     }
   };
 
+  const getPriorityLabel = (temperature: LeadTemperature) => {
+    switch (temperature) {
+      case 'Hot': return t.leads.priorityHot;
+      case 'Warm': return t.leads.priorityWarm;
+      case 'Cold': return t.leads.priorityCold;
+      default: return temperature;
+    }
+  };
+
   const isBulkEditing = selectedLeads.length > 0;
   const currentStageInfo = LEAD_STAGES.find(s => s.value === selectedLeadForStageChange?.lead_stage);
   const selectedStageInfo = LEAD_STAGES.find(s => s.value === selectedStage);
@@ -472,17 +555,19 @@ export default function LeadsPage() {
               </div>
             )}
             <div className="grid gap-0.5">
-              <div className='flex items-center gap-2'>
+              <div className='flex items-center gap-2 flex-wrap'>
                 <span className={cn("font-semibold", isBulkEditing && 'cursor-pointer')}>{lead.name}</span>
-              </div>
-              <div className="flex items-center gap-2 flex-wrap">
-                <Badge variant="outline" className={cn("text-xs", getStatusBadgeClass(lead.temperature))}>{lead.temperature}</Badge>
                 {stageInfo && (
                   <Badge variant="outline" className="text-xs bg-gray-100 text-gray-700 border-gray-300">{stageInfo.label}</Badge>
                 )}
-                <p className="text-sm text-gray-500">
-                  Next follow-up:
-                  <span className="ml-1">
+              </div>
+              <div className="flex items-center gap-2 flex-wrap">
+                <Badge variant="outline" className={cn("text-xs", getStatusBadgeClass(lead.temperature))}>{getPriorityLabel(lead.temperature)}</Badge>
+                <span className="text-gray-400">•</span>
+                <p className="text-sm text-gray-500 flex items-center gap-1">
+                  <Calendar className="h-3 w-3 sm:hidden" />
+                  <span className="hidden sm:inline">{t.leads.nextFollowUp}</span>
+                  <span className="sm:ml-1">
                     {formatFollowUpDate(lead.next_follow_up.date)}
                   </span>
                 </p>
@@ -497,20 +582,14 @@ export default function LeadsPage() {
 
   return (
     <div className="flex h-full flex-col bg-gray-50 p-4 pb-20">
-       <div className="flex items-center justify-between py-4">
-        <h1 className="text-2xl font-bold">Leads</h1>
-        <Button variant="default" className="bg-primary" onClick={handleAddNewLead} disabled={isCheckingSession}>
-          {isCheckingSession ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Plus className="mr-2 h-4 w-4" />}
-          Add New Lead
-        </Button>
-      </div>
+      {/* NEW INTEGRATED TOOLBAR */}
       <div className="flex gap-2 mb-4 items-center">
         {isBulkEditing ? (
           <>
             <Button variant="ghost" size="icon" onClick={cancelSelection}>
               <X className="h-5 w-5" />
             </Button>
-            <h3 className="font-semibold text-lg">{selectedLeads.length} selected</h3>
+            <h3 className="font-semibold text-lg">{selectedLeads.length} {t.leads.selected}</h3>
             <div className="flex-grow" />
             <Checkbox
               checked={selectedLeads.length > 0 && selectedLeads.length === filteredLeads.length}
@@ -525,22 +604,101 @@ export default function LeadsPage() {
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end">
                 <DropdownMenuItem onClick={confirmDeleteBulkLeads} className="text-red-500">
-                  Delete
+                  {t.common.delete}
                 </DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>
           </>
         ) : (
           <>
+            {/* Search Bar */}
             <div className="relative flex-grow">
               <Search className="absolute left-3 top-1/2 h-5 w-5 -translate-y-1/2 text-gray-400" />
               <Input
-                placeholder="Search leads"
+                placeholder={t.leads.searchLeads}
                 className="pl-10 bg-white"
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
               />
             </div>
+
+            {/* Sort & Filter Dropdown */}
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="outline" className="shrink-0">
+                  <ArrowUpDown className="h-4 w-4 md:mr-2" />
+                  <span className="hidden md:inline">{t.leads.sortAndFilter}</span>
+                  {(sortBy !== 'name' || sortDirection !== 'asc' || showOverdue || showUpcoming || showNoDate) && (
+                    <Badge variant="secondary" className="ml-2 h-5 w-5 p-0 flex items-center justify-center rounded-full">
+                      {[sortBy !== 'name', sortDirection !== 'asc', showOverdue, showUpcoming, showNoDate].filter(Boolean).length}
+                    </Badge>
+                  )}
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end" className="w-56">
+                <DropdownMenuLabel>{t.leads.sortOrder}</DropdownMenuLabel>
+                <DropdownMenuRadioGroup value={sortDirection} onValueChange={(value) => setSortDirection(value as 'asc' | 'desc')}>
+                  <DropdownMenuRadioItem value="asc">
+                    <ArrowUp className="mr-2 h-4 w-4" />
+                    {t.leads.ascending}
+                  </DropdownMenuRadioItem>
+                  <DropdownMenuRadioItem value="desc">
+                    <ArrowDown className="mr-2 h-4 w-4" />
+                    {t.leads.descending}
+                  </DropdownMenuRadioItem>
+                </DropdownMenuRadioGroup>
+
+                <DropdownMenuSeparator />
+
+                <DropdownMenuLabel>{t.leads.sortBy}</DropdownMenuLabel>
+                <DropdownMenuRadioGroup value={sortBy} onValueChange={(value) => setSortBy(value as 'name' | 'created' | 'followUp')}>
+                  <DropdownMenuRadioItem value="name">{t.leads.sortByName}</DropdownMenuRadioItem>
+                  <DropdownMenuRadioItem value="created">{t.leads.sortByCreated}</DropdownMenuRadioItem>
+                  <DropdownMenuRadioItem value="followUp">{t.leads.sortByFollowUp}</DropdownMenuRadioItem>
+                </DropdownMenuRadioGroup>
+
+                <DropdownMenuSeparator />
+
+                <DropdownMenuLabel>{t.leads.filterByFollowUp}</DropdownMenuLabel>
+                <DropdownMenuCheckboxItem checked={showOverdue} onCheckedChange={setShowOverdue}>
+                  {t.leads.overdue}
+                </DropdownMenuCheckboxItem>
+                <DropdownMenuCheckboxItem checked={showUpcoming} onCheckedChange={setShowUpcoming}>
+                  {t.leads.upcoming}
+                </DropdownMenuCheckboxItem>
+                <DropdownMenuCheckboxItem checked={showNoDate} onCheckedChange={setShowNoDate}>
+                  {t.leads.noDateSet}
+                </DropdownMenuCheckboxItem>
+
+                <DropdownMenuSeparator />
+
+                <DropdownMenuItem onClick={() => {
+                  setSortBy('name');
+                  setSortDirection('asc');
+                  setShowOverdue(false);
+                  setShowUpcoming(false);
+                  setShowNoDate(false);
+                }}>
+                  <X className="mr-2 h-4 w-4" />
+                  {t.leads.reset}
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+
+            {/* Add New Lead Button */}
+            <Button
+              variant="default"
+              className="bg-primary shrink-0"
+              onClick={handleAddNewLead}
+              disabled={isCheckingSession}
+            >
+              {isCheckingSession ? (
+                <Loader2 className="h-4 w-4 animate-spin md:mr-2" />
+              ) : (
+                <Plus className="h-4 w-4 md:mr-2" />
+              )}
+              <span className="hidden md:inline">{t.leads.addNewLead}</span>
+            </Button>
           </>
         )}
       </div>
@@ -548,10 +706,10 @@ export default function LeadsPage() {
       {!isBulkEditing && (
         <Tabs value={activeTab} onValueChange={setActiveTab} className="mb-4">
           <TabsList className="grid w-full grid-cols-4 bg-gray-200">
-            <TabsTrigger value="All Leads">All</TabsTrigger>
-            <TabsTrigger value="Hot Leads">Hot</TabsTrigger>
-            <TabsTrigger value="Warm Leads">Warm</TabsTrigger>
-            <TabsTrigger value="Cold Leads">Cold</TabsTrigger>
+            <TabsTrigger value="All Leads">{t.leads.allLeads}</TabsTrigger>
+            <TabsTrigger value="Hot Leads">{t.leads.hotLeads}</TabsTrigger>
+            <TabsTrigger value="Warm Leads">{t.leads.warmLeads}</TabsTrigger>
+            <TabsTrigger value="Cold Leads">{t.leads.coldLeads}</TabsTrigger>
           </TabsList>
         </Tabs>
       )}
@@ -572,20 +730,24 @@ export default function LeadsPage() {
                     <DropdownMenuContent align="end" onClick={(e) => e.stopPropagation()}>
                       <DropdownMenuItem onSelect={() => router.push(`/leads/${lead.lead_id}?edit=true`)}>
                           <Edit className="mr-2 h-4 w-4" />
-                          <span>Edit</span>
+                          <span>{t.common.edit}</span>
                       </DropdownMenuItem>
                       <DropdownMenuItem onSelect={() => openStatusDialog(lead)}>
                           <Zap className="mr-2 h-4 w-4" />
-                          <span>Priority (hot/warm/cold)</span>
+                          <span>{t.leads.priority}</span>
                       </DropdownMenuItem>
                       <DropdownMenuItem onSelect={() => openLeadStageDialog(lead)}>
                         <TrendingUp className="mr-2 h-4 w-4" />
-                        <span>Change Stage</span>
+                        <span>{t.leads.changeStage}</span>
+                      </DropdownMenuItem>
+                      <DropdownMenuItem onSelect={() => openScheduleFollowUpDialog(lead)}>
+                        <Calendar className="mr-2 h-4 w-4" />
+                        <span>{t.leads.scheduleFollowUp}</span>
                       </DropdownMenuItem>
                       <DropdownMenuSeparator />
                       <DropdownMenuItem onSelect={() => confirmDeleteSingleLead(lead.lead_id)} className="text-red-500">
                           <Trash2 className="mr-2 h-4 w-4" />
-                          <span>Delete Lead</span>
+                          <span>{t.leads.deleteLead}</span>
                       </DropdownMenuItem>
                     </DropdownMenuContent>
                   </DropdownMenu>
@@ -596,7 +758,7 @@ export default function LeadsPage() {
         ) : (
           <div className="flex flex-col items-center justify-center h-full text-center text-gray-400">
             <Users className="w-16 h-16 mb-4" />
-            <h2 className="text-xl font-semibold text-gray-500">No leads available</h2>
+            <h2 className="text-xl font-semibold text-gray-500">{t.leads.noLeadsAvailable}</h2>
           </div>
         )}
       </div>
@@ -610,19 +772,30 @@ export default function LeadsPage() {
         />
       )}
 
+      {selectedLeadForSchedule && (
+        <ScheduleFollowUpDialog
+          open={isScheduleFollowUpDialogOpen}
+          onOpenChange={setIsScheduleFollowUpDialogOpen}
+          lead={{
+            lead_id: selectedLeadForSchedule.lead_id,
+            name: selectedLeadForSchedule.name,
+          }}
+          onSuccess={fetchLeads}
+        />
+      )}
+
       <AlertDialog open={!!leadToDelete} onOpenChange={() => setLeadToDelete(null)}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Are you sure?</AlertDialogTitle>
+            <AlertDialogTitle>{t.leads.dialogs.deleteTitle}</AlertDialogTitle>
             <AlertDialogDescription>
-              This action cannot be undone. This will permanently delete the lead
-              for {leadToDeleteName}.
+              {t.leads.dialogs.deleteSingleDescription.replace('{{name}}', leadToDeleteName)}
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel onClick={() => setLeadToDelete(null)}>Cancel</AlertDialogCancel>
+            <AlertDialogCancel onClick={() => setLeadToDelete(null)}>{t.common.cancel}</AlertDialogCancel>
             <AlertDialogAction onClick={executeDeleteSingleLead} className="bg-destructive hover:bg-destructive/90">
-              Delete
+              {t.common.delete}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
@@ -631,15 +804,15 @@ export default function LeadsPage() {
       <AlertDialog open={!!leadsToDelete} onOpenChange={() => setLeadsToDelete(null)}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Are you sure?</AlertDialogTitle>
+            <AlertDialogTitle>{t.leads.dialogs.deleteTitle}</AlertDialogTitle>
             <AlertDialogDescription>
-              This action cannot be undone. This will permanently delete {leadsToDelete?.length} lead(s).
+              {t.leads.dialogs.deleteBulkDescription.replace('{{count}}', leadsToDelete?.length.toString() || '0')}
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel onClick={() => setLeadsToDelete(null)}>Cancel</AlertDialogCancel>
+            <AlertDialogCancel onClick={() => setLeadsToDelete(null)}>{t.common.cancel}</AlertDialogCancel>
             <AlertDialogAction onClick={executeDeleteBulkLeads} className="bg-destructive hover:bg-destructive/90">
-              Delete
+              {t.common.delete}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
@@ -648,9 +821,9 @@ export default function LeadsPage() {
        <Dialog open={isLeadStageDialogOpen} onOpenChange={setIsLeadStageDialogOpen}>
         <DialogContent className="sm:max-w-2xl">
             <DialogHeader>
-                <DialogTitle>Change Lead Stage</DialogTitle>
+                <DialogTitle>{t.leads.dialogs.changeStageTitle}</DialogTitle>
                 <DialogDescription>
-                    Select the new stage for this lead in the sales pipeline.
+                    {t.leads.dialogs.changeStageDescription}
                 </DialogDescription>
             </DialogHeader>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-3 max-h-[60vh] overflow-y-auto p-1">
@@ -667,7 +840,7 @@ export default function LeadsPage() {
                                 isCurrent && "cursor-default"
                             )}
                         >
-                            {isCurrent && <Badge className="absolute -top-2 -right-2">Current</Badge>}
+                            {isCurrent && <Badge className="absolute -top-2 -right-2">{t.leads.dialogs.current}</Badge>}
                             <div className="flex items-start gap-4">
                                 <div className={cn("mt-1 flex h-8 w-8 items-center justify-center rounded-full shrink-0", stage.color)}>
                                     <stage.icon className="h-5 w-5" />
@@ -682,7 +855,7 @@ export default function LeadsPage() {
                 })}
             </div>
             <DialogFooter className="mt-4">
-                <Button variant="outline" onClick={() => setIsLeadStageDialogOpen(false)}>Cancel</Button>
+                <Button variant="outline" onClick={() => setIsLeadStageDialogOpen(false)}>{t.common.cancel}</Button>
             </DialogFooter>
         </DialogContent>
        </Dialog>
@@ -690,11 +863,13 @@ export default function LeadsPage() {
        <AlertDialog open={isStageConfirmDialogOpen} onOpenChange={setIsStageConfirmDialogOpen}>
         <AlertDialogContent>
             <AlertDialogHeader>
-                <AlertDialogTitle>Confirm Stage Change</AlertDialogTitle>
+                <AlertDialogTitle>{t.leads.dialogs.confirmStageChangeTitle}</AlertDialogTitle>
                 <AlertDialogDescription>
                     {currentStageInfo && selectedStageInfo
-                        ? `Change stage from "${currentStageInfo.label}" to "${selectedStageInfo.label}"`
-                        : 'Are you sure you want to change the lead stage?'}
+                        ? t.leads.dialogs.confirmStageChangeDescription
+                            .replace('{{from}}', currentStageInfo.label)
+                            .replace('{{to}}', selectedStageInfo.label)
+                        : t.leads.dialogs.confirmStageChangeTitle}
                 </AlertDialogDescription>
             </AlertDialogHeader>
             {currentStageInfo && selectedStageInfo && (
@@ -718,9 +893,9 @@ export default function LeadsPage() {
                 <AlertDialogCancel onClick={() => {
                     setIsStageConfirmDialogOpen(false);
                     setIsLeadStageDialogOpen(true);
-                }}>Cancel</AlertDialogCancel>
+                }}>{t.common.cancel}</AlertDialogCancel>
                 <AlertDialogAction onClick={confirmLeadStageChange}>
-                  Confirm
+                  {t.common.confirm}
                 </AlertDialogAction>
             </AlertDialogFooter>
         </AlertDialogContent>

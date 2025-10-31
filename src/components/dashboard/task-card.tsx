@@ -33,6 +33,7 @@ import { copyToClipboard } from "@/lib/task-utils";
 import { RescheduleModal } from "./reschedule-modal";
 import { CancelTaskDialog } from "./cancel-task-dialog";
 import { CompleteTaskDialog } from "./complete-task-dialog";
+import { useLanguage } from "@/hooks/useLanguage";
 
 const iconMap: { [key: string]: React.ElementType } = {
   email: Mail,
@@ -70,6 +71,7 @@ interface TaskCardProps {
 }
 
 export function TaskCard({ task, date, isExpanded, onExpand, onTaskComplete }: TaskCardProps) {
+  const { t } = useLanguage();
   const [currentMessage, setCurrentMessage] = useState(task.followUpMessage);
   const [isEditing, setIsEditing] = useState(false);
   const [editedMessage, setEditedMessage] = useState("");
@@ -86,6 +88,33 @@ export function TaskCard({ task, date, isExpanded, onExpand, onTaskComplete }: T
   const Icon = iconMap[task.type] || iconMap.default;
 
   const showsAIMessage = task.type === "whatsapp" || task.type === "email";
+
+  const getPriorityTranslation = (priority: string) => {
+    switch (priority) {
+      case "Hot": return t.leads.priorityHot;
+      case "Warm": return t.leads.priorityWarm;
+      case "Cold": return t.leads.priorityCold;
+      default: return priority;
+    }
+  };
+
+  const getStageTranslation = (status: string) => {
+    const stageMap: { [key: string]: string } = {
+      "New Lead": t.leads.stages.newLead,
+      "Contacted": t.leads.stages.contacted,
+      "Qualified": t.leads.stages.qualified,
+      "Viewing Scheduled": t.leads.stages.viewingScheduled,
+      "Property Viewing Scheduled": t.leads.stages.viewingScheduled,
+      "Property Viewed": t.leads.stages.propertyViewed,
+      "Offer Made": t.leads.stages.offerMade,
+      "Negotiation": t.leads.stages.negotiation,
+      "Under Contract": t.leads.stages.underContract,
+      "Converted": t.leads.stages.converted,
+      "Lost": t.leads.stages.lost,
+      "Not Interested": t.leads.stages.notInterested,
+    };
+    return stageMap[status] || status;
+  };
 
   const handleExpand = () => {
     onExpand();
@@ -109,14 +138,14 @@ export function TaskCard({ task, date, isExpanded, onExpand, onTaskComplete }: T
       setIsEditing(false);
 
       toast({
-        title: "Message updated",
-        description: "Your follow-up message has been saved.",
+        title: t.taskCard.messageUpdated,
+        description: t.taskCard.messageSaved,
       });
     } catch (error: any) {
       toast({
         variant: "destructive",
-        title: "Error",
-        description: error.message || "Could not save message",
+        title: t.newLead.messages.errorTitle,
+        description: error.message || t.taskCard.messageUpdateError,
       });
     } finally {
       setIsSavingEdit(false);
@@ -132,14 +161,14 @@ export function TaskCard({ task, date, isExpanded, onExpand, onTaskComplete }: T
     const success = await copyToClipboard(currentMessage);
     if (success) {
       toast({
-        title: "Copied!",
-        description: "Message copied to clipboard",
+        title: t.taskCard.copiedToClipboard,
+        description: t.taskCard.clipboardDescription,
       });
     } else {
       toast({
         variant: "destructive",
-        title: "Failed to copy",
-        description: "Could not copy message to clipboard",
+        title: t.taskCard.failedToCopy,
+        description: t.taskCard.failedToCopyDescription,
       });
     }
   };
@@ -150,8 +179,8 @@ export function TaskCard({ task, date, isExpanded, onExpand, onTaskComplete }: T
     } else {
       toast({
         variant: "destructive",
-        title: "No phone number",
-        description: "This lead doesn't have a phone number",
+        title: t.taskCard.noPhoneNumber,
+        description: t.taskCard.noPhoneDescription,
       });
     }
   };
@@ -163,8 +192,8 @@ export function TaskCard({ task, date, isExpanded, onExpand, onTaskComplete }: T
     } else {
       toast({
         variant: "destructive",
-        title: "No email address",
-        description: "This lead doesn't have an email address",
+        title: t.taskCard.noEmailAddress,
+        description: t.taskCard.noEmailDescription,
       });
     }
   };
@@ -181,8 +210,8 @@ export function TaskCard({ task, date, isExpanded, onExpand, onTaskComplete }: T
       });
 
       toast({
-        title: "Task rescheduled",
-        description: `Task moved to ${newDate.toDateString()} at ${newTime}`,
+        title: t.taskCard.taskRescheduled,
+        description: t.taskCard.taskRescheduledDescription.replace('{{date}}', newDate.toDateString()).replace('{{time}}', newTime),
       });
 
       setShowReschedule(false);
@@ -190,8 +219,8 @@ export function TaskCard({ task, date, isExpanded, onExpand, onTaskComplete }: T
     } catch (error: any) {
       toast({
         variant: "destructive",
-        title: "Error",
-        description: error.message || "Could not reschedule task",
+        title: t.newLead.messages.errorTitle,
+        description: error.message || t.taskCard.rescheduleError,
       });
     } finally {
       setIsRescheduling(false);
@@ -208,8 +237,8 @@ export function TaskCard({ task, date, isExpanded, onExpand, onTaskComplete }: T
       });
 
       toast({
-        title: "Task cancelled",
-        description: "The follow-up task has been cancelled",
+        title: t.taskCard.taskCancelled,
+        description: t.taskCard.taskCancelledDescription,
       });
 
       setShowCancel(false);
@@ -217,8 +246,8 @@ export function TaskCard({ task, date, isExpanded, onExpand, onTaskComplete }: T
     } catch (error: any) {
       toast({
         variant: "destructive",
-        title: "Error",
-        description: error.message || "Could not cancel task",
+        title: t.newLead.messages.errorTitle,
+        description: error.message || t.taskCard.cancelError,
       });
     } finally {
       setIsCancelling(false);
@@ -235,17 +264,17 @@ export function TaskCard({ task, date, isExpanded, onExpand, onTaskComplete }: T
       });
 
       toast({
-        title: "Task completed!",
-        description: "The follow-up task has been marked as done",
+        title: t.taskCard.taskCompleted,
+        description: t.taskCard.taskCompletedDescription,
       });
-      
+
       setShowComplete(false);
       onTaskComplete(); // Refresh dashboard
     } catch (error: any) {
       toast({
         variant: "destructive",
-        title: "Error",
-        description: error.message || "Could not mark task as done",
+        title: t.newLead.messages.errorTitle,
+        description: error.message || t.taskCard.completeError,
       });
     } finally {
       setIsMarkingDone(false);
@@ -263,15 +292,15 @@ export function TaskCard({ task, date, isExpanded, onExpand, onTaskComplete }: T
 
             if (responseData && responseData["AI-Generated Message"] && responseData.lead_id === task.leadId) {
                 setCurrentMessage(responseData["AI-Generated Message"]);
-                toast({ title: 'Message regenerated successfully!' });
+                toast({ title: t.taskCard.messageRegeneratedSuccess });
             } else {
                 throw new Error('Invalid response from server.');
             }
         } catch (error: any) {
             toast({
                 variant: 'destructive',
-                title: 'Error',
-                description: error.message || 'Could not regenerate message.',
+                title: t.newLead.messages.errorTitle,
+                description: error.message || t.taskCard.messageRegenerateError,
             });
         } finally {
             setIsRegenerating(false);
@@ -311,7 +340,15 @@ export function TaskCard({ task, date, isExpanded, onExpand, onTaskComplete }: T
               <h4 className="text-lg font-semibold text-gray-800 mb-1">
                 {task.name}
               </h4>
-              <p className="text-sm text-gray-600 leading-relaxed line-clamp-2">
+              <div className="flex items-center gap-2 flex-wrap mb-2">
+                <Badge variant="outline" className={cn("text-sm", getPriorityColor(task.leadPriority))}>
+                  {getPriorityTranslation(task.leadPriority)}
+                </Badge>
+                <Badge variant="outline" className="text-sm">
+                  {getStageTranslation(task.leadStatus)}
+                </Badge>
+              </div>
+              <p className="text-sm text-gray-600 leading-relaxed">
                 {task.description}
               </p>
             </div>
@@ -326,15 +363,6 @@ export function TaskCard({ task, date, isExpanded, onExpand, onTaskComplete }: T
           {isExpanded && (
             <div className="mt-4 pt-4 border-t border-gray-100 space-y-4" onClick={(e) => e.stopPropagation()}>
               <div className="space-y-2">
-                <div className="flex items-center gap-2 flex-wrap">
-                  <Badge variant="outline" className={cn("text-sm", getPriorityColor(task.leadPriority))}>
-                    {task.leadPriority}
-                  </Badge>
-                  <Badge variant="outline" className="text-sm">
-                    {task.leadStatus}
-                  </Badge>
-                </div>
-
                 <div className="space-y-1 text-sm text-gray-600">
                   {task.leadContact && task.leadContact.email && (
                     <p className="flex items-center gap-2">
@@ -361,7 +389,7 @@ export function TaskCard({ task, date, isExpanded, onExpand, onTaskComplete }: T
                 <div className="space-y-3">
                   <div className="bg-gradient-to-br from-blue-50 to-blue-100 border border-blue-200 rounded-lg p-4">
                     <h4 className="text-sm font-semibold text-blue-900 mb-3 flex items-center gap-2">
-                      Follow-up Message
+                      {t.taskCard.followUpMessage}
                     </h4>
 
                     {isEditing ? (
@@ -383,7 +411,7 @@ export function TaskCard({ task, date, isExpanded, onExpand, onTaskComplete }: T
                             ) : (
                               <Save className="h-4 w-4 mr-2" />
                             )}
-                            Save
+                            {t.common.save}
                           </Button>
                           <Button
                             size="sm"
@@ -393,7 +421,7 @@ export function TaskCard({ task, date, isExpanded, onExpand, onTaskComplete }: T
                             className="flex-1"
                           >
                             <X className="h-4 w-4 mr-2" />
-                            Cancel
+                            {t.common.cancel}
                           </Button>
                         </div>
                       </div>
@@ -413,9 +441,9 @@ export function TaskCard({ task, date, isExpanded, onExpand, onTaskComplete }: T
                             className="h-9 text-xs bg-white hover:bg-gray-50"
                           >
                             <Edit className="h-3 w-3 mr-1" />
-                            Edit
+                            {t.common.edit}
                           </Button>
-                          
+
                           <Button
                             size="sm"
                             variant="outline"
@@ -424,7 +452,7 @@ export function TaskCard({ task, date, isExpanded, onExpand, onTaskComplete }: T
                             className="h-9 text-xs bg-white hover:bg-gray-50"
                           >
                             {isRegenerating ? <Loader2 className="h-3 w-3 mr-1 animate-spin" /> : <RefreshCw className="h-3 w-3 mr-1" />}
-                            Regenerate
+                            {t.taskCard.regenerate}
                           </Button>
 
                           {task.type === "whatsapp" ? (
@@ -434,7 +462,7 @@ export function TaskCard({ task, date, isExpanded, onExpand, onTaskComplete }: T
                               className="h-9 text-xs bg-green-500 hover:bg-green-600 text-white"
                             >
                               <MessageSquare className="h-3 w-3 mr-1" />
-                              WhatsApp
+                              {t.taskCard.whatsapp}
                             </Button>
                           ) : (
                             <Button
@@ -443,7 +471,7 @@ export function TaskCard({ task, date, isExpanded, onExpand, onTaskComplete }: T
                               className="h-9 text-xs bg-blue-500 hover:bg-blue-600 text-white"
                             >
                               <Mail className="h-3 w-3 mr-1" />
-                              Email
+                              {t.taskCard.email}
                             </Button>
                           )}
                         </div>
@@ -454,7 +482,7 @@ export function TaskCard({ task, date, isExpanded, onExpand, onTaskComplete }: T
                           className="w-full h-9 text-xs bg-white hover:bg-gray-50 mt-2"
                         >
                           <Copy className="h-3 w-3 mr-1" />
-                          Copy Message
+                          {t.taskCard.copyMessage}
                         </Button>
                       </>
                     )}
@@ -469,7 +497,7 @@ export function TaskCard({ task, date, isExpanded, onExpand, onTaskComplete }: T
                   className="h-20 flex flex-col items-center justify-center gap-2 border-2 hover:border-blue-500 hover:bg-blue-50"
                 >
                   <Calendar className="h-7 w-7 text-blue-600" />
-                  <span className="text-sm font-medium">Reschedule</span>
+                  <span className="text-sm font-medium">{t.taskCard.reschedule}</span>
                 </Button>
 
                 <Button
@@ -478,7 +506,7 @@ export function TaskCard({ task, date, isExpanded, onExpand, onTaskComplete }: T
                   className="h-20 flex flex-col items-center justify-center gap-2 border-2 hover:border-red-500 hover:bg-red-50"
                 >
                   <X className="h-7 w-7 text-red-600" />
-                  <span className="text-sm font-medium">Cancel</span>
+                  <span className="text-sm font-medium">{t.common.cancel}</span>
                 </Button>
 
                 <Button
@@ -492,7 +520,7 @@ export function TaskCard({ task, date, isExpanded, onExpand, onTaskComplete }: T
                   ) : (
                     <>
                       <span className="text-2xl">✓</span>
-                      <span className="text-sm font-medium">Done</span>
+                      <span className="text-sm font-medium">{t.taskCard.done}</span>
                     </>
                   )}
                 </Button>

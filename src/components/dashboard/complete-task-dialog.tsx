@@ -13,6 +13,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
+import { useLanguage } from "@/hooks/useLanguage";
 
 interface CompleteTaskDialogProps {
   open: boolean;
@@ -28,6 +29,7 @@ export function CompleteTaskDialog({
   isLoading = false,
 }: CompleteTaskDialogProps) {
   const [note, setNote] = React.useState<string>("");
+  const { t } = useLanguage();
 
   // Reset form when modal opens
   React.useEffect(() => {
@@ -45,7 +47,7 @@ export function CompleteTaskDialog({
       <DialogContent className="max-w-[90%] sm:max-w-[480px] rounded-2xl p-6">
         <DialogHeader>
           <DialogTitle className="text-xl font-semibold text-gray-800 text-center">
-            Complete Task?
+            {t.taskDialogs.completeTask}
           </DialogTitle>
           <DialogDescription className="sr-only">
             Mark this task as complete.
@@ -61,19 +63,19 @@ export function CompleteTaskDialog({
 
           <div className="text-center space-y-3">
             <p className="text-gray-700 leading-relaxed">
-              Are you sure you want to mark this task as complete?
+              {t.taskDialogs.completeTaskDescription}
             </p>
           </div>
 
           <div className="space-y-2">
             <Label htmlFor="note" className="text-sm font-medium text-gray-700">
-              Outcome Note (Optional)
+              {t.taskDialogs.outcomeNote}
             </Label>
             <Textarea
               id="note"
               value={note}
               onChange={(e) => setNote(e.target.value)}
-              placeholder="e.g., Confirmed appointment with client. They are excited."
+              placeholder={t.taskDialogs.outcomeNotePlaceholder}
               className="bg-gray-50 border-gray-200 resize-none h-20 focus:border-green-500 focus:ring-2 focus:ring-green-100"
             />
           </div>
@@ -86,14 +88,14 @@ export function CompleteTaskDialog({
             disabled={isLoading}
             className="h-11 px-6 border-gray-200 text-gray-600 hover:bg-gray-50"
           >
-            Cancel
+            {t.common.cancel}
           </Button>
           <Button
             onClick={handleConfirm}
             disabled={isLoading}
             className="h-11 px-6 bg-green-600 hover:bg-green-700 text-white"
           >
-            {isLoading ? "Completing..." : "Yes, Complete"}
+            {isLoading ? t.taskDialogs.completing : t.taskDialogs.yesComplete}
           </Button>
         </div>
       </DialogContent>

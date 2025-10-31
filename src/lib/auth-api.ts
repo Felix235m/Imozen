@@ -10,7 +10,7 @@ const TASK_OPERATIONS_URL = 'https://eurekagathr.app.n8n.cloud/webhook/task-oper
 
 
 type Operation = 'login' | 'password_reset_request' | 'password_reset_complete' | 'onboard_agent' | 'update_agent' | 'validate_session';
-type LeadOperation = 'get_dashboard' | 'get_all_leads' | 'get_lead_details' | 'edit_lead' | 'delete_lead' | 'upload_lead_image' | 'delete_lead_image' | 'add_new_note' | 'save_note' | 'get_notes';
+type LeadOperation = 'get_dashboard' | 'get_tasks' | 'get_all_leads' | 'get_lead_details' | 'edit_lead' | 'delete_lead' | 'upload_lead_image' | 'delete_lead_image' | 'add_new_note' | 'save_note' | 'get_notes';
 type LeadStatus = 'active' | 'inactive';
 type FollowUpOperation = 'regenerate_follow-up_message';
 type TaskOperation = 'reschedule_task' | 'cancel_task' | 'mark_task_done' | 'edit_follow_up_message';
