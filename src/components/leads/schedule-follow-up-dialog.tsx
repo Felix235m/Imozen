@@ -104,7 +104,7 @@ export function ScheduleFollowUpDialog({
       const token = localStorage.getItem('auth_token') || sessionStorage.getItem('sessionToken');
       if (!token) throw new Error('No authentication token found');
 
-      const webhookUrl = 'https://eurekagathr.app.n8n.cloud/webhook/domain/lead-status';
+      const webhookUrl = 'https://eurekagathr.app.n8n.cloud/webhook/task-operation';
 
       // Format date to ISO string for API
       const followUpDate = selectedDate.toISOString();
@@ -166,7 +166,7 @@ export function ScheduleFollowUpDialog({
 
     const date = getDateFromShortcut(shortcut);
     const dateLocale = language === 'pt' ? ptBR : undefined;
-    const formattedDate = format(date, 'MMM d, yyyy', { locale: dateLocale });
+    const formattedDate = format(date, 'EEEE, MMM d, yyyy', { locale: dateLocale });
 
     switch (shortcut) {
       case 'next_week':

@@ -27,7 +27,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { cn } from "@/lib/utils";
 import { useToast } from "@/hooks/use-toast";
 import { callFollowUpApi, callTaskApi } from "@/lib/auth-api";
-import { openWhatsApp } from "@/lib/whatsapp-utils";
+import { openWhatsApp, storeWhatsAppNotification, getWhatsAppNotifications, removeWhatsAppNotification } from "@/lib/whatsapp-utils";
 import { openEmail, generateEmailSubject } from "@/lib/email-utils";
 import { copyToClipboard } from "@/lib/task-utils";
 import { RescheduleModal } from "./reschedule-modal";
@@ -88,6 +88,37 @@ export function TaskCard({ task, date, isExpanded, onExpand, onTaskComplete }: T
   const Icon = iconMap[task.type] || iconMap.default;
 
   const showsAIMessage = task.type === "whatsapp" || task.type === "email";
+
+  // Check for WhatsApp return notification when component mounts and when visibility changes
+  React.useEffect(() => {
+    const checkWhatsAppNotification = () => {
+      const notifications = getWhatsAppNotifications();
+      const matchingNotification = notifications.find((n) => n.taskId === task.id);
+
+      if (matchingNotification && !document.hidden) {
+        // Show the mark done dialog automatically
+        setShowComplete(true);
+        // Remove the notification after showing dialog
+        removeWhatsAppNotification(task.id);
+      }
+    };
+
+    // Check on mount
+    checkWhatsAppNotification();
+
+    // Listen for visibility changes
+    const handleVisibilityChange = () => {
+      if (!document.hidden) {
+        checkWhatsAppNotification();
+      }
+    };
+
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+
+    return () => {
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+    };
+  }, [task.id]);
 
   const getPriorityTranslation = (priority: string) => {
     switch (priority) {
@@ -175,6 +206,8 @@ export function TaskCard({ task, date, isExpanded, onExpand, onTaskComplete }: T
 
   const handleSendWhatsApp = () => {
     if (task.leadContact?.phone) {
+      // Store notification in localStorage before opening WhatsApp
+      storeWhatsAppNotification(task.id, task.leadId, task.name);
       openWhatsApp(task.leadContact.phone, currentMessage);
     } else {
       toast({
@@ -227,14 +260,22 @@ export function TaskCard({ task, date, isExpanded, onExpand, onTaskComplete }: T
     }
   };
 
-  const handleCancel = async (note: string) => {
+  const handleCancel = async (note: string, nextFollowUpDate?: Date, scheduleNext?: boolean) => {
     setIsCancelling(true);
     try {
-      await callTaskApi("cancel_task", {
+      const payload: any = {
         task_id: task.id,
         lead_id: task.leadId,
         note: note,
-      });
+        next_follow_up: scheduleNext ? "yes" : "no",
+      };
+
+      // Only include follow_up_date if a date was selected
+      if (nextFollowUpDate) {
+        payload.follow_up_date = nextFollowUpDate.toISOString();
+      }
+
+      await callTaskApi("cancel_task", payload);
 
       toast({
         title: t.taskCard.taskCancelled,
@@ -254,14 +295,21 @@ export function TaskCard({ task, date, isExpanded, onExpand, onTaskComplete }: T
     }
   };
 
-  const handleMarkDone = async (note: string) => {
+  const handleMarkDone = async (note: string, nextFollowUpDate?: Date) => {
     setIsMarkingDone(true);
     try {
-      await callTaskApi("mark_done", {
+      const payload: any = {
         task_id: task.id,
         lead_id: task.leadId,
         note: note,
-      });
+      };
+
+      // Only include next_follow_up_date if a date was selected
+      if (nextFollowUpDate) {
+        payload.next_follow_up_date = nextFollowUpDate.toISOString();
+      }
+
+      await callTaskApi("mark_done", payload);
 
       toast({
         title: t.taskCard.taskCompleted,
@@ -535,6 +583,7 @@ export function TaskCard({ task, date, isExpanded, onExpand, onTaskComplete }: T
         onOpenChange={setShowReschedule}
         currentDate={new Date(date)}
         currentTime={task.time}
+        leadName={task.name}
         onConfirm={handleReschedule}
         isLoading={isRescheduling}
       />
@@ -542,13 +591,15 @@ export function TaskCard({ task, date, isExpanded, onExpand, onTaskComplete }: T
       <CancelTaskDialog
         open={showCancel}
         onOpenChange={setShowCancel}
+        leadName={task.name}
         onConfirm={handleCancel}
         isLoading={isCancelling}
       />
-      
+
       <CompleteTaskDialog
         open={showComplete}
         onOpenChange={setShowComplete}
+        leadName={task.name}
         onConfirm={handleMarkDone}
         isLoading={isMarkingDone}
       />
