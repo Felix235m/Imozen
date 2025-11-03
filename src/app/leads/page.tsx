@@ -1,7 +1,7 @@
 
 "use client";
 
-import React, { useState, useMemo, useEffect, useCallback } from 'react';
+import React, { useState, useMemo, useEffect, useCallback, Suspense } from 'react';
 import { Search, Plus, MoreVertical, X, Edit, Zap, Trash2, Loader2, Users, UserPlus, PhoneCall, UserCheck, Calendar, Home, Tag, MessageCircle, FileSignature, PartyPopper, ThumbsDown, UserX, TrendingUp, ArrowRight, ArrowUpDown, ArrowUp, ArrowDown } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -74,8 +74,8 @@ type Lead = {
   };
 };
 
-
-export default function LeadsPage() {
+// Main content component that uses useSearchParams
+function LeadsPageContent() {
   const [searchTerm, setSearchTerm] = useState('');
   const [activeTab, setActiveTab] = useState('All Leads');
   const [isLoading, setIsLoading] = useState(true);
@@ -1148,5 +1148,25 @@ export default function LeadsPage() {
       />
 
     </div>
+  );
+}
+
+// Loading fallback component
+function LeadsPageSkeleton() {
+  return (
+    <div className="p-4 pb-20">
+      <div className="flex items-center justify-center h-screen">
+        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+      </div>
+    </div>
+  );
+}
+
+// Wrapper component with Suspense boundary
+export default function LeadsPage() {
+  return (
+    <Suspense fallback={<LeadsPageSkeleton />}>
+      <LeadsPageContent />
+    </Suspense>
   );
 }
