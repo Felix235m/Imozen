@@ -34,6 +34,7 @@ export interface Lead {
   stage: string;
   lead_stage?: string;
   image_url?: string;
+  created_at?: string;
   next_follow_up?: {
     status: string;
     date?: string;

@@ -95,15 +95,19 @@ export function TaskCard({ task, date, isExpanded, onExpand, onTaskComplete }: T
 
   // Check for WhatsApp return notification when component mounts and when visibility changes
   React.useEffect(() => {
+    let timeoutId: NodeJS.Timeout | null = null;
+
     const checkWhatsAppNotification = () => {
       const notifications = getWhatsAppNotifications();
       const matchingNotification = notifications.find((n) => n.taskId === task.id);
 
       if (matchingNotification && !document.hidden) {
-        // Show the mark done dialog automatically
-        setShowComplete(true);
-        // Remove the notification after showing dialog
-        removeWhatsAppNotification(task.id);
+        // Show the mark done dialog automatically after 30 seconds
+        timeoutId = setTimeout(() => {
+          setShowComplete(true);
+          // Remove the notification after showing dialog
+          removeWhatsAppNotification(task.id);
+        }, 30000); // 30 seconds delay
       }
     };
 
@@ -121,6 +125,10 @@ export function TaskCard({ task, date, isExpanded, onExpand, onTaskComplete }: T
 
     return () => {
       document.removeEventListener('visibilitychange', handleVisibilityChange);
+      // Clean up timeout on unmount
+      if (timeoutId) {
+        clearTimeout(timeoutId);
+      }
     };
   }, [task.id]);
 

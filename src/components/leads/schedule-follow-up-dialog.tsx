@@ -36,6 +36,16 @@ interface ScheduleFollowUpDialogProps {
   onSuccess?: () => void; // Callback to refresh leads list
 }
 
+/**
+ * Generate a unique task ID in the format: task_{timestamp}_{randomString}
+ * Example: task_1761224347322_sv0x9gx7k
+ */
+function generateTaskId(): string {
+  const timestamp = Date.now();
+  const randomStr = Math.random().toString(36).substring(2, 11);
+  return `task_${timestamp}_${randomStr}`;
+}
+
 export function ScheduleFollowUpDialog({
   open,
   onOpenChange,
@@ -109,8 +119,12 @@ export function ScheduleFollowUpDialog({
       // Format date to ISO string for API
       const followUpDate = selectedDate.toISOString();
 
+      // Generate unique task ID
+      const taskId = generateTaskId();
+
       const webhookPayload = {
         lead_id: lead.lead_id,
+        task_id: taskId,
         operation: 'schedule_task',
         follow_up_date: followUpDate,
         ...(note.trim() && { note: note.trim() }), // Only include note if not empty

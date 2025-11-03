@@ -87,12 +87,12 @@ export function CommunicationHistoryTimeline({
               <p className="text-sm text-muted-foreground mt-0.5">
                 {formattedDate}
               </p>
-              {event.description && (
+              {event.description && event.event_type !== 'lead_created' && (
                 <p className="text-sm text-foreground/80 mt-2 leading-relaxed">
                   {event.description}
                 </p>
               )}
-              {event.performed_by && (
+              {event.performed_by && event.event_type !== 'lead_created' && (
                 <p className="text-xs text-muted-foreground mt-1">
                   by {typeof event.performed_by === 'string'
                     ? event.performed_by

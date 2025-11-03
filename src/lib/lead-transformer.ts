@@ -54,6 +54,7 @@ export function transformWebhookResponseToLeadListItem(response: any): any {
     temperature: data['Hot/Warm/Cold'] || data.temperature || 'Cold',
     stage: data.Stage || 'New Lead',
     lead_stage: data.Stage || 'New Lead',
+    created_at: data.created_at,
     next_follow_up: {
       status: data['follow-up_task'] || '',
       date: data['next follow-up date'] || null,

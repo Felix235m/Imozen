@@ -51,6 +51,7 @@ import ReactCrop, { type Crop, centerCrop, makeAspectCrop } from 'react-image-cr
 import 'react-image-crop/dist/ReactCrop.css'
 import { type LeadData } from '@/lib/leads-data';
 import { LeadFollowUpSheet } from '@/components/leads/lead-follow-up-sheet';
+import { ScheduleFollowUpDialog } from '@/components/leads/schedule-follow-up-dialog';
 import { cachedCallLeadApi, cachedCallLeadStatusApi } from '@/lib/cached-api';
 import { transformWebhookResponseToLeadData } from '@/lib/lead-transformer';
 import { Label } from '@/components/ui/label';
@@ -158,6 +159,7 @@ export default function LeadDetailPage() {
   const [isLeadStageDialogOpen, setIsLeadStageDialogOpen] = useState(false);
   const [isStageConfirmDialogOpen, setIsStageConfirmDialogOpen] = useState(false);
   const [selectedStage, setSelectedStage] = useState<LeadStage | null>(null);
+  const [isScheduleFollowUpDialogOpen, setIsScheduleFollowUpDialogOpen] = useState(false);
 
   const [changeSummary, setChangeSummary] = useState<ChangeSummary[]>([]);
   const [suggestedStatus, setSuggestedStatus] = useState<LeadData['temperature'] | null>(null);
@@ -760,6 +762,10 @@ export default function LeadDetailPage() {
                   <TrendingUp className="mr-2 h-4 w-4" />
                   <span>{t.leads.changeStage}</span>
                 </DropdownMenuItem>
+                <DropdownMenuItem onSelect={() => setIsScheduleFollowUpDialogOpen(true)}>
+                  <Calendar className="mr-2 h-4 w-4" />
+                  <span>{t.leads.scheduleFollowUp}</span>
+                </DropdownMenuItem>
                 <DropdownMenuSeparator />
                 <DropdownMenuItem onSelect={() => setIsDeleteDialogOpen(true)} className="text-red-600">
                   <Trash2 className="mr-2 h-4 w-4" />
@@ -1046,11 +1052,23 @@ export default function LeadDetailPage() {
         lead={lead}
         history={communicationHistory}
       />
-      <LeadStatusDialog 
-        open={isStatusDialogOpen} 
+      <LeadStatusDialog
+        open={isStatusDialogOpen}
         onOpenChange={setIsStatusDialogOpen}
         lead={{id: lead.lead_id, name: lead.name, status: lead.temperature}}
         onSave={handleStatusSave}
+      />
+      <ScheduleFollowUpDialog
+        open={isScheduleFollowUpDialogOpen}
+        onOpenChange={setIsScheduleFollowUpDialogOpen}
+        lead={{
+          lead_id: lead.lead_id,
+          name: lead.name,
+        }}
+        onSuccess={() => {
+          // Data will be updated via selective webhooks
+          // localStorage subscription will handle UI updates
+        }}
       />
       <AlertDialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
         <AlertDialogContent>

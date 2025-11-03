@@ -13,7 +13,7 @@ import Link from 'next/link';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuSeparator, DropdownMenuLabel, DropdownMenuRadioGroup, DropdownMenuRadioItem, DropdownMenuCheckboxItem } from '@/components/ui/dropdown-menu';
 import { useToast } from '@/hooks/use-toast';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { useLanguage } from '@/hooks/useLanguage';
 import { LeadStatusDialog } from '@/components/leads/lead-status-dialog';
 import { ScheduleFollowUpDialog } from '@/components/leads/schedule-follow-up-dialog';
@@ -83,6 +83,8 @@ export default function LeadsPage() {
   const [selectedLeads, setSelectedLeads] = useState<string[]>([]);
   const { toast } = useToast();
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const filterParam = searchParams.get('filter');
 
   // Use localStorage-based leads data
   const { leads: leadsFromStorage, updateLeads, updateSingleLead, deleteLead: deleteLeadFromStorage, addLead } = useLeads();
@@ -163,6 +165,35 @@ export default function LeadsPage() {
     // Data is loaded from localStorage via useLeads hook
     setIsLoading(false);
   }, []);
+
+  // Apply filters based on URL parameters from dashboard
+  useEffect(() => {
+    if (!filterParam) return;
+
+    switch (filterParam) {
+      case 'hot':
+        setActiveTab('Hot Leads');
+        setShowOverdue(false);
+        setShowUpcoming(false);
+        setShowNoDate(false);
+        break;
+
+      case 'upcoming':
+        setActiveTab('All Leads');
+        setShowUpcoming(true);
+        setShowOverdue(false);
+        setShowNoDate(false);
+        break;
+
+      case 'new_this_week':
+        setActiveTab('All Leads');
+        setShowOverdue(false);
+        setShowUpcoming(false);
+        setShowNoDate(false);
+        // New this week filter will be handled in filteredLeads
+        break;
+    }
+  }, [filterParam]);
 
   const handleAddNewLead = () => {
     // Check for existing draft
@@ -259,6 +290,20 @@ export default function LeadsPage() {
       });
     }
 
+    // 3b. New this week filter (from dashboard)
+    if (filterParam === 'new_this_week') {
+      const now = new Date();
+      const startOfWeek = new Date(now);
+      startOfWeek.setDate(now.getDate() - now.getDay()); // Start of current week (Sunday)
+      startOfWeek.setHours(0, 0, 0, 0);
+
+      results = results.filter(lead => {
+        if (!lead.created_at) return false;
+        const createdDate = new Date(lead.created_at);
+        return createdDate >= startOfWeek;
+      });
+    }
+
     // 4. Sorting
     results.sort((a, b) => {
       let comparison = 0;
@@ -295,7 +340,7 @@ export default function LeadsPage() {
     });
 
     return results;
-  }, [searchTerm, activeTab, leads, sortBy, sortDirection, showOverdue, showUpcoming, showNoDate]);
+  }, [searchTerm, activeTab, leads, sortBy, sortDirection, showOverdue, showUpcoming, showNoDate, filterParam]);
 
   const leadToDeleteName = useMemo(() => {
     if (!leadToDelete) return '';

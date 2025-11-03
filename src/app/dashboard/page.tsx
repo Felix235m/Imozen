@@ -19,6 +19,7 @@ import { callAuthApi } from '@/lib/auth-api';
 import { useDashboard } from '@/hooks/useAppData';
 import { checkForDraft, clearDraft, type DraftInfo } from '@/lib/draft-detector';
 import { DraftResumeDialog } from '@/components/leads/draft-resume-dialog';
+import { cn } from '@/lib/utils';
 
 export default function AgentDashboardPage() {
   const [isCheckingSession, setIsCheckingSession] = useState(false);
@@ -118,11 +119,29 @@ export default function AgentDashboardPage() {
     }
   };
 
+  const handleCardClick = (cardTitle: string) => {
+    // Navigate to leads page with appropriate filter
+    switch (cardTitle) {
+      case t.dashboard.stats.leadsForFollowUp:
+        router.push('/leads?filter=upcoming');
+        break;
+      case t.dashboard.stats.newLeadsThisWeek:
+        router.push('/leads?filter=new_this_week');
+        break;
+      case t.dashboard.stats.hotLeads:
+        router.push('/leads?filter=hot');
+        break;
+      // Conversion Rate: no action (non-clickable)
+      default:
+        break;
+    }
+  };
+
   const dynamicStats = useMemo(() => {
     if (!dashboardData) return initialStats;
     const counts = dashboardData.counts || {};
     return [
-      { title: t.dashboard.stats.leadsForFollowUp, value: counts.all?.toString() || '0', icon: Users },
+      { title: t.dashboard.stats.leadsForFollowUp, value: counts.leads_for_followup?.toString() || '0', icon: Users },
       { title: t.dashboard.stats.newLeadsThisWeek, value: counts.new_this_week?.toString() || '0', icon: ClipboardList },
       { title: t.dashboard.stats.hotLeads, value: counts.hot?.toString() || '0', icon: Flame, color: "text-red-500" },
       { title: t.dashboard.stats.conversionRate, value: `${dashboardData.conversion_rate || 0}%`, icon: TrendingUp, color: "text-green-500" },
@@ -138,21 +157,32 @@ export default function AgentDashboardPage() {
       </section>
 
       <section className="grid grid-cols-2 gap-4 mb-6">
-        {(isLoading ? initialStats : dynamicStats).map((stat) => (
-          <Card key={stat.title} className="shadow-sm">
-            <CardContent className="p-4">
-              <stat.icon className={`h-6 w-6 mb-2 text-gray-400 ${stat.color || ''}`} />
-              {isLoading ? (
-                <div className="flex items-center justify-center h-10">
-                  <Loader2 className="h-6 w-6 animate-spin text-gray-400" />
-                </div>
-              ) : (
-                <p className={`text-3xl font-bold ${stat.color || ''}`}>{stat.value}</p>
+        {(isLoading ? initialStats : dynamicStats).map((stat, index) => {
+          const isClickable = index < 3; // First 3 cards are clickable (not Conversion Rate)
+
+          return (
+            <Card
+              key={stat.title}
+              className={cn(
+                "shadow-sm",
+                isClickable && "cursor-pointer hover:shadow-lg transition-shadow"
               )}
-              <p className="text-sm text-gray-500">{stat.title}</p>
-            </CardContent>
-          </Card>
-        ))}
+              onClick={() => isClickable && !isLoading && handleCardClick(stat.title)}
+            >
+              <CardContent className="p-4">
+                <stat.icon className={`h-6 w-6 mb-2 text-gray-400 ${stat.color || ''}`} />
+                {isLoading ? (
+                  <div className="flex items-center justify-center h-10">
+                    <Loader2 className="h-6 w-6 animate-spin text-gray-400" />
+                  </div>
+                ) : (
+                  <p className={`text-3xl font-bold ${stat.color || ''}`}>{stat.value}</p>
+                )}
+                <p className="text-sm text-gray-500">{stat.title}</p>
+              </CardContent>
+            </Card>
+          );
+        })}
       </section>
 
       <section>
