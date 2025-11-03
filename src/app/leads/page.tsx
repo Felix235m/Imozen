@@ -35,9 +35,16 @@ import {
   DialogDescription,
   DialogFooter
 } from '@/components/ui/dialog';
-import { callLeadApi, callLeadStatusApi, callAuthApi } from '@/lib/auth-api';
+import { callAuthApi, callApi } from '@/lib/auth-api';
+import { cachedCallLeadApi, cachedCallLeadStatusApi } from '@/lib/cached-api';
 import { transformWebhookResponseToLeadListItem } from '@/lib/lead-transformer';
 import { format, isValid } from 'date-fns';
+import { useLeads } from '@/hooks/useAppData';
+import { refreshDashboard } from '@/lib/selective-webhooks';
+import { RetryPopup } from '@/components/notifications/retry-popup';
+import type { OptimisticOperation } from '@/types/app-data';
+import { checkForDraft, clearDraft, type DraftInfo } from '@/lib/draft-detector';
+import { DraftResumeDialog } from '@/components/leads/draft-resume-dialog';
 
 
 type LeadTemperature = 'Hot' | 'Warm' | 'Cold';
@@ -71,12 +78,22 @@ type Lead = {
 export default function LeadsPage() {
   const [searchTerm, setSearchTerm] = useState('');
   const [activeTab, setActiveTab] = useState('All Leads');
-  const [leads, setLeads] = useState<Lead[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isNavigating, setIsNavigating] = useState<string | null>(null);
   const [selectedLeads, setSelectedLeads] = useState<string[]>([]);
   const { toast } = useToast();
   const router = useRouter();
+
+  // Use localStorage-based leads data
+  const { leads: leadsFromStorage, updateLeads, updateSingleLead, deleteLead: deleteLeadFromStorage, addLead } = useLeads();
+
+  // Transform leads to ensure correct field mapping
+  const leads = useMemo(() => {
+    return leadsFromStorage.map((lead: any) => ({
+      ...lead,
+      lead_stage: lead.lead_stage || lead.Stage || 'New Lead'
+    }));
+  }, [leadsFromStorage]);
   const { t } = useLanguage();
 
   // Sort and filter state
@@ -93,8 +110,12 @@ export default function LeadsPage() {
   const [leadsToDelete, setLeadsToDelete] = useState<string[] | null>(null);
 
   const [isCheckingSession, setIsCheckingSession] = useState(false);
-  
+
   const [isLeadStageDialogOpen, setIsLeadStageDialogOpen] = useState(false);
+
+  // Retry popup state
+  const [showRetryPopup, setShowRetryPopup] = useState(false);
+  const [retryOperation, setRetryOperation] = useState<OptimisticOperation | null>(null);
   const [isStageConfirmDialogOpen, setIsStageConfirmDialogOpen] = useState(false);
   const [selectedStage, setSelectedStage] = useState<LeadStage | null>(null);
   const [selectedLeadForStageChange, setSelectedLeadForStageChange] = useState<Lead | null>(null);
@@ -102,6 +123,9 @@ export default function LeadsPage() {
   const [isScheduleFollowUpDialogOpen, setIsScheduleFollowUpDialogOpen] = useState(false);
   const [selectedLeadForSchedule, setSelectedLeadForSchedule] = useState<Lead | null>(null);
 
+  // Draft detection state
+  const [isDraftDialogOpen, setIsDraftDialogOpen] = useState(false);
+  const [draftInfo, setDraftInfo] = useState<DraftInfo>({ exists: false });
 
   // Helper function to safely format follow-up dates
   const formatFollowUpDate = (dateValue: string | null | undefined): string => {
@@ -135,78 +159,67 @@ export default function LeadsPage() {
     { value: 'Not Interested', label: t.leads.stages.notInterested, color: 'bg-gray-100 text-gray-700', description: t.leads.stageDescriptions.notInterested, icon: UserX },
   ];
 
-  const fetchLeads = useCallback(async () => {
-    setIsLoading(true);
-    try {
-        const response = await callLeadApi('get_all_leads');
-
-        let data;
-        if (Array.isArray(response) && response.length > 0) {
-            data = response[0];
-        } else if (typeof response === 'object' && response !== null && !Array.isArray(response)) {
-            data = response;
-        }
-
-        if (data && Array.isArray(data.leads)) {
-            const transformedLeads = data.leads.map((lead: any) => ({
-                ...lead,
-                lead_stage: lead.lead_stage || lead.Stage || 'New Lead'
-            }));
-            setLeads(transformedLeads);
-        } else {
-            setLeads([]);
-        }
-    } catch (error) {
-        toast({
-            variant: "destructive",
-            title: t.leads.messages.errorLoadingLeads,
-            description: t.leads.messages.errorLoadingLeads,
-        });
-        setLeads([]);
-    } finally {
-        setIsLoading(false);
-    }
-  }, [toast, t]);
-
   useEffect(() => {
-    fetchLeads();
-  }, [fetchLeads]);
+    // Data is loaded from localStorage via useLeads hook
+    setIsLoading(false);
+  }, []);
 
-  const handleAddNewLead = async () => {
-    setIsCheckingSession(true);
+  const handleAddNewLead = () => {
+    // Check for existing draft
+    const draft = checkForDraft();
+
+    if (draft.exists) {
+      // Show draft resume dialog
+      setDraftInfo(draft);
+      setIsDraftDialogOpen(true);
+    } else {
+      // No draft found, proceed with new lead creation
+      startNewLead();
+    }
+  };
+
+  const startNewLead = () => {
+    // Generate lead_id immediately using crypto.randomUUID()
+    const leadId = crypto.randomUUID();
+
+    // Initialize sessionStorage with empty form data and lead_id
+    sessionStorage.setItem('lead_id', leadId);
+    sessionStorage.setItem('leadFormData', JSON.stringify({ _lastModified: Date.now() }));
+
+    // Navigate instantly to the new lead form
+    router.push('/leads/new');
+
+    // Optionally validate session in background (non-blocking)
+    validateSessionInBackground();
+  };
+
+  const handleContinueDraft = () => {
+    // Close dialog and navigate to form (will auto-load from sessionStorage)
+    setIsDraftDialogOpen(false);
+    router.push('/leads/new');
+  };
+
+  const handleStartFresh = () => {
+    // Clear existing draft and start new
+    clearDraft();
+    setIsDraftDialogOpen(false);
+    startNewLead();
+  };
+
+  const validateSessionInBackground = async () => {
     try {
       const agentDataString = localStorage.getItem('agent_data');
-      if (!agentDataString) {
-        throw new Error('Agent data not found.');
-      }
+      if (!agentDataString) return;
+
       const agentData = JSON.parse(agentDataString);
 
-      const response = await callAuthApi('validate_session', {
+      await callAuthApi('validate_session', {
         agent: agentData,
         agent_id: agentData.agent_id,
       });
-
-      const sessionData = Array.isArray(response) ? response[0] : response;
-
-      if (sessionData && sessionData.session_id && sessionData.lead_id) {
-        sessionStorage.setItem('lead_creation_session_id', sessionData.session_id);
-        sessionStorage.setItem('lead_id', sessionData.lead_id);
-        router.push('/leads/new/step-1');
-      } else {
-        throw new Error('Invalid session. Please log in again.');
-      }
-
-    } catch (error: any) {
-      toast({
-        variant: "destructive",
-        title: t.leads.messages.sessionExpired,
-        description: t.leads.messages.sessionExpiredDescription,
-      });
-      localStorage.removeItem('auth_token');
-      localStorage.removeItem('agent_data');
-      router.push('/');
-    } finally {
-      setIsCheckingSession(false);
+    } catch (error) {
+      // Silent fail - session validation is not critical for form opening
+      console.error('Background session validation failed:', error);
     }
   };
 
@@ -303,17 +316,8 @@ export default function LeadsPage() {
         return;
     }
     setIsNavigating(leadId);
-    try {
-        await callLeadApi('get_lead_details', { lead_id: leadId });
-        router.push(`/leads/${leadId}`);
-    } catch (error) {
-        toast({
-            variant: "destructive",
-            title: t.common.loading,
-            description: t.leads.messages.errorLoadingDetails,
-        });
-        setIsNavigating(null);
-    }
+    // Data is already in localStorage, navigate directly
+    router.push(`/leads/${leadId}`);
   };
 
   const handleSelectLead = (leadId: string) => {
@@ -342,16 +346,78 @@ export default function LeadsPage() {
 
   const executeDeleteSingleLead = async () => {
     if (!leadToDelete) return;
+
+    // STEP 1: Get complete lead data from localStorage for backup
+    const { localStorageManager } = require('@/lib/local-storage-manager');
+    const appData = localStorageManager.getAppData();
+    const leadToBackup = appData.leads.find((l: any) => l.lead_id === leadToDelete);
+    const leadDetails = appData.leadDetails[leadToDelete];
+    const leadNotes = appData.notes[leadToDelete];
+    const leadCommunication = appData.communicationHistory[leadToDelete];
+    const leadTasks = appData.tasks.filter((task: any) => task.leadId === leadToDelete);
+
+    // Store backup in sessionStorage
+    const backupData = {
+      lead: leadToBackup,
+      leadDetails: leadDetails,
+      notes: leadNotes,
+      communicationHistory: leadCommunication,
+      tasks: leadTasks,
+    };
+    sessionStorage.setItem(`lead_delete_backup_${leadToDelete}`, JSON.stringify(backupData));
+
+    // STEP 2: OPTIMISTIC - Immediately remove from UI
+    deleteLeadFromStorage(leadToDelete);
+    toast({
+      title: t.leads.messages.leadDeleted,
+      description: "Processing...",
+    });
+
+    // STEP 3: Send API request in background
     try {
-        await callLeadApi('delete_lead', { lead_id: leadToDelete });
-        setLeads(prev => prev.filter(lead => lead.lead_id !== leadToDelete));
-        toast({
-          title: t.common.delete,
-          description: t.leads.messages.leadDeleted,
-        });
-    } catch(error) {
-        toast({ variant: "destructive", title: t.common.delete, description: t.leads.messages.errorDeletingLead });
+      await cachedCallLeadApi('delete_lead', { lead_id: leadToDelete });
+
+      // SUCCESS: Clear backup from sessionStorage
+      sessionStorage.removeItem(`lead_delete_backup_${leadToDelete}`);
+
+      toast({
+        title: t.leads.messages.leadDeleted,
+        description: "Lead permanently deleted.",
+      });
+    } catch(error: any) {
+      // ERROR: ROLLBACK - Restore from backup
+      const backupJson = sessionStorage.getItem(`lead_delete_backup_${leadToDelete}`);
+      if (backupJson) {
+        const backup = JSON.parse(backupJson);
+
+        // Restore all data
+        if (backup.lead) {
+          addLead(backup.lead);
+        }
+        if (backup.leadDetails) {
+          const currentData = localStorageManager.getAppData();
+          localStorageManager.setAppData({
+            ...currentData,
+            leadDetails: { ...currentData.leadDetails, [leadToDelete]: backup.leadDetails },
+            notes: backup.notes ? { ...currentData.notes, [leadToDelete]: backup.notes } : currentData.notes,
+            communicationHistory: backup.communicationHistory
+              ? { ...currentData.communicationHistory, [leadToDelete]: backup.communicationHistory }
+              : currentData.communicationHistory,
+            tasks: backup.tasks ? [...currentData.tasks, ...backup.tasks] : currentData.tasks,
+          });
+        }
+
+        // Clear backup
+        sessionStorage.removeItem(`lead_delete_backup_${leadToDelete}`);
+      }
+
+      toast({
+        variant: "destructive",
+        title: t.common.delete,
+        description: error.message || t.leads.messages.errorDeletingLead
+      });
     }
+
     setLeadToDelete(null);
   }
 
@@ -361,17 +427,96 @@ export default function LeadsPage() {
 
   const executeDeleteBulkLeads = async () => {
     if (!leadsToDelete) return;
+
+    // STEP 1: Get complete data for all leads being deleted
+    const { localStorageManager } = require('@/lib/local-storage-manager');
+    const appData = localStorageManager.getAppData();
+
+    const backupData = leadsToDelete.map(leadId => ({
+      leadId,
+      lead: appData.leads.find((l: any) => l.lead_id === leadId),
+      leadDetails: appData.leadDetails[leadId],
+      notes: appData.notes[leadId],
+      communicationHistory: appData.communicationHistory[leadId],
+      tasks: appData.tasks.filter((task: any) => task.leadId === leadId),
+    }));
+
+    // Store backup in sessionStorage
+    sessionStorage.setItem('bulk_delete_backup', JSON.stringify(backupData));
+
+    // STEP 2: OPTIMISTIC - Immediately remove all from UI
+    leadsToDelete.forEach(id => deleteLeadFromStorage(id));
+    toast({
+      title: t.leads.messages.leadsDeleted.replace('{{count}}', leadsToDelete.length.toString()),
+      description: "Processing...",
+    });
+    setSelectedLeads([]);
+
+    // STEP 3: Send API requests in background
     try {
-        await Promise.all(leadsToDelete.map(id => callLeadApi('delete_lead', { lead_id: id })));
-        setLeads(prev => prev.filter(lead => !leadsToDelete.includes(lead.lead_id)));
-        toast({
-            title: t.common.delete,
-            description: t.leads.messages.leadsDeleted.replace('{{count}}', leadsToDelete.length.toString()),
+      await Promise.all(leadsToDelete.map(id => cachedCallLeadApi('delete_lead', { lead_id: id })));
+
+      // SUCCESS: Clear backup from sessionStorage
+      sessionStorage.removeItem('bulk_delete_backup');
+
+      toast({
+        title: t.leads.messages.leadsDeleted.replace('{{count}}', leadsToDelete.length.toString()),
+        description: "Leads permanently deleted.",
+      });
+    } catch (error: any) {
+      // ERROR: ROLLBACK - Restore all from backup
+      const backupJson = sessionStorage.getItem('bulk_delete_backup');
+      if (backupJson) {
+        const backup = JSON.parse(backupJson);
+        const currentData = localStorageManager.getAppData();
+
+        // Restore all leads
+        backup.forEach((item: any) => {
+          if (item.lead) {
+            addLead(item.lead);
+          }
         });
-        setSelectedLeads([]);
-    } catch (error) {
-        toast({ variant: "destructive", title: t.common.delete, description: t.leads.messages.errorDeletingLeads });
+
+        // Restore all details, notes, communication history, and tasks
+        const restoredLeadDetails = { ...currentData.leadDetails };
+        const restoredNotes = { ...currentData.notes };
+        const restoredCommunication = { ...currentData.communicationHistory };
+        const restoredTasks = [...currentData.tasks];
+
+        backup.forEach((item: any) => {
+          if (item.leadDetails) {
+            restoredLeadDetails[item.leadId] = item.leadDetails;
+          }
+          if (item.notes) {
+            restoredNotes[item.leadId] = item.notes;
+          }
+          if (item.communicationHistory) {
+            restoredCommunication[item.leadId] = item.communicationHistory;
+          }
+          if (item.tasks && item.tasks.length > 0) {
+            restoredTasks.push(...item.tasks);
+          }
+        });
+
+        localStorageManager.setAppData({
+          ...currentData,
+          leadDetails: restoredLeadDetails,
+          notes: restoredNotes,
+          communicationHistory: restoredCommunication,
+          tasks: restoredTasks,
+        });
+
+        // Clear backup
+        sessionStorage.removeItem('bulk_delete_backup');
+      }
+
+      toast({
+        variant: "destructive",
+        title: t.common.delete,
+        description: error.message || t.leads.messages.errorDeletingLeads
+      });
     }
+
     setLeadsToDelete(null);
   }
 
@@ -381,6 +526,25 @@ export default function LeadsPage() {
   };
 
   const handleStatusSave = async (leadId: string, newStatus: LeadTemperature, note: string) => {
+    // Get current lead for rollback
+    const currentLead = leads.find(l => l.lead_id === leadId);
+    if (!currentLead) return;
+
+    const oldPriority = currentLead.temperature;
+    const operationId = `priority-change-${leadId}-${Date.now()}`;
+
+    // Optimistic update: Update localStorage immediately
+    updateSingleLead(leadId, { temperature: newStatus } as any);
+
+    // Close dialog immediately for instant feedback
+    setIsStatusDialogOpen(false);
+
+    // Show instant success feedback
+    toast({
+      title: 'Priority Updated',
+      description: `Lead priority changed to ${newStatus}.`,
+    });
+
     try {
         // Construct payload for the status change API
         const payload = {
@@ -391,37 +555,41 @@ export default function LeadsPage() {
         };
 
         // Call the status change API
-        const response = await callApi(LEAD_STATUS_URL, payload);
+        const response = await cachedCallLeadStatusApi(leadId, 'change_priority', { new_priority: newStatus, note });
 
         // Transform the webhook response to match the frontend lead list item format
         const transformedLead = transformWebhookResponseToLeadListItem(response);
 
         if (transformedLead) {
-            // Update the leads list with the fresh data from the server
-            setLeads(prevLeads =>
-              prevLeads.map(lead =>
-                lead.lead_id === leadId ? { ...lead, ...transformedLead } : lead
-              )
-            );
-        } else {
-            // Fallback: If transformation fails, just update the temperature locally
-            setLeads(prevLeads =>
-              prevLeads.map(lead =>
-                lead.lead_id === leadId ? { ...lead, temperature: newStatus } : lead
-              )
-            );
+            // Update localStorage with the fresh data from the server
+            updateSingleLead(leadId, transformedLead);
         }
 
-        toast({
-          title: 'Priority Updated',
-          description: `Lead priority changed to ${newStatus} and note was added.`,
-        });
-        
+        // Refresh dashboard immediately
+        await refreshDashboard();
+
     } catch (error: any) {
          console.error('Priority update error:', error);
-         toast({ variant: "destructive", title: "Error", description: error.message || "Could not update lead priority." });
-    } finally {
-        setIsStatusDialogOpen(false);
+
+         // Rollback: Revert to old priority
+         updateSingleLead(leadId, { temperature: oldPriority } as any);
+
+         // Show retry popup
+         setRetryOperation({
+           id: operationId,
+           type: 'change_priority',
+           oldValue: oldPriority,
+           newValue: newStatus,
+           timestamp: Date.now(),
+           leadId: leadId
+         });
+         setShowRetryPopup(true);
+
+         toast({
+           variant: "destructive",
+           title: "Priority Update Failed",
+           description: "Changes have been reverted. Click retry to try again."
+         });
     }
   };
   
@@ -484,11 +652,10 @@ export default function LeadsPage() {
             throw new Error(errorText || 'Failed to update lead stage');
         }
 
-        setLeads(prevLeads => prevLeads.map(l =>
-            l.lead_id === selectedLeadForStageChange.lead_id
-            ? { ...l, lead_stage: selectedStage, stage: selectedStage as any }
-            : l
-        ));
+        updateSingleLead(selectedLeadForStageChange.lead_id, {
+            lead_stage: selectedStage,
+            stage: selectedStage as any
+        } as any);
 
         toast({
             title: "Stage Updated",
@@ -780,7 +947,10 @@ export default function LeadsPage() {
             lead_id: selectedLeadForSchedule.lead_id,
             name: selectedLeadForSchedule.name,
           }}
-          onSuccess={fetchLeads}
+          onSuccess={() => {
+            // Data will be updated via selective webhooks
+            // No need to manually refresh - localStorage subscription will handle it
+          }}
         />
       )}
 
@@ -900,6 +1070,37 @@ export default function LeadsPage() {
             </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      {/* Retry Popup */}
+      {retryOperation && (
+        <RetryPopup
+          isOpen={showRetryPopup}
+          onClose={() => setShowRetryPopup(false)}
+          onRetry={async () => {
+            if (!retryOperation) return;
+
+            // Retry the operation based on type
+            if (retryOperation.type === 'change_priority' && retryOperation.leadId) {
+              await handleStatusSave(retryOperation.leadId, retryOperation.newValue, '');
+            }
+            setShowRetryPopup(false);
+          }}
+          onDiscard={() => {
+            setShowRetryPopup(false);
+            setRetryOperation(null);
+          }}
+          operation={retryOperation}
+        />
+      )}
+
+      {/* Draft Resume Dialog */}
+      <DraftResumeDialog
+        open={isDraftDialogOpen}
+        onOpenChange={setIsDraftDialogOpen}
+        draftInfo={draftInfo}
+        onContinue={handleContinueDraft}
+        onStartFresh={handleStartFresh}
+      />
 
     </div>
   );

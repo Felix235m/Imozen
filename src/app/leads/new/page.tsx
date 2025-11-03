@@ -1,14 +1,914 @@
 "use client";
 
-import { useEffect } from 'react';
-import { useRouter } from 'next/navigation';
+import { zodResolver } from "@hookform/resolvers/zod";
+import { useForm } from "react-hook-form";
+import * as z from "zod";
+import { Button } from "@/components/ui/button";
+import {
+  Form,
+  FormControl,
+  FormField,
+  FormItem,
+  FormLabel,
+  FormMessage,
+} from "@/components/ui/form";
+import { Input } from "@/components/ui/input";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
+import { useRouter } from "next/navigation";
+import { Textarea } from "@/components/ui/textarea";
+import { useToast } from "@/hooks/use-toast";
+import { useState, useEffect } from "react";
+import { Loader2, Home, Building, Warehouse, Mountain, Minus, Plus, X, ChevronsUpDown, DollarSign, CreditCard } from "lucide-react";
+import { useLanguage } from "@/hooks/useLanguage";
+import { cn } from "@/lib/utils";
+import { Badge } from "@/components/ui/badge";
+import { DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuCheckboxItem } from "@/components/ui/dropdown-menu";
+import { Checkbox } from "@/components/ui/checkbox";
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
+import { Separator } from "@/components/ui/separator";
+import { useLeads, useNotifications } from "@/hooks/useAppData";
+import { localStorageManager } from "@/lib/local-storage-manager";
+import type { Notification } from "@/types/app-data";
+
+// Constants
+const propertyTypes = [
+  { name: "Apartment", icon: Building },
+  { name: "House", icon: Home },
+  { name: "Commercial", icon: Warehouse },
+  { name: "Land", icon: Mountain },
+];
+
+const allLocations = [
+  { value: "lisbon", label: "Lisbon" },
+  { value: "porto", label: "Porto" },
+  { value: "faro", label: "Faro" },
+  { value: "coimbra", label: "Coimbra" },
+  { value: "braga", label: "Braga" },
+  { value: "aveiro", label: "Aveiro" },
+  { value: "sintra", label: "Sintra" },
+  { value: "cascais", label: "Cascais" },
+  { value: "funchal", label: "Funchal" },
+  { value: "guimaraes", label: "Guimarães" }
+];
+
+const financingTypes = [
+  { name: "Cash", icon: DollarSign },
+  { name: "Credit", icon: CreditCard },
+];
+
+const purchaseTimeframes = ["Immediately (under 3 months)", "3-6 months", "After 6 months"];
+const searchDurations = ["Starting now", "0-2 months", "3-6 months", "More than 6 months"];
+const propertiesViewedOptions = ["No", "A few", "Many"];
+
+// Combined form schema with all fields
+const formSchema = z.object({
+  // Step 1: Contact Information
+  firstName: z.string().min(1, "First name is required"),
+  lastName: z.string().min(1, "Last name is required"),
+  countryCode: z.string().min(1, "Country code is required"),
+  phoneNumber: z.string().min(1, "Phone number is required"),
+  email: z.string().email("Invalid email").optional().or(z.literal('')),
+  language: z.string().optional(),
+  leadSource: z.string().optional(),
+
+  // Step 2: Property Requirements
+  propertyType: z.string().optional(),
+  locations: z.array(z.string()).optional(),
+  budget: z.number().optional(),
+  budgetCurrency: z.string(),
+  bedrooms: z.number().min(0, "Bedrooms cannot be negative"),
+
+  // Step 3: Qualification
+  financingType: z.string().optional(),
+  creditPreApproval: z.boolean().default(false),
+  purchaseTimeframe: z.string().optional(),
+  searchDuration: z.string().optional(),
+  propertiesViewed: z.string().optional(),
+
+  // Step 4: Initial Note
+  initialNote: z.string().optional(),
+});
 
 export default function NewLeadPage() {
+  const { t } = useLanguage();
   const router = useRouter();
+  const { toast } = useToast();
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
+  // Hooks for localStorage management
+  const { addLead, updateSingleLead, deleteLead } = useLeads();
+  const { updateNotifications } = useNotifications();
+
+  const form = useForm<z.infer<typeof formSchema>>({
+    resolver: zodResolver(formSchema),
+    defaultValues: {
+      // Step 1 defaults
+      firstName: "",
+      lastName: "",
+      countryCode: "+351",
+      phoneNumber: "",
+      email: "",
+      language: "Portuguese",
+      leadSource: "",
+      // Step 2 defaults
+      propertyType: "",
+      locations: [],
+      budget: 0,
+      budgetCurrency: "EUR",
+      bedrooms: 0,
+      // Step 3 defaults
+      financingType: "",
+      creditPreApproval: false,
+      purchaseTimeframe: "",
+      searchDuration: "",
+      propertiesViewed: "",
+      // Step 4 defaults
+      initialNote: "",
+    },
+  });
+
+  // Load data from sessionStorage on mount
   useEffect(() => {
-    router.replace('/leads/new/step-1');
-  }, [router]);
+    if (typeof window !== 'undefined') {
+      const storedData = sessionStorage.getItem('leadFormData');
+      if (storedData) {
+        try {
+          const data = JSON.parse(storedData);
 
-  return null;
+          // Parse phone number if it's already formatted to avoid concatenation
+          if (data.phoneNumber && data.phoneNumber.includes('(')) {
+            const match = data.phoneNumber.match(/\(([^)]+)\)\s*(.+)/);
+            if (match) {
+              data.countryCode = match[1];
+              data.phoneNumber = match[2].trim();
+            }
+          }
+
+          form.reset(data);
+        } catch (e) {
+          console.error("Failed to parse lead form data from session storage", e);
+        }
+      }
+    }
+  }, [form]);
+
+  // Save to sessionStorage on changes (debounced)
+  useEffect(() => {
+    const subscription = form.watch((values) => {
+      if (typeof window !== 'undefined') {
+        sessionStorage.setItem('leadFormData', JSON.stringify(values));
+      }
+    });
+    return () => subscription.unsubscribe();
+  }, [form]);
+
+  // Watch values for conditional logic
+  const propertyType = form.watch("propertyType");
+  const bedrooms = form.watch("bedrooms");
+  const locations = form.watch("locations") || [];
+  const financingType = form.watch("financingType");
+
+  const isBedroomsDisabled = propertyType === 'Commercial' || propertyType === 'Land';
+  const isCreditPreApprovalDisabled = financingType !== 'Credit';
+
+  // Auto-disable bedrooms for Commercial/Land
+  useEffect(() => {
+    if (isBedroomsDisabled) {
+      form.setValue('bedrooms', 0);
+    }
+  }, [isBedroomsDisabled, form]);
+
+  // Auto-disable credit pre-approval if not Credit
+  useEffect(() => {
+    if (isCreditPreApprovalDisabled) {
+      form.setValue('creditPreApproval', false);
+    }
+  }, [isCreditPreApprovalDisabled, form]);
+
+  // Location handlers
+  const handleLocationSelect = (locationValue: string) => {
+    const currentLocations = form.getValues('locations') || [];
+    if (currentLocations.includes(locationValue)) {
+      form.setValue('locations', currentLocations.filter(loc => loc !== locationValue));
+    } else {
+      form.setValue('locations', [...currentLocations, locationValue]);
+    }
+  };
+
+  const handleLocationRemove = (locationValue: string) => {
+    const currentLocations = form.getValues('locations') || [];
+    form.setValue('locations', currentLocations.filter(loc => loc !== locationValue));
+  };
+
+  // Form submission with optimistic updates
+  const onSubmit = async (values: z.infer<typeof formSchema>) => {
+    const leadId = sessionStorage.getItem('lead_id');
+
+    if (!leadId) {
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: "Lead ID not found. Please start the process again.",
+      });
+      return;
+    }
+
+    // Clean phone number before concatenation to avoid duplicates
+    let cleanPhone = values.phoneNumber.replace(/\([^)]+\)/g, '').replace(/\s+/g, '').trim();
+    const completePhoneNumber = `(${values.countryCode}) ${cleanPhone}`;
+
+    // Prepare payload for webhook
+    const payload = {
+      firstName: values.firstName,
+      lastName: values.lastName,
+      phoneNumber: completePhoneNumber,
+      email: values.email,
+      language: values.language,
+      leadSource: values.leadSource,
+      propertyType: values.propertyType,
+      locations: values.locations,
+      budget: values.budget,
+      budgetCurrency: values.budgetCurrency,
+      bedrooms: values.bedrooms,
+      financingType: values.financingType,
+      creditPreApproval: values.creditPreApproval,
+      purchaseTimeframe: values.purchaseTimeframe,
+      searchDuration: values.searchDuration,
+      propertiesViewed: values.propertiesViewed,
+      initialNote: values.initialNote,
+      lead_id: leadId,
+    };
+
+    // Create optimistic lead object for immediate display
+    const optimisticLead = {
+      lead_id: leadId,
+      name: `${values.firstName} ${values.lastName}`,
+      temperature: 'Warm' as const,
+      stage: 'New Lead' as const,
+      lead_stage: 'New Lead' as const,
+      next_follow_up: {
+        status: 'Not set',
+        date: null,
+      },
+      contact: {
+        phone: completePhoneNumber,
+        email: values.email || undefined,
+      },
+    };
+
+    // IMMEDIATE: Add lead to localStorage (optimistic update)
+    addLead(optimisticLead);
+
+    // IMMEDIATE: Navigate to leads page
+    router.push('/leads');
+
+    // IMMEDIATE: Show optimistic success toast
+    toast({
+      title: "Lead Added!",
+      description: "Creating lead in background...",
+    });
+
+    // Clear form data from sessionStorage
+    sessionStorage.removeItem('leadFormData');
+
+    // BACKGROUND: Send webhook request
+    try {
+      const token = localStorage.getItem('auth_token');
+
+      const response = await fetch("https://eurekagathr.app.n8n.cloud/webhook/New-Lead", {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify(payload)
+      });
+
+      // Check for session expiry (401 Unauthorized)
+      if (response.status === 401) {
+        // Session expired - logout immediately
+        localStorage.removeItem('auth_token');
+        localStorage.removeItem('agent_data');
+        localStorageManager.clearAppData();
+
+        toast({
+          variant: "destructive",
+          title: "Session Expired",
+          description: "Please log in again.",
+        });
+
+        router.push('/');
+        return;
+      }
+
+      if (!response.ok) {
+        const errorText = await response.text();
+        let errorMessage = "Failed to create lead. Please try again.";
+        try {
+          const errorJson = JSON.parse(errorText);
+          errorMessage = errorJson.message || errorMessage;
+        } catch (e) {
+          errorMessage = errorText || errorMessage;
+        }
+        throw new Error(errorMessage);
+      }
+
+      const responseData = await response.json();
+      const serverLead = Array.isArray(responseData) ? responseData[0] : responseData;
+
+      // SUCCESS: Update localStorage with complete server data
+      updateSingleLead(leadId, {
+        ...optimisticLead,
+        // Map server fields to our structure
+        temperature: serverLead['Hot/Warm/Cold'] || optimisticLead.temperature,
+        stage: serverLead.Stage || optimisticLead.stage,
+        lead_stage: serverLead.Stage || optimisticLead.lead_stage,
+        // Add any additional server fields
+        ...serverLead,
+      });
+
+      // Add success notification
+      const notifications = localStorageManager.getNotifications();
+      const successNotification: Notification = {
+        id: `notif-success-${Date.now()}`,
+        type: 'new_lead',
+        title: 'Lead Created Successfully',
+        message: `${optimisticLead.name} has been added to your leads.`,
+        timestamp: Date.now(),
+        priority: 'medium',
+        read: false,
+        lead_id: leadId,
+      };
+      updateNotifications([successNotification, ...notifications]);
+
+      // Show success toast
+      toast({
+        title: "Lead Created!",
+        description: "Successfully synced with server.",
+      });
+
+      // Clear remaining sessionStorage
+      sessionStorage.removeItem('lead_id');
+      sessionStorage.removeItem('lead_creation_session_id');
+
+    } catch (error: any) {
+      console.error('Lead creation error:', error);
+
+      // ROLLBACK: Remove optimistic lead from localStorage
+      deleteLead(leadId);
+
+      // Add error notification with retry action
+      const notifications = localStorageManager.getNotifications();
+      const errorNotification: Notification = {
+        id: `notif-error-${Date.now()}`,
+        type: 'system_error',
+        title: 'Lead Creation Failed',
+        message: `Could not create lead for ${optimisticLead.name}. Tap to retry.`,
+        timestamp: Date.now(),
+        priority: 'high',
+        read: false,
+        action_type: 'retry_create_lead',
+        action_target: '/leads/new',
+        action_data: values, // Store failed form data for retry
+      };
+      updateNotifications([errorNotification, ...notifications]);
+
+      // Show error toast
+      toast({
+        variant: "destructive",
+        title: "Lead Creation Failed",
+        description: "Check notifications to retry.",
+      });
+    }
+  };
+
+  const handleCancel = () => {
+    // Optionally clear sessionStorage
+    sessionStorage.removeItem('leadFormData');
+    sessionStorage.removeItem('lead_id');
+    sessionStorage.removeItem('lead_creation_session_id');
+    router.push('/leads');
+  };
+
+  return (
+    <div className="flex flex-col h-full bg-gray-50">
+      {/* Header */}
+      <div className="sticky top-0 z-10 bg-white p-4 border-b">
+        <div className="max-w-2xl mx-auto">
+          <h1 className="text-2xl font-bold">Add New Lead</h1>
+          <p className="text-sm text-muted-foreground mt-1">Fill in all the information below</p>
+        </div>
+      </div>
+
+      {/* Main Form */}
+      <main className="flex-1 overflow-y-auto pb-32">
+        <div className="p-4 max-w-2xl mx-auto">
+          <Form {...form}>
+            <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8">
+
+              {/* SECTION 1: Contact Information */}
+              <Card>
+                <CardHeader>
+                  <CardTitle>Contact Information</CardTitle>
+                  <CardDescription>Basic contact details for the lead</CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-6">
+                  <FormField
+                    control={form.control}
+                    name="firstName"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>{t.newLead.labels.firstName} <span className="text-red-500">*</span></FormLabel>
+                        <FormControl>
+                          <Input placeholder={t.newLead.placeholders.firstName} {...field} />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+
+                  <FormField
+                    control={form.control}
+                    name="lastName"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>{t.newLead.labels.lastName} <span className="text-red-500">*</span></FormLabel>
+                        <FormControl>
+                          <Input placeholder={t.newLead.placeholders.lastName} {...field} />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+
+                  <FormItem>
+                    <FormLabel>{t.newLead.labels.phone} <span className="text-red-500">*</span></FormLabel>
+                    <div className="flex items-center gap-2">
+                      <FormField
+                        control={form.control}
+                        name="countryCode"
+                        render={({ field }) => (
+                          <FormControl>
+                            <Input
+                              placeholder="+351"
+                              {...field}
+                              className="w-20"
+                            />
+                          </FormControl>
+                        )}
+                      />
+                      <FormField
+                        control={form.control}
+                        name="phoneNumber"
+                        render={({ field }) => (
+                          <FormControl>
+                            <Input type="tel" placeholder={t.newLead.placeholders.phoneNumber} {...field} />
+                          </FormControl>
+                        )}
+                      />
+                    </div>
+                    <FormMessage>{form.formState.errors.phoneNumber?.message}</FormMessage>
+                  </FormItem>
+
+                  <FormField
+                    control={form.control}
+                    name="email"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>{t.newLead.labels.email}</FormLabel>
+                        <FormControl>
+                          <Input type="email" placeholder={t.newLead.placeholders.email} {...field} />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+
+                  <FormField
+                    control={form.control}
+                    name="language"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>{t.newLead.labels.language}</FormLabel>
+                        <Select onValueChange={field.onChange} defaultValue={field.value}>
+                          <FormControl>
+                            <SelectTrigger>
+                              <SelectValue placeholder={t.newLead.placeholders.selectLanguage} />
+                            </SelectTrigger>
+                          </FormControl>
+                          <SelectContent>
+                            <SelectItem value="English">{t.newLead.languages.english}</SelectItem>
+                            <SelectItem value="Portuguese">{t.newLead.languages.portuguese}</SelectItem>
+                            <SelectItem value="French">{t.newLead.languages.french}</SelectItem>
+                          </SelectContent>
+                        </Select>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+
+                  <FormField
+                    control={form.control}
+                    name="leadSource"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>{t.newLead.labels.leadSource}</FormLabel>
+                        <Select onValueChange={field.onChange} defaultValue={field.value}>
+                          <FormControl>
+                            <SelectTrigger>
+                              <SelectValue placeholder={t.newLead.placeholders.selectSource} />
+                            </SelectTrigger>
+                          </FormControl>
+                          <SelectContent>
+                            <SelectItem value="referral">{t.newLead.sources.referral}</SelectItem>
+                            <SelectItem value="website">{t.newLead.sources.website}</SelectItem>
+                            <SelectItem value="casayes">{t.newLead.sources.casayes}</SelectItem>
+                            <SelectItem value="idealista">{t.newLead.sources.idealista}</SelectItem>
+                            <SelectItem value="century-21-pt">{t.newLead.sources.century21}</SelectItem>
+                            <SelectItem value="imovirtual">{t.newLead.sources.imovirtual}</SelectItem>
+                            <SelectItem value="social-media-campaign">{t.newLead.sources.socialMedia}</SelectItem>
+                          </SelectContent>
+                        </Select>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                </CardContent>
+              </Card>
+
+              {/* SECTION 2: Property Requirements */}
+              <Card>
+                <CardHeader>
+                  <CardTitle>{t.leads.propertyRequirements || "Property Requirements"}</CardTitle>
+                  <CardDescription>Specify the property preferences</CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-6">
+                  <FormField
+                    control={form.control}
+                    name="propertyType"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>{t.leads.propertyType || "Property Type"}</FormLabel>
+                        <FormControl>
+                          <div className="grid grid-cols-2 gap-4">
+                            {propertyTypes.map((type) => (
+                              <Button
+                                key={type.name}
+                                variant={field.value === type.name ? "default" : "outline"}
+                                onClick={(e) => {
+                                  e.preventDefault();
+                                  field.onChange(type.name);
+                                }}
+                                className={cn("h-auto py-4 flex flex-col gap-2 transition-all", field.value === type.name ? "bg-primary text-primary-foreground" : "bg-card hover:bg-accent hover:text-accent-foreground")}
+                              >
+                                <type.icon className="h-6 w-6" />
+                                <span>{type.name}</span>
+                              </Button>
+                            ))}
+                          </div>
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+
+                  <FormField
+                    control={form.control}
+                    name="locations"
+                    render={({ field }) => (
+                      <FormItem className="flex flex-col">
+                        <FormLabel>{t.newLead.locationPreferences || "Location Preferences"}</FormLabel>
+                        <DropdownMenu>
+                          <DropdownMenuTrigger asChild>
+                            <Button
+                              variant="outline"
+                              className="w-full justify-between h-auto min-h-10"
+                            >
+                              <div className="flex gap-1 flex-wrap items-center">
+                                {locations.length > 0 ? (
+                                  locations.map(locValue => {
+                                    const location = allLocations.find(l => l.value === locValue);
+                                    return (
+                                      <Badge
+                                        key={locValue}
+                                        variant="secondary"
+                                        className="mr-1"
+                                        onClick={(e) => {
+                                          e.stopPropagation();
+                                          handleLocationRemove(locValue);
+                                        }}
+                                      >
+                                        {location?.label}
+                                        <X className="ml-1 h-3 w-3" />
+                                      </Badge>
+                                    )
+                                  })
+                                ) : (
+                                  <span className="text-muted-foreground">{t.newLead.selectLocations || "Select locations"}</span>
+                                )}
+                              </div>
+                              <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                            </Button>
+                          </DropdownMenuTrigger>
+                          <DropdownMenuContent className="w-[--radix-dropdown-menu-trigger-width]">
+                            {allLocations.map((location) => (
+                              <DropdownMenuCheckboxItem
+                                key={location.value}
+                                checked={locations.includes(location.value)}
+                                onSelect={(e) => e.preventDefault()}
+                                onClick={() => handleLocationSelect(location.value)}
+                              >
+                                {location.label}
+                              </DropdownMenuCheckboxItem>
+                            ))}
+                          </DropdownMenuContent>
+                        </DropdownMenu>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+
+                  <FormItem>
+                    <FormLabel>{t.leads.budget || "Budget"}</FormLabel>
+                    <div className="flex items-center gap-2">
+                      <FormField
+                        control={form.control}
+                        name="budgetCurrency"
+                        render={({ field }) => (
+                          <Select onValueChange={field.onChange} defaultValue={field.value}>
+                            <FormControl>
+                              <SelectTrigger className="w-24">
+                                <SelectValue />
+                              </SelectTrigger>
+                            </FormControl>
+                            <SelectContent>
+                              <SelectItem value="EUR">€ EUR</SelectItem>
+                              <SelectItem value="USD">$ USD</SelectItem>
+                            </SelectContent>
+                          </Select>
+                        )}
+                      />
+                      <FormField
+                        control={form.control}
+                        name="budget"
+                        render={({ field }) => (
+                          <FormControl>
+                            <Input
+                              type="number"
+                              placeholder="Enter budget"
+                              {...field}
+                              onChange={e => field.onChange(Number(e.target.value))}
+                              onFocus={(e) => {
+                                if (field.value === 0) {
+                                  e.target.select();
+                                }
+                              }}
+                            />
+                          </FormControl>
+                        )}
+                      />
+                    </div>
+                    <FormMessage>{form.formState.errors.budget?.message}</FormMessage>
+                  </FormItem>
+
+                  <FormField
+                    control={form.control}
+                    name="bedrooms"
+                    render={({ field }) => (
+                      <FormItem className={cn(isBedroomsDisabled && "opacity-50")}>
+                        <FormLabel>{t.newLead.numberOfBedrooms || "Number of Bedrooms"}</FormLabel>
+                        <FormControl>
+                          <div className="flex items-center justify-center gap-4 p-2 border rounded-lg">
+                            <Button
+                              type="button"
+                              variant="outline"
+                              size="icon"
+                              onClick={() => field.onChange(Math.max(0, bedrooms - 1))}
+                              disabled={isBedroomsDisabled}
+                            >
+                              <Minus className="h-4 w-4" />
+                            </Button>
+                            <span className="text-2xl font-bold w-12 text-center">{bedrooms}</span>
+                            <Button
+                              type="button"
+                              variant="outline"
+                              size="icon"
+                              onClick={() => field.onChange(bedrooms + 1)}
+                              disabled={isBedroomsDisabled}
+                            >
+                              <Plus className="h-4 w-4" />
+                            </Button>
+                          </div>
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                </CardContent>
+              </Card>
+
+              {/* SECTION 3: Qualification */}
+              <Card>
+                <CardHeader>
+                  <CardTitle>{t.newLead.qualificationDetails || "Qualification Details"}</CardTitle>
+                  <CardDescription>Understanding the lead's buying position</CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-6">
+                  <FormField
+                    control={form.control}
+                    name="financingType"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>{t.newLead.financingType || "Financing Type"}</FormLabel>
+                        <FormControl>
+                          <div className="grid grid-cols-2 gap-4">
+                            {financingTypes.map((type) => (
+                              <Button
+                                key={type.name}
+                                variant={field.value === type.name ? "default" : "outline"}
+                                onClick={(e) => {
+                                  e.preventDefault();
+                                  field.onChange(type.name);
+                                }}
+                                className={cn("h-auto py-4 flex flex-col gap-2 transition-all", field.value === type.name ? "bg-primary text-primary-foreground" : "bg-card hover:bg-accent hover:text-accent-foreground")}
+                              >
+                                <type.icon className="h-6 w-6" />
+                                <span>{type.name}</span>
+                              </Button>
+                            ))}
+                          </div>
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+
+                  <FormField
+                    control={form.control}
+                    name="creditPreApproval"
+                    render={({ field }) => (
+                      <FormItem className={cn("flex flex-row items-start space-x-3 space-y-0 rounded-md border p-4", isCreditPreApprovalDisabled && "opacity-50 cursor-not-allowed")}>
+                        <FormControl>
+                          <Checkbox
+                            checked={field.value}
+                            onCheckedChange={field.onChange}
+                            disabled={isCreditPreApprovalDisabled}
+                          />
+                        </FormControl>
+                        <div className="space-y-1 leading-none">
+                          <FormLabel className={cn(isCreditPreApprovalDisabled && "cursor-not-allowed")}>
+                            {t.newLead.creditPreApproval || "Credit Pre-Approval"}
+                          </FormLabel>
+                          <FormMessage />
+                        </div>
+                      </FormItem>
+                    )}
+                  />
+
+                  <FormField
+                    control={form.control}
+                    name="purchaseTimeframe"
+                    render={({ field }) => (
+                      <FormItem className="space-y-3">
+                        <FormLabel>{t.newLead.whenPlanning || "When are they planning to purchase?"}</FormLabel>
+                        <FormControl>
+                          <RadioGroup
+                            onValueChange={field.onChange}
+                            value={field.value}
+                            className="flex flex-col space-y-1"
+                          >
+                            {purchaseTimeframes.map((item) => (
+                              <FormItem key={item} className="flex items-center space-x-3 space-y-0">
+                                <FormControl>
+                                  <RadioGroupItem value={item} />
+                                </FormControl>
+                                <FormLabel className="font-normal">{item}</FormLabel>
+                              </FormItem>
+                            ))}
+                          </RadioGroup>
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+
+                  <FormField
+                    control={form.control}
+                    name="searchDuration"
+                    render={({ field }) => (
+                      <FormItem className="space-y-3">
+                        <FormLabel>{t.newLead.howLongLooking || "How long have they been looking?"}</FormLabel>
+                        <FormControl>
+                          <RadioGroup
+                            onValueChange={field.onChange}
+                            value={field.value}
+                            className="flex flex-col space-y-1"
+                          >
+                            {searchDurations.map((item) => (
+                              <FormItem key={item} className="flex items-center space-x-3 space-y-0">
+                                <FormControl>
+                                  <RadioGroupItem value={item} />
+                                </FormControl>
+                                <FormLabel className="font-normal">{item}</FormLabel>
+                              </FormItem>
+                            ))}
+                          </RadioGroup>
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+
+                  <FormField
+                    control={form.control}
+                    name="propertiesViewed"
+                    render={({ field }) => (
+                      <FormItem className="space-y-3">
+                        <FormLabel>{t.newLead.seenOtherProperties || "Have they seen other properties?"}</FormLabel>
+                        <FormControl>
+                          <RadioGroup
+                            onValueChange={field.onChange}
+                            value={field.value}
+                            className="flex flex-col space-y-1"
+                          >
+                            {propertiesViewedOptions.map((item) => (
+                              <FormItem key={item} className="flex items-center space-x-3 space-y-0">
+                                <FormControl>
+                                  <RadioGroupItem value={item} />
+                                </FormControl>
+                                <FormLabel className="font-normal">{item}</FormLabel>
+                              </FormItem>
+                            ))}
+                          </RadioGroup>
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                </CardContent>
+              </Card>
+
+              {/* SECTION 4: Initial Note */}
+              <Card>
+                <CardHeader>
+                  <CardTitle>{t.newLead.initialNote || "Initial Note"}</CardTitle>
+                  <CardDescription>{t.newLead.initialNoteDescription || "Add any additional notes about this lead"}</CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <FormField
+                    control={form.control}
+                    name="initialNote"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>{t.newLead.note || "Note"}</FormLabel>
+                        <FormControl>
+                          <Textarea
+                            placeholder="e.g., Client is very interested in properties with a backyard for their dog. Prefers modern architecture..."
+                            className="min-h-[200px]"
+                            {...field}
+                          />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                </CardContent>
+              </Card>
+
+              {/* Action Buttons */}
+              <div className="pt-6 pb-8">
+                <div className="grid grid-cols-2 gap-4 max-w-md mx-auto">
+                  <Button
+                    variant="outline"
+                    type="button"
+                    size="lg"
+                    onClick={handleCancel}
+                    disabled={isSubmitting}
+                  >
+                    {t.common.cancel || "Cancel"}
+                  </Button>
+                  <Button
+                    type="submit"
+                    size="lg"
+                    className="bg-primary"
+                    disabled={isSubmitting}
+                  >
+                    {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                    {t.newLead.createNewLead || "Add Lead"}
+                  </Button>
+                </div>
+              </div>
+            </form>
+          </Form>
+        </div>
+      </main>
+    </div>
+  );
 }

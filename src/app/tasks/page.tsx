@@ -1,51 +1,27 @@
 "use client";
 
-import { useState, useEffect, useMemo, useCallback } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { Loader2 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { useLanguage } from '@/hooks/useLanguage';
-import { callLeadApi } from '@/lib/auth-api';
 import { format, isToday, isTomorrow, isValid, isPast, startOfDay } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { TaskCard } from '@/components/dashboard/task-card';
+import { useTasks } from '@/hooks/useAppData';
 
 export default function TasksPage() {
-  const [dashboardData, setDashboardData] = useState<any>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [expandedTaskId, setExpandedTaskId] = useState<string | null>(null);
   const { toast } = useToast();
   const { t, language } = useLanguage();
   const dateLocale = language === 'pt' ? ptBR : undefined;
 
-  const fetchDashboardData = useCallback(async () => {
-    setIsLoading(true);
-    try {
-      const response = await callLeadApi('get_tasks');
-      const data = Array.isArray(response) ? response[0] : response;
-
-      if (data && data.success) {
-        setDashboardData(data);
-      } else {
-        toast({
-          variant: "destructive",
-          title: "Error",
-          description: "Could not load tasks data.",
-        });
-      }
-    } catch (error) {
-      toast({
-        variant: "destructive",
-        title: "Error",
-        description: "Could not load tasks data.",
-      });
-    } finally {
-      setIsLoading(false);
-    }
-  }, [toast]);
+  // Use localStorage-based tasks data
+  const tasks = useTasks();
 
   useEffect(() => {
-    fetchDashboardData();
-  }, [fetchDashboardData]);
+    setIsLoading(false);
+  }, []);
 
   const formatTaskDate = (dateStr: string) => {
     const date = new Date(dateStr);
@@ -65,7 +41,7 @@ export default function TasksPage() {
   };
 
   const { overdueTasks, upcomingTasks } = useMemo(() => {
-    if (!dashboardData || !dashboardData.tasks) {
+    if (!tasks || tasks.length === 0) {
       return { overdueTasks: [], upcomingTasks: [] };
     }
 
@@ -73,7 +49,7 @@ export default function TasksPage() {
     const overdue: any[] = [];
     const upcoming: any[] = [];
 
-    dashboardData.tasks.forEach((taskGroup: any) => {
+    tasks.forEach((taskGroup: any) => {
       const taskDate = startOfDay(new Date(taskGroup.date));
       const formattedGroup = {
         ...taskGroup,
@@ -88,14 +64,14 @@ export default function TasksPage() {
     });
 
     return { overdueTasks: overdue, upcomingTasks: upcoming };
-  }, [dashboardData]);
+  }, [tasks]);
 
   const handleToggleExpand = (taskId: string) => {
     setExpandedTaskId(prevId => (prevId === taskId ? null : taskId));
   };
 
   const renderTaskSection = (tasks: any[], title: string, emptyMessage: string, isOverdue: boolean = false) => (
-    <section className="mb-8">
+    <section className="mb-8" suppressHydrationWarning>
       <h3 className={`text-xl font-semibold mb-4 ${isOverdue ? 'text-red-600' : ''}`}>
         {title}
         {tasks.length > 0 && (
@@ -111,8 +87,8 @@ export default function TasksPage() {
       ) : (
         <div className="space-y-6">
           {tasks.map((group: any) => (
-            <div key={group.date}>
-              <h4 className={`font-semibold mb-2 ${isOverdue ? 'text-red-600' : 'text-gray-600'}`}>
+            <div key={group.date} suppressHydrationWarning>
+              <h4 className={`font-semibold mb-2 ${isOverdue ? 'text-red-600' : 'text-gray-600'}`} suppressHydrationWarning>
                 {group.formattedDate}
               </h4>
               <div className="space-y-3">
@@ -123,7 +99,10 @@ export default function TasksPage() {
                     date={group.date}
                     isExpanded={expandedTaskId === task.id}
                     onExpand={() => handleToggleExpand(task.id)}
-                    onTaskComplete={fetchDashboardData}
+                    onTaskComplete={() => {
+                      // Task updates handled by localStorage subscription
+                      // No need to manually refresh
+                    }}
                   />
                 ))}
               </div>

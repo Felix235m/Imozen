@@ -7,10 +7,11 @@ const LEAD_STATUS_URL = 'https://eurekagathr.app.n8n.cloud/webhook/domain/lead-s
 const FOLLOW_UP_URL = 'https://eurekagathr.app.n8n.cloud/webhook/follow-up_message';
 const LEAD_COMMUNICATION_URL = 'https://eurekagathr.app.n8n.cloud/webhook/domain/notes';
 const TASK_OPERATIONS_URL = 'https://eurekagathr.app.n8n.cloud/webhook/task-operation';
+const AGENT_DATABASE_URL = 'https://eurekagathr.app.n8n.cloud/webhook/agent_data';
 
 
-type Operation = 'login' | 'password_reset_request' | 'password_reset_complete' | 'onboard_agent' | 'update_agent' | 'validate_session';
-type LeadOperation = 'get_dashboard' | 'get_tasks' | 'get_all_leads' | 'get_lead_details' | 'edit_lead' | 'delete_lead' | 'upload_lead_image' | 'delete_lead_image' | 'add_new_note' | 'save_note' | 'get_notes';
+type Operation = 'login' | 'password_reset_request' | 'password_reset_complete' | 'onboard_agent' | 'update_agent' | 'validate_session' | 'agent_image_url';
+type LeadOperation = 'get_dashboard' | 'get_tasks' | 'get_all_leads' | 'get_lead_details' | 'edit_lead' | 'delete_lead' | 'upload_lead_image' | 'upload_lead_profile_image' | 'delete_lead_image' | 'add_new_note' | 'save_note' | 'get_notes';
 type LeadStatus = 'active' | 'inactive';
 type FollowUpOperation = 'regenerate_follow-up_message';
 type TaskOperation = 'reschedule_task' | 'cancel_task' | 'mark_task_done' | 'edit_follow_up_message';
@@ -60,6 +61,25 @@ export async function callApi(url: string, body: any) {
 
     if (!response.ok) {
         console.error('❌ callApi - Request failed:', response.status);
+
+        // Handle 401 Unauthorized (session expired)
+        if (response.status === 401) {
+            console.error('❌ callApi - Session expired (401)');
+
+            // Clear auth tokens and app data
+            if (typeof window !== 'undefined') {
+                const { localStorageManager } = require('@/lib/local-storage-manager');
+                localStorage.removeItem('auth_token');
+                localStorage.removeItem('agent_data');
+                sessionStorage.removeItem('sessionToken');
+                localStorageManager.clearAppData();
+
+                // Redirect to login
+                window.location.href = '/';
+            }
+
+            throw new Error('Session expired. Please log in again.');
+        }
 
         // Handle server errors (5xx)
         if (response.status >= 500) {
@@ -199,4 +219,98 @@ export async function callTaskApi(operation: TaskOperation, payload: any = {}) {
     console.log('🟣 callTaskApi - Body:', JSON.stringify(body, null, 2));
 
     return callApi(TASK_OPERATIONS_URL, body);
+}
+
+/**
+ * Fetch complete agent database (all app data in single call)
+ * This replaces individual calls to get_tasks, get_dashboard, get_all_leads, etc.
+ * @param token - Authentication token
+ * @returns Complete agent database response
+ */
+export async function fetchAgentDatabase(token: string) {
+    const body = {
+        operation: 'agent_database',
+    };
+
+    const headers: HeadersInit = {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${token}`,
+    };
+
+    console.log('🟠 fetchAgentDatabase - Fetching complete database');
+    console.log('🟠 fetchAgentDatabase - URL:', AGENT_DATABASE_URL);
+    console.log('🟠 fetchAgentDatabase - Headers:', headers);
+    console.log('🟠 fetchAgentDatabase - Request body:', body);
+
+    let response;
+    try {
+        response = await fetch(AGENT_DATABASE_URL, {
+            method: 'POST',
+            headers,
+            body: JSON.stringify(body),
+        });
+    } catch (error: any) {
+        console.error('❌ fetchAgentDatabase - Network error:', error);
+
+        if (error.name === 'TypeError' || error.message.includes('fetch')) {
+            throw new Error('Server is busy or could not be reached. Please check your connection and try again.');
+        }
+        if (error.name === 'AbortError') {
+            throw new Error('Request timed out. The server is taking too long to respond.');
+        }
+        throw new Error('Network error occurred. Please check your connection and try again.');
+    }
+
+    console.log('🟠 fetchAgentDatabase - Response status:', response.status, response.statusText);
+
+    const text = await response.text();
+    console.log('🟠 fetchAgentDatabase - Response text:', text);
+
+    if (!response.ok) {
+        console.error('❌ fetchAgentDatabase - Request failed:', response.status);
+
+        // Handle 401 Unauthorized (session expired)
+        if (response.status === 401) {
+            console.error('❌ fetchAgentDatabase - Session expired (401)');
+
+            // Clear auth tokens and app data
+            if (typeof window !== 'undefined') {
+                const { localStorageManager } = require('@/lib/local-storage-manager');
+                localStorage.removeItem('auth_token');
+                localStorage.removeItem('agent_data');
+                sessionStorage.removeItem('sessionToken');
+                localStorageManager.clearAppData();
+
+                // Redirect to login
+                window.location.href = '/';
+            }
+
+            throw new Error('Session expired. Please log in again.');
+        }
+
+        if (response.status >= 500) {
+            throw new Error('Server error occurred. Please try again later.');
+        }
+
+        try {
+            const errorData = JSON.parse(text);
+            throw new Error(errorData.error?.message || errorData.message || 'API request failed');
+        } catch (e: any) {
+            if (e.message.includes('{')) {
+                throw new Error(text || 'API request failed with non-JSON response');
+            }
+            throw new Error(e.message || text || 'API request failed with non-JSON response');
+        }
+    }
+
+    try {
+        const parsed = JSON.parse(text);
+        // Handle array response (webhook returns array with single object)
+        const response = Array.isArray(parsed) ? parsed[0] : parsed;
+        console.log('✅ fetchAgentDatabase - Database received:', response);
+        return response;
+    } catch (e) {
+        console.log('✅ fetchAgentDatabase - Success (non-JSON response):', text);
+        return text || { success: true };
+    }
 }

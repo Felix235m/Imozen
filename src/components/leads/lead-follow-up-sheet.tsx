@@ -33,7 +33,7 @@ export function LeadFollowUpSheet({ open, onOpenChange, lead }: LeadFollowUpShee
     useEffect(() => {
         if (lead) {
             setLanguage(lead.contact.language || 'English');
-            setAiMessage(lead.management.ai_message);
+            setAiMessage(lead.management.ai_generated_message || lead.management.ai_message || '');
         }
     }, [lead]);
     

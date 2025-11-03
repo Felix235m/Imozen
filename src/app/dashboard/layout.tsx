@@ -25,6 +25,7 @@ import { ImoZenLogo } from '@/components/logo';
 import { cn } from '@/lib/utils';
 import { useEffect, useState } from 'react';
 import { useLanguage } from '@/hooks/useLanguage';
+import { FailedOperationsBadge } from '@/components/notifications/failed-operations-badge';
 
 export default function DashboardLayout({
   children,
@@ -83,6 +84,7 @@ export default function DashboardLayout({
             {pageTitle && <h1 className="text-2xl font-bold">{pageTitle}</h1>}
         </div>
         <div className="flex items-center justify-end gap-4">
+          <FailedOperationsBadge />
           <Link href="/notifications">
             <Button variant="ghost" size="icon">
               <Bell className="h-6 w-6" />

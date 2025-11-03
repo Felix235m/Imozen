@@ -26,7 +26,7 @@ import { Badge } from "@/components/ui/badge";
 import { Textarea } from "@/components/ui/textarea";
 import { cn } from "@/lib/utils";
 import { useToast } from "@/hooks/use-toast";
-import { callFollowUpApi, callTaskApi } from "@/lib/auth-api";
+import { cachedCallFollowUpApi, cachedCallTaskApi } from "@/lib/cached-api";
 import { openWhatsApp, storeWhatsAppNotification, getWhatsAppNotifications, removeWhatsAppNotification } from "@/lib/whatsapp-utils";
 import { openEmail, generateEmailSubject } from "@/lib/email-utils";
 import { copyToClipboard } from "@/lib/task-utils";
@@ -59,7 +59,11 @@ interface TaskItem {
   };
   leadStatus: string;
   leadPriority: "Hot" | "Warm" | "Cold";
-  propertyRequirements: string;
+  propertyRequirements?: {
+    locations?: string[];
+    types?: string[];
+    budget?: string;
+  } | string;
 }
 
 interface TaskCardProps {
@@ -159,7 +163,7 @@ export function TaskCard({ task, date, isExpanded, onExpand, onTaskComplete }: T
   const handleSaveEdit = async () => {
     setIsSavingEdit(true);
     try {
-      await callTaskApi("edit_follow_up_message", {
+      await cachedCallTaskApi("edit_follow_up_message", {
         task_id: task.id,
         lead_id: task.leadId,
         edited_message: editedMessage,
@@ -234,7 +238,7 @@ export function TaskCard({ task, date, isExpanded, onExpand, onTaskComplete }: T
   const handleReschedule = async (newDate: Date, newTime: string, note: string) => {
     setIsRescheduling(true);
     try {
-      await callTaskApi("reschedule_task", {
+      await cachedCallTaskApi("reschedule_task", {
         task_id: task.id,
         lead_id: task.leadId,
         date: newDate.toISOString(),
@@ -275,7 +279,7 @@ export function TaskCard({ task, date, isExpanded, onExpand, onTaskComplete }: T
         payload.follow_up_date = nextFollowUpDate.toISOString();
       }
 
-      await callTaskApi("cancel_task", payload);
+      await cachedCallTaskApi("cancel_task", payload);
 
       toast({
         title: t.taskCard.taskCancelled,
@@ -309,7 +313,7 @@ export function TaskCard({ task, date, isExpanded, onExpand, onTaskComplete }: T
         payload.next_follow_up_date = nextFollowUpDate.toISOString();
       }
 
-      await callTaskApi("mark_done", payload);
+      await cachedCallTaskApi("mark_done", payload);
 
       toast({
         title: t.taskCard.taskCompleted,
@@ -332,7 +336,7 @@ export function TaskCard({ task, date, isExpanded, onExpand, onTaskComplete }: T
     const handleRegenerate = async () => {
         setIsRegenerating(true);
         try {
-            const response = await callFollowUpApi('regenerate_follow-up_message', { 
+            const response = await cachedCallFollowUpApi('regenerate_follow-up_message', { 
                 lead_id: task.leadId,
                 task_id: task.id,
             });
@@ -427,7 +431,16 @@ export function TaskCard({ task, date, isExpanded, onExpand, onTaskComplete }: T
                   {task.propertyRequirements && (
                     <p className="flex items-start gap-2">
                       <Home className="h-4 w-4 mt-0.5 flex-shrink-0" />
-                      <span>{task.propertyRequirements}</span>
+                      <span>
+                        {typeof task.propertyRequirements === 'object'
+                          ? [
+                              task.propertyRequirements.types?.join(', '),
+                              task.propertyRequirements.locations?.join(', '),
+                              task.propertyRequirements.budget
+                            ].filter(Boolean).join(' • ')
+                          : task.propertyRequirements
+                        }
+                      </span>
                     </p>
                   )}
                 </div>

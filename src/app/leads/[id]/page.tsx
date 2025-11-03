@@ -51,9 +51,12 @@ import ReactCrop, { type Crop, centerCrop, makeAspectCrop } from 'react-image-cr
 import 'react-image-crop/dist/ReactCrop.css'
 import { type LeadData } from '@/lib/leads-data';
 import { LeadFollowUpSheet } from '@/components/leads/lead-follow-up-sheet';
-import { callLeadApi, callLeadStatusApi } from '@/lib/auth-api';
+import { cachedCallLeadApi, cachedCallLeadStatusApi } from '@/lib/cached-api';
 import { transformWebhookResponseToLeadData } from '@/lib/lead-transformer';
 import { Label } from '@/components/ui/label';
+import { useLeadDetails, useNotes, useLeads } from '@/hooks/useAppData';
+import { CommunicationHistoryTimeline } from '@/components/leads/communication-history-timeline';
+import { uploadToCloudinary, canvasToBlob } from '@/lib/cloudinary-upload';
 
 type Note = {
     id?: string;
@@ -134,6 +137,11 @@ export default function LeadDetailPage() {
   const id = params.id as string;
   const [isEditing, setIsEditing] = useState(false);
 
+  // Use localStorage-based lead data
+  const { leadDetails: leadFromStorage, updateLeadDetails } = useLeadDetails(id);
+  const { notes: notesFromStorage, updateNotes: updateNotesInStorage } = useNotes(id);
+  const { deleteLead: deleteLeadFromStorage, addLead } = useLeads();
+
   const [lead, setLead] = useState<LeadData | null>(null);
   const [originalLead, setOriginalLead] = useState<LeadData | null>(null);
   const [isSaving, setIsSaving] = useState(false);
@@ -167,7 +175,12 @@ export default function LeadDetailPage() {
   const [isFetchingNotes, setIsFetchingNotes] = useState(false);
   const [stageChangeNote, setStageChangeNote] = useState('');
   
-  const communicationHistory = useMemo(() => lead?.communication_history || [], [lead]);
+  const communicationHistory = useMemo(() => {
+    return (lead?.communication_history || []).map(event => ({
+      ...event,
+      type: event.event_type || event.type,  // Normalize to 'type' field
+    }));
+  }, [lead]);
   
   const leadToDeleteName = useMemo(() => {
     if (!lead) return '';
@@ -201,16 +214,16 @@ export default function LeadDetailPage() {
 
   const fetchLeadDetails = useCallback(async () => {
     try {
-      const response = await callLeadApi('get_lead_details', { lead_id: id });
-      const currentLeadData = Array.isArray(response) && response.length > 0 ? response[0] : null;
+      // Get data from localStorage instead of API
+      const currentLeadData = leadFromStorage;
 
       if (!currentLeadData) {
         throw new Error('Lead not found');
       }
 
       // Ensure lead_stage field exists
-      if (!currentLeadData.lead_stage && currentLeadData.Stage) {
-        currentLeadData.lead_stage = currentLeadData.Stage;
+      if (!currentLeadData.lead_stage && (currentLeadData as any).Stage) {
+        (currentLeadData as any).lead_stage = (currentLeadData as any).Stage;
       }
 
       // Normalize locations to match dropdown values
@@ -218,7 +231,7 @@ export default function LeadDetailPage() {
         currentLeadData.property.locations = normalizeLocations(currentLeadData.property.locations);
       }
 
-      setLead(currentLeadData);
+      setLead(currentLeadData as LeadData);
       setOriginalLead(JSON.parse(JSON.stringify(currentLeadData)));
       setAvatarPreview(currentLeadData.image_url);
 
@@ -226,20 +239,19 @@ export default function LeadDetailPage() {
       setPhoneCountryCode(code);
       setPhoneNumber(number);
 
-      const history = (currentLeadData.notes || [])
-        .filter((item: any) => item.type === 'note' && item.description !== currentLeadData.management.agent_notes)
-        .map((item: any) => ({
-            id: item.id,
-            content: item.description,
-            date: item.date,
-        }));
+      // Use notes from localStorage
+      const history = notesFromStorage.map((note: any) => ({
+        id: note.id || note.note_id,
+        content: note.content || note.current_note,
+        date: note.created_at || note.date || note.timestamp,
+      }));
       setNotes(history);
 
     } catch (error) {
        toast({ variant: 'destructive', title: 'Error', description: 'Could not load lead details.' });
        router.push('/leads');
     }
-  }, [id, toast, router, parsePhoneNumber, normalizeLocations]);
+  }, [leadFromStorage, notesFromStorage, toast, router, parsePhoneNumber, normalizeLocations]);
   
   const prepareSaveChanges = useCallback(() => {
     if (!lead || !originalLead) return;
@@ -318,7 +330,7 @@ export default function LeadDetailPage() {
       )
   }
 
-  function getCroppedImg(image: HTMLImageElement, crop: Crop): Promise<string> {
+  function getCroppedImg(image: HTMLImageElement, crop: Crop): Promise<HTMLCanvasElement> {
     const canvas = document.createElement('canvas');
     const scaleX = image.naturalWidth / image.width;
     const scaleY = image.naturalHeight / image.height;
@@ -341,9 +353,7 @@ export default function LeadDetailPage() {
         crop.width,
         crop.height
     );
-    return new Promise((resolve) => {
-        resolve(canvas.toDataURL('image/jpeg'));
-    });
+    return Promise.resolve(canvas);
   }
 
   const handleAvatarChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -361,17 +371,45 @@ export default function LeadDetailPage() {
     if (!completedCrop || !imgRef.current) {
         return;
     }
-    const croppedImageUrl = await getCroppedImg(imgRef.current, completedCrop);
-    setAvatarPreview(croppedImageUrl);
-    setIsCropModalOpen(false);
-    setImgSrc('');
 
     try {
-        await callLeadApi('upload_lead_image', { lead_id: id, image: croppedImageUrl });
-        toast({ title: "Avatar updated successfully" });
-    } catch (error) {
-        toast({ variant: "destructive", title: "Error", description: "Could not upload avatar." });
-        setAvatarPreview(originalLead?.image_url || null);
+      // Step 1: Get cropped canvas
+      const canvas = await getCroppedImg(imgRef.current, completedCrop);
+
+      // Step 2: Convert canvas to Blob
+      const blob = await canvasToBlob(canvas, 'image/jpeg', 0.9);
+
+      // Step 3: Upload to Cloudinary
+      toast({ title: "Uploading image...", description: "Please wait" });
+      const uploadResult = await uploadToCloudinary(blob, 'leads');
+
+      if (!uploadResult.success || !uploadResult.url) {
+        throw new Error(uploadResult.error || 'Upload failed');
+      }
+
+      // Step 4: Update preview immediately (optimistic)
+      setAvatarPreview(uploadResult.url);
+      setIsCropModalOpen(false);
+      setImgSrc('');
+
+      // Step 5: Send Cloudinary URL to webhook
+      await cachedCallLeadApi('upload_lead_profile_image', {
+        lead_id: id,
+        image_url: uploadResult.url
+      });
+
+      toast({ title: "Avatar updated successfully" });
+    } catch (error: any) {
+      console.error('Avatar upload error:', error);
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: error.message || "Could not upload avatar."
+      });
+      // Restore original avatar on error
+      setAvatarPreview(originalLead?.image_url || null);
+      setIsCropModalOpen(false);
+      setImgSrc('');
     }
   };
 
@@ -395,17 +433,80 @@ export default function LeadDetailPage() {
   }
 
   const handleDeleteLead = async () => {
+    // STEP 1: Get complete lead data from localStorage for backup
+    const { localStorageManager } = require('@/lib/local-storage-manager');
+    const appData = localStorageManager.getAppData();
+    const leadToBackup = appData.leads.find((l: any) => l.lead_id === id);
+    const leadDetails = appData.leadDetails[id];
+    const leadNotes = appData.notes[id];
+    const leadCommunication = appData.communicationHistory[id];
+    const leadTasks = appData.tasks.filter((task: any) => task.leadId === id);
+
+    // Store backup in sessionStorage
+    const backupData = {
+      lead: leadToBackup,
+      leadDetails: leadDetails,
+      notes: leadNotes,
+      communicationHistory: leadCommunication,
+      tasks: leadTasks,
+    };
+    sessionStorage.setItem(`lead_delete_backup_${id}`, JSON.stringify(backupData));
+
+    // STEP 2: OPTIMISTIC - Immediately remove from UI and navigate
+    deleteLeadFromStorage(id);
+    setIsDeleteDialogOpen(false);
+    toast({
+      title: "Lead Deleted",
+      description: "Processing...",
+    });
+    router.push('/leads');
+
+    // STEP 3: Send API request in background
     try {
-        await callLeadApi('delete_lead', { lead_id: id });
-        toast({
-          title: "Lead Deleted",
-          description: `${lead?.name} has been deleted.`,
-        });
-        router.push('/leads');
-    } catch (error) {
-        toast({ variant: 'destructive', title: 'Error', description: 'Could not delete lead.' });
-    } finally {
-        setIsDeleteDialogOpen(false);
+      await cachedCallLeadApi('delete_lead', { lead_id: id });
+
+      // SUCCESS: Clear backup from sessionStorage
+      sessionStorage.removeItem(`lead_delete_backup_${id}`);
+
+      toast({
+        title: "Lead Deleted",
+        description: `Lead permanently deleted.`,
+      });
+    } catch (error: any) {
+      // ERROR: ROLLBACK - Restore from backup
+      const backupJson = sessionStorage.getItem(`lead_delete_backup_${id}`);
+      if (backupJson) {
+        const backup = JSON.parse(backupJson);
+
+        // Restore all data
+        if (backup.lead) {
+          addLead(backup.lead);
+        }
+        if (backup.leadDetails) {
+          const currentData = localStorageManager.getAppData();
+          localStorageManager.setAppData({
+            ...currentData,
+            leadDetails: { ...currentData.leadDetails, [id]: backup.leadDetails },
+            notes: backup.notes ? { ...currentData.notes, [id]: backup.notes } : currentData.notes,
+            communicationHistory: backup.communicationHistory
+              ? { ...currentData.communicationHistory, [id]: backup.communicationHistory }
+              : currentData.communicationHistory,
+            tasks: backup.tasks ? [...currentData.tasks, ...backup.tasks] : currentData.tasks,
+          });
+        }
+
+        // Clear backup
+        sessionStorage.removeItem(`lead_delete_backup_${id}`);
+      }
+
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: error.message || "Could not delete lead."
+      });
+
+      // Navigate back to leads list even on error (since UI was already updated)
+      router.push('/leads');
     }
   }
 
@@ -456,7 +557,7 @@ export default function LeadDetailPage() {
         },
     };
 
-    callLeadStatusApi(leadId, "change_priority", fullPayload).then((response) => {
+    cachedCallLeadStatusApi(leadId, "change_priority", fullPayload).then((response) => {
         // Transform webhook response to frontend LeadData format
         const transformedLead = transformWebhookResponseToLeadData(response);
 
@@ -555,7 +656,10 @@ export default function LeadDetailPage() {
         },
       };
 
-      await callLeadApi('edit_lead', updatedLeadData);
+      await cachedCallLeadApi('edit_lead', updatedLeadData);
+
+      // Update localStorage
+      updateLeadDetails(updatedLeadData as any);
 
       setOriginalLead(JSON.parse(JSON.stringify(updatedLeadData)));
 
@@ -571,18 +675,17 @@ export default function LeadDetailPage() {
   const handleOpenNotes = async () => {
     setIsFetchingNotes(true);
     try {
-      const response = await callLeadApi('get_notes', { lead_id: id });
-      const notesData = Array.isArray(response) && response.length > 0 ? response[0] : null;
-
-      if (notesData && notesData.success) {
-        if (notesData.current_note) {
-            setCurrentNote(notesData.current_note);
-        }
-        setNotes(notesData.notes || []);
-        setIsNotesOpen(true);
-      } else {
-        throw new Error('Could not fetch notes.');
+      // Notes are already loaded from localStorage
+      // Just set current note from lead data if exists
+      if (lead && lead.management?.agent_notes) {
+        setCurrentNote({
+          note_id: 'current',
+          note: lead.management.agent_notes,
+          created_at_formatted: '',
+          created_by: ''
+        });
       }
+      setIsNotesOpen(true);
     } catch (error) {
       toast({ variant: 'destructive', title: 'Error', description: 'Could not load notes.' });
     } finally {
@@ -1441,22 +1544,11 @@ function LeadNotesSheet({ open, onOpenChange, lead, currentNote, setCurrentNote,
     );
 }
 
-type HistoryItem = {
-    id: string;
-    type: string;
-    title: string;
-    date: string;
-    description: string;
-    icon: React.ElementType;
-    iconColor: string;
-    bgColor: string;
-};
-
 type LeadHistorySheetProps = {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   lead: LeadData;
-  history: HistoryItem[];
+  history: any[];
 };
 
 function LeadHistorySheet({ open, onOpenChange, lead, history }: LeadHistorySheetProps) {
@@ -1464,42 +1556,20 @@ function LeadHistorySheet({ open, onOpenChange, lead, history }: LeadHistoryShee
     return (
         <Sheet open={open} onOpenChange={onOpenChange}>
             <SheetContent side="bottom" className="h-[90vh] flex flex-col p-0">
-                <SheetHeader className="flex flex-row items-center justify-between border-b px-4 py-3 shrink-0">
-                     <div className='flex items-center'>
-                         <Button variant="ghost" size="icon" onClick={() => onOpenChange(false)} className="mr-2">
-                           <X className="h-6 w-6" />
+                <SheetHeader className="flex flex-row items-center justify-between border-b px-6 py-4 shrink-0">
+                     <div className='flex items-center gap-3'>
+                         <Button variant="ghost" size="icon" onClick={() => onOpenChange(false)}>
+                           <X className="h-5 w-5" />
                          </Button>
-                        <SheetTitle>{t.leads.communicationHistory}</SheetTitle>
+                        <SheetTitle className="text-xl font-semibold">{t.leads.communicationHistory}</SheetTitle>
                      </div>
                      <SheetDescription className="sr-only">
                        View the communication history for {lead.name}.
                     </SheetDescription>
                 </SheetHeader>
 
-                <div className="flex-1 overflow-y-auto p-4 space-y-6">
-                     <Card>
-                        <CardContent className="p-6">
-                            <div className="relative">
-                                {history.map((item, index) => (
-                                    <div key={item.id} className="flex gap-4">
-                                        <div className="flex flex-col items-center">
-                                            <div className={cn("rounded-full h-10 w-10 flex items-center justify-center", item.bgColor)}>
-                                                <item.icon className={cn("h-5 w-5", item.iconColor)} />
-                                            </div>
-                                            {index < history.length - 1 && (
-                                                <div className="w-px flex-1 bg-gray-200 my-2"></div>
-                                            )}
-                                        </div>
-                                        <div className="pb-8">
-                                            <p className="font-semibold">{item.title}</p>
-                                            <p className="text-sm text-gray-500 mb-1">{format(new Date(item.date), "MMM d, yyyy - h:mm a")}</p>
-                                            <p className="text-sm text-gray-600">{item.description}</p>
-                                        </div>
-                                    </div>
-                                ))}
-                            </div>
-                        </CardContent>
-                    </Card>
+                <div className="flex-1 overflow-y-auto px-6 py-6">
+                    <CommunicationHistoryTimeline events={history} />
                 </div>
             </SheetContent>
         </Sheet>

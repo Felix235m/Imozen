@@ -13,6 +13,7 @@ import { useToast } from '@/hooks/use-toast';
 import { useLanguage } from '@/hooks/useLanguage';
 import { callAuthApi } from '@/lib/auth-api';
 import { LANGUAGE_MAP } from '@/types/agent';
+import { uploadToCloudinary } from '@/lib/cloudinary-upload';
 
 type ProfileData = {
   name: string;
@@ -87,14 +88,31 @@ export default function ProfilePage() {
     setProfile(prev => prev ? { ...prev, language: value } : null);
   };
 
-  const handleAvatarChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleAvatarChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        setAvatarPreview(reader.result as string);
-      };
-      reader.readAsDataURL(file);
+      try {
+        // Show uploading toast
+        toast({ title: "Uploading image...", description: "Please wait" });
+
+        // Upload to Cloudinary
+        const uploadResult = await uploadToCloudinary(file, 'agents');
+
+        if (!uploadResult.success || !uploadResult.url) {
+          throw new Error(uploadResult.error || 'Upload failed');
+        }
+
+        // Set preview to Cloudinary URL
+        setAvatarPreview(uploadResult.url);
+        toast({ title: "Image uploaded!", description: "Remember to save changes" });
+      } catch (error: any) {
+        console.error('Avatar upload error:', error);
+        toast({
+          variant: "destructive",
+          title: "Upload failed",
+          description: error.message || "Could not upload image."
+        });
+      }
     }
   };
 
@@ -122,10 +140,18 @@ export default function ProfilePage() {
         agent_email: profile.email,
         agent_phone: combinedPhone,
         agent_language: profile.language,
-        agent_image_url: avatarPreview || profile.avatar || '',
+        agent_image_url: avatarPreview || profile.avatar || '', // Now contains Cloudinary URL
         login_username: agentData.login_username,
         sheet_url: agentData.sheet_url || '',
       };
+
+      // Call agent_image_url webhook if image was updated
+      if (avatarPreview && avatarPreview !== profile.avatar) {
+        await callAuthApi('agent_image_url', {
+          agent_id: agentData.agent_id,
+          agent_image_url: avatarPreview,
+        });
+      }
 
       // Call update_agent webhook
       const response = await callAuthApi('update_agent', updatePayload);

@@ -1,7 +1,7 @@
 
 "use client";
 
-import { useState, useEffect, useMemo, useCallback } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import {
   ClipboardList,
   Flame,
@@ -15,16 +15,25 @@ import { Card, CardContent } from '@/components/ui/card';
 import { useRouter } from 'next/navigation';
 import { useToast } from '@/hooks/use-toast';
 import { useLanguage } from '@/hooks/useLanguage';
-import { callAuthApi, callLeadApi } from '@/lib/auth-api';
+import { callAuthApi } from '@/lib/auth-api';
+import { useDashboard } from '@/hooks/useAppData';
+import { checkForDraft, clearDraft, type DraftInfo } from '@/lib/draft-detector';
+import { DraftResumeDialog } from '@/components/leads/draft-resume-dialog';
 
 export default function AgentDashboardPage() {
   const [isCheckingSession, setIsCheckingSession] = useState(false);
   const [agentName, setAgentName] = useState('');
-  const [dashboardData, setDashboardData] = useState<any>(null);
   const [isLoading, setIsLoading] = useState(true);
   const router = useRouter();
   const { toast } = useToast();
   const { t } = useLanguage();
+
+  // Draft detection state
+  const [isDraftDialogOpen, setIsDraftDialogOpen] = useState(false);
+  const [draftInfo, setDraftInfo] = useState<DraftInfo>({ exists: false });
+
+  // Use localStorage-based dashboard data
+  const dashboardData = useDashboard();
 
   const initialStats = [
     { title: t.dashboard.stats.leadsForFollowUp, value: '0', icon: Users },
@@ -32,32 +41,6 @@ export default function AgentDashboardPage() {
     { title: t.dashboard.stats.hotLeads, value: '0', icon: Flame, color: "text-red-500" },
     { title: t.dashboard.stats.conversionRate, value: '0%', icon: TrendingUp, color: "text-green-500" },
   ];
-
-  const fetchDashboardData = useCallback(async () => {
-    setIsLoading(true);
-    try {
-        const response = await callLeadApi('get_dashboard');
-        const data = Array.isArray(response) ? response[0] : response;
-
-        if (data && data.success) {
-            setDashboardData(data);
-        } else {
-             toast({
-                variant: "destructive",
-                title: "Error",
-                description: "Could not load dashboard data.",
-            });
-        }
-    } catch (error) {
-        toast({
-            variant: "destructive",
-            title: "Error",
-            description: "Could not load dashboard data.",
-        });
-    } finally {
-        setIsLoading(false);
-    }
-  }, [toast]);
 
   useEffect(() => {
     const agentDataString = localStorage.getItem('agent_data');
@@ -71,45 +54,67 @@ export default function AgentDashboardPage() {
       }
     }
 
-    fetchDashboardData();
-  }, [fetchDashboardData]);
+    // Data is loaded from localStorage via useDashboard hook
+    setIsLoading(false);
+  }, []);
 
 
-  const handleAddNewLead = async () => {
-    setIsCheckingSession(true);
+  const handleAddNewLead = () => {
+    // Check for existing draft
+    const draft = checkForDraft();
+
+    if (draft.exists) {
+      // Show draft resume dialog
+      setDraftInfo(draft);
+      setIsDraftDialogOpen(true);
+    } else {
+      // No draft found, proceed with new lead creation
+      startNewLead();
+    }
+  };
+
+  const startNewLead = () => {
+    // Generate lead_id immediately using crypto.randomUUID()
+    const leadId = crypto.randomUUID();
+
+    // Initialize sessionStorage with empty form data and lead_id
+    sessionStorage.setItem('lead_id', leadId);
+    sessionStorage.setItem('leadFormData', JSON.stringify({ _lastModified: Date.now() }));
+
+    // Navigate instantly to the new lead form
+    router.push('/leads/new');
+
+    // Optionally validate session in background (non-blocking)
+    validateSessionInBackground();
+  };
+
+  const handleContinueDraft = () => {
+    // Close dialog and navigate to form (will auto-load from sessionStorage)
+    setIsDraftDialogOpen(false);
+    router.push('/leads/new');
+  };
+
+  const handleStartFresh = () => {
+    // Clear existing draft and start new
+    clearDraft();
+    setIsDraftDialogOpen(false);
+    startNewLead();
+  };
+
+  const validateSessionInBackground = async () => {
     try {
       const agentDataString = localStorage.getItem('agent_data');
-      if (!agentDataString) {
-        throw new Error('Agent data not found.');
-      }
+      if (!agentDataString) return;
+
       const agentData = JSON.parse(agentDataString);
 
-      const response = await callAuthApi('validate_session', {
+      await callAuthApi('validate_session', {
         agent: agentData,
         agent_id: agentData.agent_id,
       });
-
-      const sessionData = Array.isArray(response) ? response[0] : response;
-
-      if (sessionData && sessionData.session_id && sessionData.lead_id) {
-        sessionStorage.setItem('lead_creation_session_id', sessionData.session_id);
-        sessionStorage.setItem('lead_id', sessionData.lead_id);
-        router.push('/leads/new/step-1');
-      } else {
-        throw new Error('Invalid session. Please log in again.');
-      }
-
-    } catch (error: any) {
-      toast({
-        variant: "destructive",
-        title: "Session Expired",
-        description: "Your session has expired. Please log in again.",
-      });
-      localStorage.removeItem('auth_token');
-      localStorage.removeItem('agent_data');
-      router.push('/');
-    } finally {
-      setIsCheckingSession(false);
+    } catch (error) {
+      // Silent fail - session validation is not critical for form opening
+      console.error('Background session validation failed:', error);
     }
   };
 
@@ -156,6 +161,15 @@ export default function AgentDashboardPage() {
             {t.dashboard.addNewLead}
           </Button>
       </section>
+
+      {/* Draft Resume Dialog */}
+      <DraftResumeDialog
+        open={isDraftDialogOpen}
+        onOpenChange={setIsDraftDialogOpen}
+        draftInfo={draftInfo}
+        onContinue={handleContinueDraft}
+        onStartFresh={handleStartFresh}
+      />
     </div>
   );
 }
