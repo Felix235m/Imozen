@@ -63,37 +63,37 @@ export function CommunicationHistoryTimeline({
         }
 
         return (
-          <div key={event.id} className="flex gap-4 pb-8 last:pb-0">
+          <div key={event.id} className="flex gap-3 pb-4 last:pb-0">
             {/* Icon and timeline line */}
             <div className="flex flex-col items-center">
               <div
                 className={cn(
-                  "rounded-full h-10 w-10 flex items-center justify-center shrink-0",
+                  "rounded-full h-9 w-9 flex items-center justify-center shrink-0",
                   config.bgColor
                 )}
               >
-                <Icon className={cn("h-5 w-5", config.iconColor)} />
+                <Icon className={cn("h-4 w-4", config.iconColor)} />
               </div>
               {!isLast && (
-                <div className="w-0.5 flex-1 bg-border mt-2 min-h-[40px]" />
+                <div className="w-0.5 flex-1 bg-border mt-1.5 min-h-[30px]" />
               )}
             </div>
 
             {/* Content */}
-            <div className="flex-1 pt-1">
-              <h3 className="font-semibold text-base text-foreground">
+            <div className="flex-1 pt-0.5">
+              <h3 className="font-semibold text-sm text-foreground">
                 {event.title || config.title}
               </h3>
-              <p className="text-sm text-muted-foreground mt-0.5">
+              <p className="text-xs text-muted-foreground mt-0.5">
                 {formattedDate}
               </p>
               {event.description && event.event_type !== 'lead_created' && (
-                <p className="text-sm text-foreground/80 mt-2 leading-relaxed">
+                <p className="text-sm text-foreground/80 mt-1.5 leading-relaxed">
                   {event.description}
                 </p>
               )}
               {event.performed_by && event.event_type !== 'lead_created' && (
-                <p className="text-xs text-muted-foreground mt-1">
+                <p className="text-xs text-muted-foreground mt-0.5">
                   by {typeof event.performed_by === 'string'
                     ? event.performed_by
                     : event.performed_by.agent_name || 'Agent'}

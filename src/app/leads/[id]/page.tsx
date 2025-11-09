@@ -29,6 +29,8 @@ import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription } from '
 import { Textarea } from '@/components/ui/textarea';
 import { format } from 'date-fns';
 import { LeadStatusDialog } from '@/components/leads/lead-status-dialog';
+import { LeadTypeBadge } from '@/components/leads/lead-badges';
+import { FullLeadHeader, CompactLeadHeader } from '@/components/leads/lead-headers';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -53,11 +55,13 @@ import { type LeadData } from '@/lib/leads-data';
 import { LeadFollowUpSheet } from '@/components/leads/lead-follow-up-sheet';
 import { ScheduleFollowUpDialog } from '@/components/leads/schedule-follow-up-dialog';
 import { cachedCallLeadApi, cachedCallLeadStatusApi } from '@/lib/cached-api';
-import { transformWebhookResponseToLeadData } from '@/lib/lead-transformer';
+import { transformWebhookResponseToLeadData, transformNewBackendResponse } from '@/lib/lead-transformer';
+import { normalizeLeadDetail, extractLeadType } from '@/lib/lead-normalization';
 import { Label } from '@/components/ui/label';
 import { useLeadDetails, useNotes, useLeads } from '@/hooks/useAppData';
 import { CommunicationHistoryTimeline } from '@/components/leads/communication-history-timeline';
 import { uploadToCloudinary, canvasToBlob } from '@/lib/cloudinary-upload';
+import { navigationOptimizer } from '@/lib/navigation-optimizer';
 
 type Note = {
     id?: string;
@@ -214,46 +218,116 @@ export default function LeadDetailPage() {
     });
   }, []);
 
+  // Format ISO date to Portugal timezone
+  const formatDateWithTimezone = useCallback((isoDate: string, timezone: string = 'Europe/Lisbon'): string => {
+    if (!isoDate || isNaN(new Date(isoDate).getTime())) return '';
+
+    try {
+      const date = new Date(isoDate);
+      // Use the current language locale for date formatting
+      const locale = t.common.languages.portuguese === 'Português' ? 'pt-PT' : 'en-US';
+      return date.toLocaleString(locale, {
+        month: 'long',
+        day: 'numeric',
+        year: 'numeric',
+        hour: 'numeric',
+        minute: '2-digit',
+        hour12: true,
+        timeZone: timezone
+      });
+    } catch {
+      return '';
+    }
+  }, [t]);
+
   const fetchLeadDetails = useCallback(async () => {
     try {
-      // Get data from localStorage instead of API
-      const currentLeadData = leadFromStorage;
+      // PERFORMANCE FIX: If data exists in localStorage, use it directly without transformation
+      if (leadFromStorage) {
+        console.log(`✅ Loading lead ${id} from localStorage (instant)`);
 
-      if (!currentLeadData) {
-        throw new Error('Lead not found');
+        // Apply transformation to ensure all fields are properly formatted
+        let currentLeadData = transformNewBackendResponse(leadFromStorage);
+
+        // Normalize locations
+        if (currentLeadData.property?.locations) {
+          currentLeadData = {
+            ...currentLeadData,
+            property: {
+              ...currentLeadData.property,
+              locations: normalizeLocations(currentLeadData.property.locations)
+            }
+          };
+        }
+
+        setLead(currentLeadData as LeadData);
+        setOriginalLead(JSON.parse(JSON.stringify(currentLeadData)));
+        setAvatarPreview(currentLeadData.image_url);
+
+        // Parse phone number for edit mode
+        const { code, number } = parsePhoneNumber(currentLeadData.contact.phone);
+        setPhoneCountryCode(code);
+        setPhoneNumber(number);
+
+        // PERFORMANCE FIX: Fetch data in background without blocking UI
+        // This ensures data stays fresh while providing instant navigation
+        cachedCallLeadApi('get_lead_details', { lead_id: id }, { forceRefetch: false })
+          .then(response => {
+            const apiLead = Array.isArray(response) ? response[0] : response;
+            if (apiLead) {
+              const transformed = transformNewBackendResponse(apiLead);
+              if (transformed.property?.locations) {
+                transformed.property.locations = normalizeLocations(transformed.property.locations);
+              }
+              // Update localStorage with fresh data
+              updateLeadDetails(transformed as any);
+              console.log(`🔄 Background updated lead ${id} with fresh data`);
+            }
+          })
+          .catch(error => {
+            console.warn('Background refresh failed:', error);
+            // Don't show error to user as they already have data
+          });
+
+        return; // Exit early - data is ready
       }
 
-      // Ensure lead_stage field exists
-      if (!currentLeadData.lead_stage && (currentLeadData as any).Stage) {
-        (currentLeadData as any).lead_stage = (currentLeadData as any).Stage;
+      // Only fetch from API if data doesn't exist in localStorage
+      console.log(`Lead ${id} not in leadDetails, fetching from API...`);
+      const response = await cachedCallLeadApi('get_lead_details', { lead_id: id }, { forceRefetch: true });
+      const apiLead = Array.isArray(response) ? response[0] : response;
+
+      if (!apiLead) {
+        throw new Error('Lead not found in API');
       }
 
-      // Normalize locations to match dropdown values
-      if (currentLeadData.property?.locations) {
-        currentLeadData.property.locations = normalizeLocations(currentLeadData.property.locations);
+      console.log('📥 API Response:', apiLead);
+
+      // Transform and store in localStorage for future access
+      const transformed = transformNewBackendResponse(apiLead);
+      console.log('🔄 Transformed lead_type:', transformed.lead_type);
+
+      // Normalize locations
+      if (transformed.property?.locations) {
+        transformed.property.locations = normalizeLocations(transformed.property.locations);
       }
 
-      setLead(currentLeadData as LeadData);
-      setOriginalLead(JSON.parse(JSON.stringify(currentLeadData)));
-      setAvatarPreview(currentLeadData.image_url);
+      updateLeadDetails(transformed as any);
+      setLead(transformed as LeadData);
+      setOriginalLead(JSON.parse(JSON.stringify(transformed)));
+      setAvatarPreview(transformed.image_url);
+      console.log(`✅ Fetched and stored lead ${id} in leadDetails`);
 
-      const { code, number } = parsePhoneNumber(currentLeadData.contact.phone);
+      const { code, number } = parsePhoneNumber(transformed.contact.phone);
       setPhoneCountryCode(code);
       setPhoneNumber(number);
 
-      // Use notes from localStorage
-      const history = notesFromStorage.map((note: any) => ({
-        id: note.id || note.note_id,
-        content: note.content || note.current_note,
-        date: note.created_at || note.date || note.timestamp,
-      }));
-      setNotes(history);
-
     } catch (error) {
+       console.error('Error loading lead:', error);
        toast({ variant: 'destructive', title: 'Error', description: 'Could not load lead details.' });
        router.push('/leads');
     }
-  }, [leadFromStorage, notesFromStorage, toast, router, parsePhoneNumber, normalizeLocations]);
+  }, [id, leadFromStorage, updateLeadDetails, toast, router, parsePhoneNumber, normalizeLocations]);
   
   const prepareSaveChanges = useCallback(() => {
     if (!lead || !originalLead) return;
@@ -303,6 +377,21 @@ export default function LeadDetailPage() {
 
   useEffect(() => {
     fetchLeadDetails();
+    
+    // PERFORMANCE FIX: Preload related leads for instant navigation
+    const { localStorageManager } = require('@/lib/local-storage-manager');
+    const allLeads = localStorageManager.getLeads();
+    
+    // Get 3 random leads (excluding current) for potential navigation
+    const otherLeads = allLeads
+      .filter(lead => lead.lead_id !== id)
+      .sort(() => Math.random() - 0.5)
+      .slice(0, 3)
+      .map(lead => lead.lead_id);
+      
+    if (otherLeads.length > 0) {
+      navigationOptimizer.preloadMultipleLeads(otherLeads);
+    }
   }, [fetchLeadDetails]);
 
   useEffect(() => {
@@ -322,6 +411,32 @@ export default function LeadDetailPage() {
         }
     }
   }, [isEditing, lead?.property.type]);
+
+  // History state management for mobile swipe gesture fix
+  useEffect(() => {
+    const isAnySheetOpen = isNotesOpen || isFollowUpOpen || isHistoryOpen;
+
+    if (isAnySheetOpen) {
+      // Push a dummy history state when a sheet opens
+      window.history.pushState({ sheetOpen: true }, '');
+
+      const handlePopState = (event: PopStateEvent) => {
+        // Close whichever sheet is open instead of navigating back
+        if (isNotesOpen) setIsNotesOpen(false);
+        if (isFollowUpOpen) setIsFollowUpOpen(false);
+        if (isHistoryOpen) setIsHistoryOpen(false);
+
+        // Prevent the default back navigation
+        event.preventDefault();
+      };
+
+      window.addEventListener('popstate', handlePopState);
+
+      return () => {
+        window.removeEventListener('popstate', handlePopState);
+      };
+    }
+  }, [isNotesOpen, isFollowUpOpen, isHistoryOpen]);
 
 
   if (!lead || !originalLead) {
@@ -395,7 +510,7 @@ export default function LeadDetailPage() {
       setImgSrc('');
 
       // Step 5: Send Cloudinary URL to webhook
-      await cachedCallLeadApi('upload_lead_profile_image', {
+      await callLeadApi('upload_lead_profile_image', {
         lead_id: id,
         image_url: uploadResult.url
       });
@@ -677,18 +792,52 @@ export default function LeadDetailPage() {
   const handleOpenNotes = async () => {
     setIsFetchingNotes(true);
     try {
-      // Notes are already loaded from localStorage
-      // Just set current note from lead data if exists
-      if (lead && lead.management?.agent_notes) {
-        setCurrentNote({
-          note_id: 'current',
-          note: lead.management.agent_notes,
-          created_at_formatted: '',
-          created_by: ''
-        });
+      // Read notes from useNotes hook which gets data from localStorage
+      const notesArray: any[] = notesFromStorage || [];
+
+      // Get agent name from localStorage
+      const agentDataString = localStorage.getItem('agent_data');
+      const agentName = agentDataString ? JSON.parse(agentDataString).agent_name : 'Agent';
+
+      if (notesArray.length === 0) {
+        // No notes exist - show empty state
+        setCurrentNote(null);
+        setNotes([]);
+        setIsNotesOpen(true);
+        setIsFetchingNotes(false);
+        return;
       }
+
+      // Sort by created_at descending (most recent first)
+      const sortedNotes = [...notesArray].sort((a: any, b: any) =>
+        new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
+      );
+
+      // Most recent note is the current note
+      const currentNoteData = sortedNotes[0];
+
+      setCurrentNote({
+        note_id: currentNoteData.note_id,
+        note: currentNoteData.content || currentNoteData.current_note,
+        created_at_formatted: formatDateWithTimezone(currentNoteData.created_at),
+        created_by: currentNoteData.created_by || agentName
+      } as CurrentNote);
+
+      // Rest of notes become history
+      const historyNotes = sortedNotes.slice(1).map((note: any) => ({
+        id: note.note_id,
+        note_id: note.note_id,
+        content: note.content || note.current_note,
+        created_at: note.created_at,
+        created_at_formatted: formatDateWithTimezone(note.created_at),
+        created_by: note.created_by || agentName,
+        date: note.created_at
+      }));
+
+      setNotes(historyNotes);
       setIsNotesOpen(true);
     } catch (error) {
+      console.error('Error loading notes:', error);
       toast({ variant: 'destructive', title: 'Error', description: 'Could not load notes.' });
     } finally {
       setIsFetchingNotes(false);
@@ -784,14 +933,16 @@ export default function LeadDetailPage() {
               <AvatarImage src={avatarPreview || undefined} alt={lead.name} />
               <AvatarFallback>{lead.name.split(' ').map(n => n[0]).join('')}</AvatarFallback>
             </Avatar>
-            <Button
-              variant="outline"
-              size="icon"
-              className="absolute bottom-0 right-0 h-8 w-8 rounded-full bg-white shadow-md"
-              onClick={() => fileInputRef.current?.click()}
-            >
-              <Upload className="h-4 w-4" />
-            </Button>
+            {!isEditing && (
+              <Button
+                variant="outline"
+                size="icon"
+                className="absolute bottom-0 right-0 h-8 w-8 rounded-full bg-white shadow-md"
+                onClick={() => fileInputRef.current?.click()}
+              >
+                <Upload className="h-4 w-4" />
+              </Button>
+            )}
             <Input
               type="file"
               ref={fileInputRef}
@@ -799,8 +950,7 @@ export default function LeadDetailPage() {
               accept="image/*"
               onChange={handleAvatarChange}
             />
-          </div>
-          <div className='flex flex-col items-center gap-1'>
+          </div>          <div className='flex flex-col items-center gap-1'>
           <div className='relative flex justify-center items-center gap-2'>
               <h2 className="text-2xl font-bold">{lead.name}</h2>
               {currentStageInfo && (
@@ -810,6 +960,7 @@ export default function LeadDetailPage() {
               )}
             </div>
             <div className='flex items-center gap-2'>
+              <LeadTypeBadge leadType={lead.lead_type} />
               <Badge variant="outline" className={cn("text-xs", getStatusBadgeClass(lead.temperature))}>{getPriorityLabel(lead.temperature)}</Badge>
               {currentStageInfo && (
                 <Badge variant="outline" className="text-xs bg-gray-100 text-gray-700 border-gray-300">{getStageLabel(currentStageInfo.value)}</Badge>
@@ -859,18 +1010,28 @@ export default function LeadDetailPage() {
                          />
                        </div>
                      </div>
-                     <EditableField
-                       label={t.leads.language}
-                       value={lead.contact.language}
-                       onChange={(value) => setLead(prev => prev ? {...prev, contact: {...prev.contact, language: value}} : null)}
-                     />
+                     <div>
+                       <Label className="text-sm text-gray-500 mb-2 block">{t.leads.language}</Label>
+                       <Select
+                         value={lead.contact.language || 'Portuguese'}
+                         onValueChange={(value) => setLead(prev => prev ? {...prev, contact: {...prev.contact, language: value}} : null)}
+                       >
+                         <SelectTrigger className="w-full">
+                           <SelectValue />
+                         </SelectTrigger>
+                         <SelectContent>
+                           <SelectItem value="English">{t.common.languages.english}</SelectItem>
+                           <SelectItem value="Portuguese">{t.common.languages.portuguese}</SelectItem>
+                         </SelectContent>
+                       </Select>
+                     </div>
                    </>
                  ) : (
                    <>
                      <InfoItem label={t.leads.name} value={lead.name} className="col-span-2" />
                      <InfoItem label={t.leads.email} value={lead.contact.email} className="col-span-2" />
                      <InfoItem label={t.leads.phoneNumber} value={String(lead.contact.phone || '')} className="col-span-2" />
-                     <InfoItem label={t.leads.language} value={lead.contact.language} />
+                     <InfoItem label={t.leads.language} value={lead.contact.language || 'Portuguese'} />
                    </>
                  )}
               </div>
@@ -902,14 +1063,16 @@ export default function LeadDetailPage() {
                         </div>
 
                         <div>
-                            <p className="text-gray-500 text-sm mb-2">{t.leads.budget}</p>
+                            <p className="text-gray-500 text-sm mb-2">
+                              {lead.lead_type === 'Seller' ? t.leads.askingPrice : t.leads.budget}
+                            </p>
                             <div className="relative">
                                 <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500 font-medium">€</span>
                                 <Input
                                     type="number"
                                     value={lead.property.budget || ''}
                                     onChange={(e) => {
-                                        const value = e.target.value === '' ? null : Number(e.target.value);
+                                        const value = e.target.value === '' ? 0 : Number(e.target.value);
                                         setLead(prev => prev ? {...prev, property: {...prev.property, budget: value}} : null);
                                     }}
                                     className="pl-8"
@@ -944,7 +1107,9 @@ export default function LeadDetailPage() {
                         </div>
 
                         <div>
-                            <p className="text-gray-500 text-sm mb-2">{t.leads.locations}</p>
+                            <p className="text-gray-500 text-sm mb-2">
+                              {lead.lead_type === 'Seller' ? t.leads.propertyLocation : t.leads.desiredLocations}
+                            </p>
                             <DropdownMenu>
                                 <DropdownMenuTrigger asChild>
                                     <Button variant="outline" className="w-full justify-between">
@@ -1013,10 +1178,17 @@ export default function LeadDetailPage() {
                     </div>
                 ) : (
                     <div className="grid grid-cols-2 gap-y-4 gap-x-8 text-sm">
-                        <InfoItem label={t.leads.propertyType} value={lead.property.type} />
-                        <InfoItem label={t.leads.budget} value={lead.property.budget_formatted} />
-                        <InfoItem label={t.leads.bedrooms} value={lead.property.bedrooms} />
-                        <InfoItem label={t.leads.locations} value={lead.property.locations.join(', ')} className="col-span-2" />
+                        <InfoItem label={t.leads.propertyType} value={lead.property.type || '-'} />
+                        <InfoItem
+                          label={lead.lead_type === 'Seller' ? t.leads.askingPrice : t.leads.budget}
+                          value={lead.property.budget_formatted || '-'}
+                        />
+                        <InfoItem label={t.leads.bedrooms} value={lead.property.bedrooms || '-'} />
+                        <InfoItem
+                          label={lead.lead_type === 'Seller' ? t.leads.propertyLocation : t.leads.desiredLocations}
+                          value={lead.property.locations.map(loc => loc.charAt(0).toUpperCase() + loc.slice(1)).join(', ')}
+                          className="col-span-2"
+                        />
                     </div>
                 )}
             </CardContent>
@@ -1064,6 +1236,11 @@ export default function LeadDetailPage() {
         lead={{
           lead_id: lead.lead_id,
           name: lead.name,
+          image_url: lead.image_url,
+          lead_type: lead.lead_type,
+          temperature: lead.temperature,
+          stage: lead.stage,
+          lead_stage: lead.lead_stage,
         }}
         onSuccess={() => {
           // Data will be updated via selective webhooks
@@ -1073,16 +1250,15 @@ export default function LeadDetailPage() {
       <AlertDialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Are you sure?</AlertDialogTitle>
+            <AlertDialogTitle>{t.leadDetails.areYouSure}</AlertDialogTitle>
             <AlertDialogDescription>
-              This action cannot be undone. This will permanently delete the lead
-              for {leadToDeleteName}.
+              {t.leadDetails.deleteLeadWarning.replace('{{name}}', leadToDeleteName)}
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogCancel>{t.common.cancel}</AlertDialogCancel>
             <AlertDialogAction onClick={handleDeleteLead} className="bg-destructive hover:bg-destructive/90">
-              Delete
+              {t.common.delete}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
@@ -1090,7 +1266,7 @@ export default function LeadDetailPage() {
        <Dialog open={isCropModalOpen} onOpenChange={setIsCropModalOpen}>
         <DialogContent>
             <DialogHeader>
-                <DialogTitle>Crop Image</DialogTitle>
+                <DialogTitle>{t.leads.cropImage}</DialogTitle>
             </DialogHeader>
             <div className="flex items-center justify-center">
               {imgSrc && (
@@ -1112,8 +1288,8 @@ export default function LeadDetailPage() {
               )}
             </div>
             <DialogFooter>
-                <Button variant="outline" onClick={() => setIsCropModalOpen(false)}>Cancel</Button>
-                <Button onClick={handleSaveCrop}>Save</Button>
+                <Button variant="outline" onClick={() => setIsCropModalOpen(false)}>{t.common.cancel}</Button>
+                <Button onClick={handleSaveCrop}>{t.common.save}</Button>
             </DialogFooter>
         </DialogContent>
        </Dialog>
@@ -1244,10 +1420,11 @@ export default function LeadDetailPage() {
 }
 
 function InfoItem({ label, value, className }: { label: string; value: React.ReactNode; className?: string }) {
+  const displayValue = value === null || value === undefined || value === '' ? '-' : value;
   return (
     <div className={cn("grid gap-1", className)}>
       <p className="text-gray-500">{label}</p>
-      <div className="font-medium break-all">{value}</div>
+      <div className="font-medium break-all">{displayValue}</div>
     </div>
   );
 }
@@ -1331,19 +1508,69 @@ function LeadNotesSheet({ open, onOpenChange, lead, currentNote, setCurrentNote,
     }, [open, currentNote]);
 
     const handleSaveNote = async (operation: 'add_new_note' | 'edit_note') => {
+        if (!noteContent.trim()) {
+            toast({
+                variant: 'destructive',
+                title: t.common.error,
+                description: 'Please enter a note'
+            });
+            return;
+        }
+
         setIsSaving(true);
+
+        // STEP 1: Backup current state for rollback
+        const backup = {
+            currentNote: currentNote,
+            notes: notes,
+            originalContent: originalNoteContent
+        };
+
         try {
+            // STEP 2: Optimistic update - Update UI immediately
+            const now = new Date();
+            const agentDataString = localStorage.getItem('agent_data');
+            const agentName = agentDataString ? JSON.parse(agentDataString).agent_name : 'Agent';
+    
+            const tempNote = {
+                note_id: operation === 'add_new_note' ? 'temp_' + Date.now() : currentNote?.note_id || '',
+                note: noteContent.trim(),
+                created_at: now.toISOString(),
+                created_at_formatted: formatDateWithTimezone(now.toISOString()),
+                created_by: agentName,
+                date: now.toISOString()
+            };
+
+            // For edit: move old note to history
+            if (operation === 'edit_note' && currentNote && currentNote.note) {
+                const oldNote = {
+                    id: currentNote.note_id || 'history_' + Date.now(),
+                    note_id: currentNote.note_id,
+                    lead_id: lead.lead_id,
+                    content: originalNoteContent,
+                    current_note: originalNoteContent,
+                    created_at_formatted: currentNote.created_at_formatted || formatDateWithTimezone(now.toISOString()),
+                    created_by: currentNote.created_by || agentName
+                };
+                const updatedHistory = [oldNote, ...notes];
+                setNotes(updatedHistory);
+            }
+
+            setCurrentNote(tempNote);
+            setOriginalNoteContent(noteContent.trim());
+
+            // STEP 3: Call API
             const token = localStorage.getItem('auth_token');
             const payload: any = {
                 operation,
                 lead_id: lead.lead_id,
-                current_note: noteContent,
+                current_note: noteContent.trim(),
             };
-    
-            if (operation === 'edit_note' && currentNote) {
-                payload.note_id = currentNote.note_id;
+
+            if (operation === 'edit_note' && backup.currentNote) {
+                payload.note_id = backup.currentNote.note_id;
             }
-    
+
             const response = await fetch('https://eurekagathr.app.n8n.cloud/webhook/domain/notes', {
                 method: 'POST',
                 headers: {
@@ -1352,56 +1579,141 @@ function LeadNotesSheet({ open, onOpenChange, lead, currentNote, setCurrentNote,
                 },
                 body: JSON.stringify(payload)
             });
-    
-            const responseData = await response.json();
-    
+
             if (!response.ok) {
-                throw new Error(responseData.message || `Failed to ${operation === 'edit_note' ? 'update' : 'add'} note`);
+                throw new Error(`Failed to ${operation === 'edit_note' ? 'update' : 'add'} note`);
             }
-            
-            toast({ title: 'Success', description: `Note ${operation === 'edit_note' ? 'updated' : 'added'} successfully!` });
-            
+
+            const data = await response.json();
+            const result = Array.isArray(data) ? data[0] : data;
+
+            // STEP 4: Process notes array from response
+            const responseNotes = result.notes || [];
+
+            if (responseNotes.length > 0) {
+                // Sort by created_at descending
+                const sortedNotes = [...responseNotes].sort((a: any, b: any) =>
+                    new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
+                );
+
+                // Most recent note is current
+                const latestNote = sortedNotes[0];
+
+                setCurrentNote({
+                    note_id: latestNote.note_id,
+                    note: latestNote.content || latestNote.current_note,
+                    created_at_formatted: formatDateWithTimezone(latestNote.created_at || ''),
+                    created_by: latestNote.created_by || agentName
+                } as CurrentNote);
+
+                setNoteContent(latestNote.content || latestNote.current_note);
+                setOriginalNoteContent(latestNote.content || latestNote.current_note);
+
+                // Rest are history
+                const history = sortedNotes.slice(1).map((n: any) => ({
+                    id: n.note_id,
+                    note_id: n.note_id,
+                    content: n.content || n.current_note,
+                    created_at: n.created_at,
+                    created_at_formatted: formatDateWithTimezone(n.created_at || ''),
+                    created_by: n.created_by || agentName,
+                    date: n.created_at
+                }));
+
+                setNotes(history);
+
+                // Update localStorage - store ALL notes
+                const formattedNotes = sortedNotes.map((n: any) => ({
+                    id: n.note_id,
+                    note_id: n.note_id,
+                    lead_id: lead.lead_id,
+                    content: n.content || n.current_note,
+                    current_note: n.content || n.current_note,
+                    created_at: n.created_at,
+                    created_at_formatted: formatDateWithTimezone(n.created_at || ''),
+                    created_by: n.created_by || agentName,
+                    note_type: n.note_type || 'text',
+                    date: n.created_at
+                }));
+
+                updateNotesInStorage(formattedNotes);
+            }
+
+            // STEP 6: Success message
+            toast({
+                title: operation === 'add_new_note' ? 'New note added successfully' : 'Note updated successfully',
+                description: operation === 'add_new_note' ? 'Your note has been saved' : 'Your changes have been saved'
+            });
+
             if (operation === 'add_new_note') {
-                if (responseData && responseData.note_id) {
-                    setCurrentNote(responseData);
-                }
                 setIsAddingNewNote(false);
-            } else if (operation === 'edit_note' && currentNote) {
-                const updatedNote = { ...currentNote, note: noteContent };
-                setCurrentNote(updatedNote);
-                setOriginalNoteContent(noteContent);
             }
-            onOpenChange(false);
+
         } catch (error: any) {
-            toast({ variant: 'destructive', title: 'Error', description: error.message || 'An unexpected error occurred.' });
+            // ROLLBACK on error
+            setCurrentNote(backup.currentNote);
+            setNotes(backup.notes);
+            setOriginalNoteContent(backup.originalContent);
+            setNoteContent(backup.originalContent || '');
+
+            toast({
+                variant: 'destructive',
+                title: t.common.error,
+                description: error.message || 'Failed to save note'
+            });
         } finally {
-             setIsSaving(false);
+            setIsSaving(false);
         }
     };
 
     const handleNewNoteClick = () => {
-        if (currentNote) {
+        if (currentNote && currentNote.note) {
+            // Create properly formatted history note with ALL date fields
+            const historyNote = {
+                id: currentNote.note_id,
+                note_id: currentNote.note_id,
+                content: currentNote.note,
+                current_note: currentNote.note,
+                created_at_formatted: currentNote.created_at_formatted || formatDateWithTimezone(new Date().toISOString()),
+                created_by: currentNote.created_by || 'Agent',
+                date: new Date().toISOString(),
+                timestamp: new Date().toISOString()
+            };
+
+            // Only add if not already in history
             if (!notes.some(n => n.note_id === currentNote.note_id)) {
-                setNotes(prev => [currentNote, ...prev]);
+                setNotes(prev => [historyNote, ...prev]);
             }
+
             setMovedNoteId(currentNote.note_id);
-            setCurrentNote(null);
         }
+
+        setCurrentNote(null);
         setIsAddingNewNote(true);
-        setNoteContent(''); 
+        setNoteContent('');
     };
 
     const handleCancelNewNote = () => {
-        setIsAddingNewNote(false);
-        setNoteContent('');
         if (movedNoteId) {
             const movedNote = notes.find(n => n.note_id === movedNoteId);
             if (movedNote) {
-                setCurrentNote(movedNote as CurrentNote);
+                // Restore the previous note to current
+                const restoredCurrentNote = {
+                    note_id: movedNote.note_id || movedNote.id || '',
+                    note: movedNote.content || movedNote.note || '',
+                    created_at_formatted: movedNote.created_at_formatted || '',
+                    created_by: movedNote.created_by || 'Agent'
+                };
+                setCurrentNote(restoredCurrentNote);
+                // Restore the content to the textarea
+                setNoteContent(restoredCurrentNote.note);
+                setOriginalNoteContent(restoredCurrentNote.note);
+                // Remove from history
                 setNotes(notes.filter(n => n.note_id !== movedNoteId));
             }
             setMovedNoteId(null);
         }
+        setIsAddingNewNote(false);
     };
     
     useEffect(() => {
@@ -1434,58 +1746,55 @@ function LeadNotesSheet({ open, onOpenChange, lead, currentNote, setCurrentNote,
         if (!dateStr || isNaN(new Date(dateStr).getTime())) {
             return '';
         }
-        return format(new Date(dateStr), "MMMM d, yyyy - h:mm a");
+        const date = new Date(dateStr);
+        // Use current language locale for date formatting
+        const locale = t.common.languages.portuguese === 'Português' ? 'pt-PT' : 'en-US';
+        return date.toLocaleString(locale, {
+            month: 'long',
+            day: 'numeric',
+            year: 'numeric',
+            hour: 'numeric',
+            minute: '2-digit',
+            hour12: true
+        });
     }
 
     return (
         <Sheet open={open} onOpenChange={onOpenChange}>
             <SheetContent side="bottom" className="h-[90vh] flex flex-col p-0">
-                <SheetHeader className="flex flex-row items-center justify-between border-b px-4 py-3 shrink-0">
-                     <div className='flex items-center'>
-                         <Button variant="ghost" size="icon" onClick={() => onOpenChange(false)} className="mr-2">
-                           <X className="h-6 w-6" />
-                         </Button>
-                        <SheetTitle>{t.leads.leadNotes}</SheetTitle>
-                     </div>
+                <SheetHeader className="flex flex-row items-center gap-3 border-b px-4 py-3 shrink-0">
+                     <Button variant="ghost" size="icon" onClick={() => onOpenChange(false)} className="shrink-0">
+                       <ArrowLeft className="h-6 w-6" />
+                     </Button>
+                     <SheetTitle className="text-lg font-semibold">{t.leads.leadNotes}</SheetTitle>
                      <SheetDescription className="sr-only">
                        Manage notes for {lead.name}.
                     </SheetDescription>
                 </SheetHeader>
 
-                <div className="flex-1 overflow-y-auto p-4 space-y-6">
-                    <div className="flex items-start gap-4">
-                        <Avatar className="h-12 w-12">
-                            <AvatarImage src={lead.image_url} />
-                            <AvatarFallback>{lead.name.split(' ').map(n=>n[0]).join('')}</AvatarFallback>
-                        </Avatar>
-                        <div>
-                            <div className="flex items-center gap-2">
-                                <h3 className="text-lg font-bold">{lead.name}</h3>
-                                <Badge variant="outline" className={cn("text-sm", getStatusBadgeClass(lead.temperature))}>{getPriorityLabel(lead.temperature)}</Badge>
-                            </div>
-                            <p className="text-sm text-gray-500">{String(lead.contact.phone || '')}</p>
-                            <p className="text-sm text-gray-500">{lead.contact.email}</p>
-                            <p className="text-xs text-gray-400 mt-1">{t.leads.created} {lead.created_at_formatted}</p>
+                <div className="flex-1 overflow-y-auto p-3 space-y-3">
+                    <CompactLeadHeader
+                      name={lead.name}
+                      imageUrl={lead.image_url}
+                      leadType={lead.lead_type}
+                      temperature={lead.temperature}
+                      stage={lead.lead_stage}
+                    />
+                    <div>
+                        <div className="flex justify-between items-center mb-2">
+                            <h4 className="text-base font-semibold">{t.leads.currentNote}</h4>
+                            {currentNote && (
+                                <div className="text-xs text-gray-500 text-right">
+                                    <p>{currentNote.created_at_formatted}</p>
+                                    <p className="hidden">By: {currentNote.created_by}</p>
+                                </div>
+                            )}
                         </div>
-                    </div>
-
-                    <Card>
-                        <CardHeader>
-                             <div className="flex justify-between items-center">
-                                <CardTitle className="text-lg">{t.leads.currentNote}</CardTitle>
-                                {currentNote && (
-                                    <div className="text-xs text-gray-500 text-right">
-                                        <p>{t.leads.lastUpdated} {currentNote.created_at_formatted}</p>
-                                        <p className="hidden">By: {currentNote.created_by}</p>
-                                    </div>
-                                )}
-                            </div>
-                        </CardHeader>
-                        <CardContent>
+                        <div className="border rounded-lg p-3">
                              <Textarea
                                 ref={textareaRef}
                                 placeholder={t.leads.notePlaceholder}
-                                className="border-0 focus-visible:ring-0 min-h-[100px] p-0 resize-none overflow-hidden"
+                                className="border-0 focus-visible:ring-0 min-h-[100px] max-h-[300px] p-0 resize-none overflow-y-auto"
                                 value={noteContent}
                                 onChange={(e) => setNoteContent(e.target.value)}
                             />
@@ -1510,7 +1819,7 @@ function LeadNotesSheet({ open, onOpenChange, lead, currentNote, setCurrentNote,
                                         </Button>
                                         <Button size="sm" onClick={() => handleSaveNote('edit_note')} disabled={isSaving}>
                                             {isSaving ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
-                                            {t.common.save}
+                                            {t.leads.saveChanges || 'Save Changes'}
                                         </Button>
                                     </>
                                 )}
@@ -1520,38 +1829,36 @@ function LeadNotesSheet({ open, onOpenChange, lead, currentNote, setCurrentNote,
                                     </Button>
                                 )}
                             </div>
-                        </CardContent>
-                    </Card>
-                    
+                        </div>
+                    </div>
+
                     <div>
-                        <h4 className="text-lg font-semibold mb-4">{t.leads.noteHistory}</h4>
-                        <div className="space-y-4">
+                        <h4 className="text-base font-semibold mb-2">{t.leads.noteHistory}</h4>
+                        <div className="space-y-2">
                             {notes.map((note, index) => {
                                 const key = note.note_id || `history-${index}`;
                                 const displayDate = note.created_at_formatted || formattedDate(note.date);
-                                
+
                                 return (
-                                <Card key={key} className="bg-gray-50">
-                                    <CardContent className="p-4 relative">
-                                        <p className="text-sm text-gray-700 mb-2 whitespace-pre-wrap">{note.note || note.content}</p>
-                                         <div className="flex justify-between items-center">
-                                            <p className="text-xs text-gray-400">{displayDate}</p>
-                                            <p className="text-xs text-gray-400 hidden">By: {note.created_by}</p>
-                                        </div>
-                                        <Button 
-                                            variant="ghost" 
-                                            size="icon" 
-                                            className="absolute bottom-2 right-2 h-8 w-8"
-                                            onClick={() => handleCopy(note.note || note.content || '')}
-                                        >
-                                            <Copy className="h-4 w-4 text-gray-500" />
-                                        </Button>
-                                    </CardContent>
-                                </Card>
+                                <div key={key} className="bg-gray-50 rounded-lg p-3 relative">
+                                    <p className="text-sm text-gray-700 mb-1.5 whitespace-pre-wrap pr-8">{note.note || note.content}</p>
+                                    <div className="flex justify-between items-center">
+                                        <p className="text-xs text-gray-400">{displayDate}</p>
+                                        <p className="text-xs text-gray-400 hidden">By: {note.created_by}</p>
+                                    </div>
+                                    <Button
+                                        variant="ghost"
+                                        size="icon"
+                                        className="absolute top-2 right-2 h-7 w-7"
+                                        onClick={() => handleCopy(note.note || note.content || '')}
+                                    >
+                                        <Copy className="h-3.5 w-3.5 text-gray-500" />
+                                    </Button>
+                                </div>
                             )})}
                              {notes.length === 0 && (
-                                <div className="text-center text-gray-500 py-8">
-                                    No past notes for this lead.
+                                <div className="text-center text-gray-500 py-6 text-sm">
+                                    {t.leads.noPastNotes}
                                 </div>
                             )}
                         </div>
@@ -1574,19 +1881,25 @@ function LeadHistorySheet({ open, onOpenChange, lead, history }: LeadHistoryShee
     return (
         <Sheet open={open} onOpenChange={onOpenChange}>
             <SheetContent side="bottom" className="h-[90vh] flex flex-col p-0">
-                <SheetHeader className="flex flex-row items-center justify-between border-b px-6 py-4 shrink-0">
-                     <div className='flex items-center gap-3'>
-                         <Button variant="ghost" size="icon" onClick={() => onOpenChange(false)}>
-                           <X className="h-5 w-5" />
-                         </Button>
-                        <SheetTitle className="text-xl font-semibold">{t.leads.communicationHistory}</SheetTitle>
-                     </div>
+                <SheetHeader className="flex flex-row items-center gap-3 border-b px-4 py-3 shrink-0">
+                     <Button variant="ghost" size="icon" onClick={() => onOpenChange(false)} className="shrink-0">
+                       <ArrowLeft className="h-6 w-6" />
+                     </Button>
+                     <SheetTitle className="text-lg font-semibold">{t.leads.communicationHistory}</SheetTitle>
                      <SheetDescription className="sr-only">
                        View the communication history for {lead.name}.
                     </SheetDescription>
                 </SheetHeader>
 
-                <div className="flex-1 overflow-y-auto px-6 py-6">
+                <div className="flex-1 overflow-y-auto p-3">
+                    <CompactLeadHeader
+                      name={lead.name}
+                      imageUrl={lead.image_url}
+                      leadType={lead.lead_type}
+                      temperature={lead.temperature}
+                      stage={lead.lead_stage}
+                      className="mb-3"
+                    />
                     <CommunicationHistoryTimeline events={history} />
                 </div>
             </SheetContent>

@@ -34,6 +34,8 @@ import { RescheduleModal } from "./reschedule-modal";
 import { CancelTaskDialog } from "./cancel-task-dialog";
 import { CompleteTaskDialog } from "./complete-task-dialog";
 import { useLanguage } from "@/hooks/useLanguage";
+import { LeadTypeBadge } from "@/components/leads/lead-badges";
+import { localStorageManager } from "@/lib/local-storage-manager";
 
 const iconMap: { [key: string]: React.ElementType } = {
   email: Mail,
@@ -51,6 +53,7 @@ interface TaskItem {
   description: string;
   type: "email" | "phone" | "whatsapp" | "calendar" | "home" | "briefcase";
   leadId: string;
+  leadType?: 'Buyer' | 'Seller';
   followUpMessage: string;
   time: string;
   leadContact?: {
@@ -91,6 +94,52 @@ export function TaskCard({ task, date, isExpanded, onExpand, onTaskComplete }: T
   const { toast } = useToast();
   const Icon = iconMap[task.type] || iconMap.default;
 
+  // Get lead_type with fallback lookup from localStorage
+  const getLeadType = (): 'Buyer' | 'Seller' => {
+    if (task.leadType) {
+      return task.leadType;
+    }
+    // Fallback: lookup from leadDetails if not included in task
+    const leadDetail = localStorageManager.getLeadDetails(task.leadId);
+    if (leadDetail?.lead_type) {
+      console.log(`🔍 Task ${task.id} missing leadType, using fallback from leadDetails: ${leadDetail.lead_type}`);
+      return leadDetail.lead_type;
+    }
+    // Last resort: check leads array
+    const allLeads = localStorageManager.getLeads();
+    const lead = allLeads.find(l => l.lead_id === task.leadId);
+    if (lead?.lead_type) {
+      console.log(`🔍 Task ${task.id} missing leadType, using fallback from leads[]: ${lead.lead_type}`);
+      return lead.lead_type;
+    }
+    console.warn(`⚠️ Task ${task.id} has no lead_type and fallback lookup failed, defaulting to Buyer`);
+    return 'Buyer';
+  };
+
+  // Get lead priority with fallback lookup from localStorage
+  const getLeadPriority = (): 'Hot' | 'Warm' | 'Cold' => {
+    if (task.leadPriority && ['Hot', 'Warm', 'Cold'].includes(task.leadPriority)) {
+      return task.leadPriority;
+    }
+    // Fallback: lookup from leadDetails if not included in task
+    const leadDetail = localStorageManager.getLeadDetails(task.leadId);
+    if (leadDetail?.temperature) {
+      console.log(`🔍 Task ${task.id} missing leadPriority, using fallback from leadDetails: ${leadDetail.temperature}`);
+      return leadDetail.temperature;
+    }
+    // Last resort: check leads array
+    const allLeads = localStorageManager.getLeads();
+    const lead = allLeads.find(l => l.lead_id === task.leadId);
+    if (lead?.temperature) {
+      console.log(`🔍 Task ${task.id} missing leadPriority, using fallback from leads[]: ${lead.temperature}`);
+      return lead.temperature;
+    }
+    console.warn(`⚠️ Task ${task.id} has no leadPriority and fallback lookup failed, defaulting to Cold`);
+    return 'Cold';
+  };
+
+  const leadType = getLeadType();
+  const leadPriority = getLeadPriority();
   const showsAIMessage = task.type === "whatsapp" || task.type === "email";
 
   // Check for WhatsApp return notification when component mounts and when visibility changes
@@ -401,8 +450,9 @@ export function TaskCard({ task, date, isExpanded, onExpand, onTaskComplete }: T
                 {task.name}
               </h4>
               <div className="flex items-center gap-2 flex-wrap mb-2">
-                <Badge variant="outline" className={cn("text-sm", getPriorityColor(task.leadPriority))}>
-                  {getPriorityTranslation(task.leadPriority)}
+                <LeadTypeBadge leadType={leadType} />
+                <Badge variant="outline" className={cn("text-sm", getPriorityColor(leadPriority))}>
+                  {getPriorityTranslation(leadPriority)}
                 </Badge>
                 <Badge variant="outline" className="text-sm">
                   {getStageTranslation(task.leadStatus)}
@@ -498,7 +548,7 @@ export function TaskCard({ task, date, isExpanded, onExpand, onTaskComplete }: T
                       <>
                         <div className="bg-white rounded-md p-3 mb-3">
                           <p className="text-sm text-gray-800 whitespace-pre-wrap">
-                            {currentMessage || "No message available."}
+                            {currentMessage || t.taskCard.noMessageAvailable}
                           </p>
                         </div>
 

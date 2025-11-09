@@ -7,6 +7,8 @@
 
 import { cachedCallLeadApi } from './cached-api';
 import { localStorageManager } from './local-storage-manager';
+import { extractLeadType, extractLeadStage, extractTemperature, normalizeLead, normalizeLeadDetail } from './lead-normalization';
+import { transformBackendTasks } from './task-transformer';
 
 /**
  * Refresh dashboard statistics
@@ -39,8 +41,10 @@ export async function refreshTasks(): Promise<void> {
     const data = Array.isArray(response) ? response[0] : response;
 
     if (data && data.success) {
-      localStorageManager.updateTasks(data.tasks || []);
-      console.log('✅ Tasks refreshed');
+      // Transform backend tasks to frontend format
+      const transformedTasks = transformBackendTasks(data.tasks || []);
+      localStorageManager.updateTasks(transformedTasks);
+      console.log('✅ Tasks refreshed and transformed');
     }
   } catch (error) {
     console.error('❌ Failed to refresh tasks:', error);
@@ -79,12 +83,30 @@ export async function refreshAllLeads(): Promise<void> {
     const data = Array.isArray(response) ? response[0] : response;
 
     if (data && Array.isArray(data.leads)) {
-      const transformedLeads = data.leads.map((lead: any) => ({
-        ...lead,
-        lead_stage: lead.lead_stage || lead.Stage || 'New Lead'
-      }));
+      // Use centralized normalization for all leads
+      const transformedLeads = data.leads.map((lead: any) => {
+        const normalized = normalizeLead(lead);
+        console.log(`🔍 refreshAllLeads - Processing lead ${normalized.lead_id}: lead_type = ${normalized.lead_type}`);
+        return normalized;
+      });
+
       localStorageManager.updateLeads(transformedLeads);
-      console.log('✅ All leads refreshed');
+
+      // Ensure leadDetails[leadId] exists for each lead (prevents webhook lead errors)
+      transformedLeads.forEach((lead: any) => {
+        const leadId = lead.lead_id;
+        const existingDetail = localStorageManager.getLeadDetails(leadId);
+
+        if (!existingDetail) {
+          // Create minimal detail entry from list data using centralized normalization
+          const minimalDetail = normalizeLeadDetail(lead);
+
+          localStorageManager.updateLeadDetails(leadId, minimalDetail);
+          console.log(`📝 Created leadDetails entry for ${leadId} with lead_type: ${minimalDetail.lead_type}`);
+        }
+      });
+
+      console.log('✅ All leads refreshed with leadDetails sync');
     }
   } catch (error) {
     console.error('❌ Failed to refresh all leads:', error);

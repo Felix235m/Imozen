@@ -24,11 +24,16 @@ import {
 } from '@/components/ui/select';
 import { DatePicker } from '@/components/ui/date-picker';
 import { useLanguage } from "@/hooks/useLanguage";
+import { BalancedLeadHeader } from "@/components/leads/lead-headers";
 
 interface CompleteTaskDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   leadName?: string;
+  leadImageUrl?: string;
+  leadType?: 'Buyer' | 'Seller';
+  leadTemperature?: string;
+  leadStage?: string;
   onConfirm: (note: string, nextFollowUpDate?: Date) => void;
   isLoading?: boolean;
 }
@@ -37,6 +42,10 @@ export function CompleteTaskDialog({
   open,
   onOpenChange,
   leadName,
+  leadImageUrl,
+  leadType,
+  leadTemperature,
+  leadStage,
   onConfirm,
   isLoading = false,
 }: CompleteTaskDialogProps) {
@@ -119,14 +128,21 @@ export function CompleteTaskDialog({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-[90%] sm:max-w-[480px] rounded-2xl p-6">
         <DialogHeader>
-          <DialogTitle className="text-xl font-semibold text-gray-800 text-center">
+          <DialogTitle className="text-xl font-semibold text-gray-800 text-center mb-3">
             {t.taskDialogs.completeFollowUp}
           </DialogTitle>
           {leadName && (
-            <DialogDescription className="text-base text-gray-600 text-center mt-1">
-              {t.taskDialogs.leadLabel} {leadName}
-            </DialogDescription>
+            <BalancedLeadHeader
+              name={leadName}
+              imageUrl={leadImageUrl}
+              leadType={leadType}
+              temperature={leadTemperature}
+              stage={leadStage}
+            />
           )}
+          <DialogDescription className="sr-only">
+            {t.taskDialogs.leadLabel} {leadName}
+          </DialogDescription>
         </DialogHeader>
 
         <div className="space-y-5 mt-2">

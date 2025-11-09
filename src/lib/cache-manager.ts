@@ -24,9 +24,9 @@ interface CacheOptions {
 export class CacheManager {
   private cache: Map<string, CacheEntry<any>> = new Map();
   private lastMutationTime: number = 0;
-  private readonly DEFAULT_STALE_TIME = 5 * 60 * 1000; // 5 minutes
-  private readonly RECENT_CHANGE_STALE_TIME = 30 * 1000; // 30 seconds
-  private readonly RECENT_CHANGE_WINDOW = 2 * 60 * 1000; // 2 minutes
+  private readonly DEFAULT_STALE_TIME = 2 * 60 * 1000; // 2 minutes (reduced from 5)
+  private readonly RECENT_CHANGE_STALE_TIME = 10 * 1000; // 10 seconds (reduced from 30)
+  private readonly RECENT_CHANGE_WINDOW = 1 * 60 * 1000; // 1 minute (reduced from 2)
 
   /**
    * Get cached data or fetch from API

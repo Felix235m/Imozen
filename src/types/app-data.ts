@@ -9,6 +9,7 @@ export interface TaskItem {
   description: string;
   type: string;
   leadId: string;
+  leadType?: 'Buyer' | 'Seller';
   followUpMessage?: string;
   time?: string;
   leadContact?: {
@@ -33,6 +34,7 @@ export interface Lead {
   temperature: string;
   stage: string;
   lead_stage?: string;
+  lead_type?: 'Buyer' | 'Seller';
   image_url?: string;
   created_at?: string;
   next_follow_up?: {
@@ -55,6 +57,7 @@ export interface LeadDetail {
   image_url?: string;
   temperature: string;
   lead_stage: string;
+  lead_type?: 'Buyer' | 'Seller';
   Stage?: string;
   property?: {
     locations?: string[];
@@ -90,6 +93,8 @@ export interface Note {
   current_note?: string;
   timestamp: number | string;
   created_at?: string;
+  created_at_formatted?: string;
+  created_by?: string;
   updated_at?: string;
 }
 

@@ -148,7 +148,7 @@ export function useNotes(leadId: string) {
 
   useEffect(() => {
     const unsubscribe = localStorageManager.subscribe((newData) => {
-      setNotes(newData.notes[leadId] || []);
+      setNotes(newData.leadDetails[leadId]?.notes || []);
     });
 
     setNotes(localStorageManager.getNotes(leadId));

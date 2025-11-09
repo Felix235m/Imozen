@@ -20,6 +20,7 @@ import { useDashboard } from '@/hooks/useAppData';
 import { checkForDraft, clearDraft, type DraftInfo } from '@/lib/draft-detector';
 import { DraftResumeDialog } from '@/components/leads/draft-resume-dialog';
 import { cn } from '@/lib/utils';
+import { navigationOptimizer } from '@/lib/navigation-optimizer';
 
 export default function AgentDashboardPage() {
   const [isCheckingSession, setIsCheckingSession] = useState(false);
@@ -57,6 +58,9 @@ export default function AgentDashboardPage() {
 
     // Data is loaded from localStorage via useDashboard hook
     setIsLoading(false);
+    
+    // PERFORMANCE FIX: Preload leads data for instant navigation
+    navigationOptimizer.preloadData({ type: 'leads-list' });
   }, []);
 
 
@@ -119,7 +123,36 @@ export default function AgentDashboardPage() {
     }
   };
 
-  const handleCardClick = (cardTitle: string) => {
+  const handleCardClick = async (cardTitle: string) => {
+    // PERFORMANCE FIX: Preload leads data before navigation for instant experience
+    try {
+      const { localStorageManager } = require('@/lib/local-storage-manager');
+      const leads = localStorageManager.getLeads();
+      
+      // If leads are not in localStorage or are stale, preload them
+      if (!leads || leads.length === 0 || localStorageManager.isStale()) {
+        const { fetchAgentDatabase } = require('@/lib/auth-api');
+        const token = localStorage.getItem('auth_token');
+        
+        if (token) {
+          fetchAgentDatabase(token)
+            .then(response => {
+              if (response && response.success) {
+                localStorageManager.initializeFromAgentDatabase(response);
+                console.log('🚀 Preloaded leads data for instant navigation');
+              }
+            })
+            .catch(error => {
+              console.warn('Failed to preload leads data:', error);
+              // Continue with navigation even if preload fails
+            });
+        }
+      }
+    } catch (error) {
+      console.warn('Error during leads preloading:', error);
+      // Continue with navigation even if preload fails
+    }
+    
     // Navigate to leads page with appropriate filter
     switch (cardTitle) {
       case t.dashboard.stats.leadsForFollowUp:

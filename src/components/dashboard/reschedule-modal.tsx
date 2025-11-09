@@ -24,6 +24,7 @@ import {
 import { DatePicker } from "@/components/ui/date-picker";
 import { TimePicker } from "@/components/ui/time-picker";
 import { useLanguage } from "@/hooks/useLanguage";
+import { BalancedLeadHeader } from "@/components/leads/lead-headers";
 
 interface RescheduleModalProps {
   open: boolean;
@@ -31,6 +32,10 @@ interface RescheduleModalProps {
   currentDate?: Date;
   currentTime?: string;
   leadName?: string;
+  leadImageUrl?: string;
+  leadType?: 'Buyer' | 'Seller';
+  leadTemperature?: string;
+  leadStage?: string;
   onConfirm: (newDate: Date, newTime: string, note: string) => void;
   isLoading?: boolean;
 }
@@ -41,6 +46,10 @@ export function RescheduleModal({
   currentDate,
   currentTime = "03:00 PM",
   leadName,
+  leadImageUrl,
+  leadType,
+  leadTemperature,
+  leadStage,
   onConfirm,
   isLoading = false,
 }: RescheduleModalProps) {
@@ -120,14 +129,21 @@ export function RescheduleModal({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-[90%] sm:max-w-[480px] rounded-2xl p-6">
         <DialogHeader>
-          <DialogTitle className="text-xl font-semibold text-gray-800">
+          <DialogTitle className="text-xl font-semibold text-gray-800 mb-3">
             {t.taskDialogs.rescheduleFollowUp}
           </DialogTitle>
           {leadName && (
-            <DialogDescription className="text-base text-gray-600 mt-1">
-              {t.taskDialogs.leadLabel} {leadName}
-            </DialogDescription>
+            <BalancedLeadHeader
+              name={leadName}
+              imageUrl={leadImageUrl}
+              leadType={leadType}
+              temperature={leadTemperature}
+              stage={leadStage}
+            />
           )}
+          <DialogDescription className="sr-only">
+            {t.taskDialogs.leadLabel} {leadName}
+          </DialogDescription>
         </DialogHeader>
 
         <div className="space-y-5 mt-4">
@@ -183,7 +199,7 @@ export function RescheduleModal({
           <div className="space-y-2">
             <Label htmlFor="time" className="text-sm font-medium text-gray-700 flex items-center gap-2">
               <Clock className="h-4 w-4" />
-              Select Time
+              {t.taskDialogs.selectTime}
             </Label>
             <TimePicker value={selectedTime} onChange={setSelectedTime} />
           </div>
@@ -197,7 +213,7 @@ export function RescheduleModal({
               id="note"
               value={note}
               onChange={(e) => setNote(e.target.value)}
-              placeholder="Reason for rescheduling..."
+              placeholder={t.taskDialogs.rescheduleReasonPlaceholder}
               className="bg-gray-50 border-gray-200 resize-none h-20 focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
             />
           </div>

@@ -8,6 +8,7 @@ import {
   Bell,
   LogOut,
   CalendarClock,
+  RefreshCw,
 } from 'lucide-react';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
@@ -26,6 +27,11 @@ import { cn } from '@/lib/utils';
 import { useEffect, useState } from 'react';
 import { useLanguage } from '@/hooks/useLanguage';
 import { FailedOperationsBadge } from '@/components/notifications/failed-operations-badge';
+import { fetchAgentDatabase } from '@/lib/auth-api';
+import { localStorageManager } from '@/lib/local-storage-manager';
+import { LoadingModal } from '@/components/ui/loading-modal';
+import { useToast } from '@/hooks/use-toast';
+import { navigationOptimizer } from '@/lib/navigation-optimizer';
 
 export default function DashboardLayout({
   children,
@@ -35,8 +41,11 @@ export default function DashboardLayout({
   const pathname = usePathname();
   const router = useRouter();
   const { t } = useLanguage();
+  const { toast } = useToast();
   const [agentAvatar, setAgentAvatar] = useState<string | undefined>(undefined);
   const [agentInitial, setAgentInitial] = useState("A");
+  const [isRefreshing, setIsRefreshing] = useState(false);
+  const [refreshStep, setRefreshStep] = useState(0);
 
   const navItems = [
     { href: '/tasks', icon: CalendarClock, label: t.navigation.tasks },
@@ -66,10 +75,69 @@ export default function DashboardLayout({
     }
   }, []);
 
+  // PERFORMANCE FIX: Smart preloading based on current page
+  useEffect(() => {
+    navigationOptimizer.smartPreload(pathname);
+  }, [pathname]);
+
   const handleLogout = () => {
     localStorage.removeItem('auth_token');
     localStorage.removeItem('agent_data');
     router.push('/');
+  };
+
+  const handleRefresh = async () => {
+    setIsRefreshing(true);
+    setRefreshStep(0);
+
+    try {
+      const token = localStorage.getItem('auth_token');
+      if (!token) {
+        throw new Error('Authentication token not found');
+      }
+
+      // Step 1: Fetching data
+      setRefreshStep(0);
+      const response = await fetchAgentDatabase(token);
+
+      // Validate response
+      if (!response || !response.success || !response.data) {
+        throw new Error('Invalid response from server');
+      }
+
+      // Step 2: Loading the data
+      setRefreshStep(1);
+      await new Promise(resolve => setTimeout(resolve, 300));
+
+      // Step 3: Getting details from DB
+      setRefreshStep(2);
+
+      // Store data in localStorage
+      localStorageManager.initializeFromAgentDatabase(response);
+
+      // Step 4: Preparing app data
+      setRefreshStep(3);
+      await new Promise(resolve => setTimeout(resolve, 200));
+
+      // Update agent avatar/initial from fresh data
+      if (response.data.agent) {
+        setAgentAvatar(response.data.agent.agent_image_url || undefined);
+        setAgentInitial(response.data.agent.agent_name ? response.data.agent.agent_name.charAt(0).toUpperCase() : 'A');
+      }
+
+      toast({
+        title: t.common?.refreshSuccess || 'Data Refreshed',
+        description: t.common?.refreshSuccessDescription || 'Your data has been updated successfully',
+      });
+    } catch (error: any) {
+      toast({
+        variant: 'destructive',
+        title: t.common?.refreshError || 'Refresh Failed',
+        description: error.message || 'Could not refresh data',
+      });
+    } finally {
+      setIsRefreshing(false);
+    }
   };
 
   const pageTitle = getPageTitle(pathname);
@@ -104,6 +172,11 @@ export default function DashboardLayout({
                 <User className="mr-2 h-4 w-4" />
                 <span>{t.navigation.profile}</span>
               </DropdownMenuItem>
+              <DropdownMenuItem onClick={handleRefresh} disabled={isRefreshing}>
+                <RefreshCw className={cn("mr-2 h-4 w-4", isRefreshing && "animate-spin")} />
+                <span>{t.common?.refresh || 'Refresh'}</span>
+              </DropdownMenuItem>
+              <DropdownMenuSeparator />
               <DropdownMenuItem onClick={handleLogout}>
                 <LogOut className="mr-2 h-4 w-4" />
                 <span>{t.common.logOut}</span>
@@ -133,6 +206,7 @@ export default function DashboardLayout({
           })}
         </div>
       </nav>
+      <LoadingModal isOpen={isRefreshing} currentStep={refreshStep} />
     </div>
   );
 }

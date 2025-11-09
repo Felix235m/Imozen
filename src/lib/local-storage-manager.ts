@@ -20,6 +20,8 @@ import type {
   CommunicationEvent,
   AgentDatabaseResponse,
 } from '@/types/app-data';
+import { validateLeadData } from './lead-normalization';
+import { transformBackendTasks } from './task-transformer';
 
 const APP_DATA_KEY = 'app_data';
 const DATA_VERSION = '1.0';
@@ -47,6 +49,9 @@ type StorageChangeCallback = (data: AppData) => void;
 
 export class LocalStorageManager {
   private subscribers: Set<StorageChangeCallback> = new Set();
+  private cache: AppData | null = null; // PERFORMANCE: Cache parsed data
+  private cacheTimestamp: number = 0;
+  private CACHE_TTL = 50; // Reduced to 50ms for even faster access
 
   constructor() {
     // Listen for storage changes from other tabs
@@ -59,6 +64,8 @@ export class LocalStorageManager {
     if (event.key === APP_DATA_KEY && event.newValue) {
       try {
         const data: AppData = JSON.parse(event.newValue);
+        this.cache = data; // Update cache
+        this.cacheTimestamp = Date.now();
         this.notifySubscribers(data);
       } catch (error) {
         console.error('Failed to parse storage change:', error);
@@ -82,21 +89,34 @@ export class LocalStorageManager {
 
   /**
    * Get all app data from localStorage
+   * PERFORMANCE: Uses cache to avoid repeated JSON.parse calls
    */
   getAppData(): AppData {
     if (typeof window === 'undefined' || !window.localStorage) {
       return DEFAULT_APP_DATA;
     }
 
+    // PERFORMANCE FIX: Use cache if it's fresh (within 100ms)
+    const now = Date.now();
+    if (this.cache && (now - this.cacheTimestamp) < this.CACHE_TTL) {
+      return this.cache;
+    }
+
     try {
       const stored = localStorage.getItem(APP_DATA_KEY);
-      if (!stored) return DEFAULT_APP_DATA;
+      if (!stored) {
+        this.cache = DEFAULT_APP_DATA;
+        this.cacheTimestamp = now;
+        return DEFAULT_APP_DATA;
+      }
 
       const data: AppData = JSON.parse(stored);
 
       // Check if data is expired
       if (this.isExpired(data)) {
         this.clearAppData();
+        this.cache = DEFAULT_APP_DATA;
+        this.cacheTimestamp = now;
         return DEFAULT_APP_DATA;
       }
 
@@ -104,12 +124,19 @@ export class LocalStorageManager {
       if (data.version !== DATA_VERSION) {
         console.warn('Data version mismatch. Clearing old data.');
         this.clearAppData();
+        this.cache = DEFAULT_APP_DATA;
+        this.cacheTimestamp = now;
         return DEFAULT_APP_DATA;
       }
 
+      // Update cache
+      this.cache = data;
+      this.cacheTimestamp = now;
       return data;
     } catch (error) {
       console.error('Failed to get app data:', error);
+      this.cache = DEFAULT_APP_DATA;
+      this.cacheTimestamp = now;
       return DEFAULT_APP_DATA;
     }
   }
@@ -130,6 +157,11 @@ export class LocalStorageManager {
       };
 
       localStorage.setItem(APP_DATA_KEY, JSON.stringify(newData));
+
+      // Update cache immediately
+      this.cache = newData;
+      this.cacheTimestamp = Date.now();
+
       this.notifySubscribers(newData);
     } catch (error) {
       console.error('Failed to set app data:', error);
@@ -165,7 +197,7 @@ export class LocalStorageManager {
     }
 
     const appData: AppData = {
-      tasks: response.data.tasks || [],
+      tasks: transformBackendTasks(response.data.tasks || []),
       leads: response.data.leads || [],
       dashboard: response.data.dashboard || DEFAULT_APP_DATA.dashboard,
       leadDetails: response.data.leadDetails || {},
@@ -236,29 +268,68 @@ export class LocalStorageManager {
   }
 
   /**
-   * Update specific lead details
+   * Update specific lead details AND sync to leads array
+   * CRITICAL: This ensures both storage structures stay in sync
    */
   updateLeadDetails(leadId: string, details: LeadDetail): void {
     const data = this.getAppData();
+
+    // Validate lead detail data
+    if (process.env.NODE_ENV === 'development') {
+      validateLeadData(details);
+    }
+
     const newLeadDetails = { ...data.leadDetails, [leadId]: details };
-    this.setAppData({ leadDetails: newLeadDetails });
+
+    // SYNC: Also update leads array if it exists
+    const leads = data.leads.map(lead => {
+      if (lead.lead_id === leadId) {
+        const updated = {
+          ...lead,
+          lead_type: details.lead_type,
+          temperature: details.temperature,
+          stage: details.lead_stage || details.stage,
+          lead_stage: details.lead_stage || details.stage,
+          name: details.name,
+          image_url: details.image_url,
+          contact: details.contact,
+          property: details.property,
+          next_follow_up: details.next_follow_up,
+        };
+        // Validate synced data
+        if (process.env.NODE_ENV === 'development') {
+          validateLeadData(updated);
+        }
+        return updated;
+      }
+      return lead;
+    });
+
+    console.log(`🔄 Synced lead ${leadId} to both leadDetails{} and leads[] with lead_type: ${details.lead_type}`);
+    this.setAppData({ leadDetails: newLeadDetails, leads });
   }
 
   /**
    * Get notes for a lead
+   * Notes are now stored in leadDetails[leadId].notes instead of notes[leadId]
    */
   getNotes(leadId: string): Note[] {
     const data = this.getAppData();
-    return data.notes[leadId] || [];
+    return data.leadDetails[leadId]?.notes || [];
   }
 
   /**
    * Update notes for a lead
+   * Notes are now stored in leadDetails[leadId].notes instead of notes[leadId]
    */
   updateNotes(leadId: string, notes: Note[]): void {
     const data = this.getAppData();
-    const newNotes = { ...data.notes, [leadId]: notes };
-    this.setAppData({ notes: newNotes });
+    const leadDetail = data.leadDetails[leadId];
+    if (leadDetail) {
+      const updatedLeadDetail = { ...leadDetail, notes };
+      const newLeadDetails = { ...data.leadDetails, [leadId]: updatedLeadDetail };
+      this.setAppData({ leadDetails: newLeadDetails });
+    }
   }
 
   /**
@@ -301,37 +372,79 @@ export class LocalStorageManager {
     // Remove from leads array
     const leads = data.leads.filter(lead => lead.lead_id !== leadId);
 
-    // Remove from leadDetails
+    // Remove from leadDetails (notes are inside leadDetails, so they're removed automatically)
     const leadDetails = { ...data.leadDetails };
     delete leadDetails[leadId];
-
-    // Remove from notes
-    const notes = { ...data.notes };
-    delete notes[leadId];
 
     // Remove from communication history
     const communicationHistory = { ...data.communicationHistory };
     delete communicationHistory[leadId];
 
     // Remove tasks/follow-ups associated with this lead
-    const tasks = data.tasks.filter(task => task.leadId !== leadId);
+    const tasks = data.tasks.map(group => ({
+      ...group,
+      items: group.items.filter(task => task.leadId !== leadId)
+    })).filter(group => group.items.length > 0);
 
-    this.setAppData({ leads, leadDetails, notes, communicationHistory, tasks });
+    this.setAppData({ leads, leadDetails, communicationHistory, tasks });
   }
 
   /**
-   * Update a single lead in the leads array
+   * Update a single lead in the leads array AND sync to leadDetails
+   * CRITICAL: This ensures both storage structures stay in sync
    */
   updateSingleLead(leadId: string, updates: Partial<Lead>): void {
     const data = this.getAppData();
-    const leads = data.leads.map(lead =>
-      lead.lead_id === leadId ? { ...lead, ...updates } : lead
-    );
-    this.setAppData({ leads });
+
+    // Update leads array
+    const leads = data.leads.map(lead => {
+      if (lead.lead_id === leadId) {
+        const updated = { ...lead, ...updates };
+        // Validate updated lead data
+        if (process.env.NODE_ENV === 'development') {
+          validateLeadData(updated);
+        }
+        return updated;
+      }
+      return lead;
+    });
+
+    // SYNC: Also update leadDetails (create if doesn't exist)
+    const leadDetails = { ...data.leadDetails };
+    if (leadDetails[leadId]) {
+      // Entry exists, update it
+      leadDetails[leadId] = {
+        ...leadDetails[leadId],
+        ...updates,
+        // Ensure contact.phone is always a string
+        contact: {
+          ...leadDetails[leadId]?.contact,
+          ...updates.contact,
+          phone: updates.contact?.phone || leadDetails[leadId]?.contact?.phone || ''
+        }
+      };
+      console.log(`🔄 Synced lead ${leadId} to both leads[] and leadDetails{} with lead_type: ${updates.lead_type || leadDetails[leadId].lead_type}`);
+    } else {
+      // CRITICAL FIX: Entry doesn't exist, create it from updated lead
+      const fullLead = leads.find(l => l.lead_id === leadId);
+      if (fullLead) {
+        leadDetails[leadId] = {
+          ...fullLead,
+          notes: [],
+          communication_history: [],
+          purchase: {},
+          management: {},
+        } as any;
+        console.log(`✅ Created missing leadDetails entry for ${leadId} with lead_type: ${fullLead.lead_type}`);
+      }
+    }
+
+    this.setAppData({ leads, leadDetails });
   }
 
   /**
    * Add a new lead (with deduplication)
+   * CRITICAL: Populates BOTH leads[] and leadDetails{} to prevent API refetch
    */
   addLead(lead: Lead): void {
     const data = this.getAppData();
@@ -339,9 +452,107 @@ export class LocalStorageManager {
     // Check if lead already exists to prevent duplicates
     const leadExists = data.leads.some(l => l.lead_id === lead.lead_id);
 
-    // Only add if it doesn't already exist
+    // Add to leads array if doesn't exist
     const leads = leadExists ? data.leads : [lead, ...data.leads];
-    this.setAppData({ leads });
+
+    // CRITICAL FIX: Also add to leadDetails{} so details page doesn't need to fetch from API
+    const leadDetails = { ...data.leadDetails };
+    if (!leadDetails[lead.lead_id]) {
+      // Convert Lead to LeadDetail format (they have similar structure)
+      leadDetails[lead.lead_id] = {
+        ...lead,
+        notes: [],
+        communication_history: [],
+        purchase: {},
+        management: {},
+      } as any;
+      console.log(`✅ Added new lead ${lead.lead_id} to both leads[] and leadDetails{} with lead_type: ${lead.lead_type}`);
+    }
+
+    this.setAppData({ leads, leadDetails });
+  }
+
+  /**
+   * Process complete new lead data in a single atomic transaction
+   * More efficient than multiple separate updates
+   * CRITICAL: Ensures all data components are stored correctly
+   */
+  processNewLeadData(
+    leadId: string,
+    leadData: LeadDetail,
+    notes: Note[],
+    tasks: TaskGroup[],
+    communicationHistory: CommunicationEvent[]
+  ): void {
+    const currentData = this.getAppData();
+
+    // 1. Update lead in leads array
+    const updatedLeads = currentData.leads.map((lead) =>
+      lead.lead_id === leadId ? { ...lead, ...leadData } : lead
+    );
+
+    // 2. Update leadDetails with lead data AND notes
+    const updatedLeadDetails = {
+      ...currentData.leadDetails,
+      [leadId]: {
+        ...leadData,
+        notes: notes.length > 0 ? notes : (leadData.notes || []),
+      },
+    };
+
+    // 3. Merge tasks with existing (grouped by date, no duplicates)
+    const mergedTasks = this.mergeTaskGroups(currentData.tasks, tasks);
+
+    // 4. Add communication history
+    const updatedHistory = {
+      ...currentData.communicationHistory,
+      [leadId]: communicationHistory,
+    };
+
+    console.log(`🔄 Batch processing new lead ${leadId}:`, {
+      lead_type: leadData.lead_type,
+      notes: notes.length,
+      tasks_groups: tasks.length,
+      history_events: communicationHistory.length,
+    });
+
+    // Single atomic update - more efficient than 4 separate updates
+    this.setAppData({
+      leads: updatedLeads,
+      leadDetails: updatedLeadDetails,
+      tasks: mergedTasks,
+      communicationHistory: updatedHistory,
+    });
+
+    console.log(`✅ Successfully stored all data for lead ${leadId} with lead_type: ${leadData.lead_type}`);
+  }
+
+  /**
+   * Helper: Merge task groups by date (prevents duplicates)
+   */
+  private mergeTaskGroups(existing: TaskGroup[], newGroups: TaskGroup[]): TaskGroup[] {
+    const merged = new Map<string, any[]>();
+
+    // Add existing tasks
+    existing.forEach((group) => {
+      merged.set(group.date, [...group.items]);
+    });
+
+    // Add new tasks (avoid duplicates by ID)
+    newGroups.forEach((group) => {
+      const existingItems = merged.get(group.date) || [];
+      const existingIds = new Set(existingItems.map((t: any) => t.id));
+      const newItems = group.items.filter((t) => !existingIds.has(t.id));
+
+      if (newItems.length > 0) {
+        merged.set(group.date, [...existingItems, ...newItems]);
+      }
+    });
+
+    // Convert map to array and sort by date
+    return Array.from(merged.entries())
+      .map(([date, items]) => ({ date, items }))
+      .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
   }
 
   /**

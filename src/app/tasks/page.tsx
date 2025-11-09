@@ -12,6 +12,11 @@ import { useTasks } from '@/hooks/useAppData';
 export default function TasksPage() {
   const [isLoading, setIsLoading] = useState(true);
   const [expandedTaskId, setExpandedTaskId] = useState<string | null>(null);
+  const [processedTasks, setProcessedTasks] = useState<{
+    overdueTasks: any[];
+    upcomingTasks: any[];
+  }>({ overdueTasks: [], upcomingTasks: [] });
+
   const { toast } = useToast();
   const { t, language } = useLanguage();
   const dateLocale = language === 'pt' ? ptBR : undefined;
@@ -19,10 +24,7 @@ export default function TasksPage() {
   // Use localStorage-based tasks data
   const tasks = useTasks();
 
-  useEffect(() => {
-    setIsLoading(false);
-  }, []);
-
+  // Format task date - helper function
   const formatTaskDate = (dateStr: string) => {
     const date = new Date(dateStr);
     if (!isValid(date)) return t.tasks.invalidDate;
@@ -40,11 +42,15 @@ export default function TasksPage() {
     return format(date, 'eeee - MMMM d, yyyy', formatOptions);
   };
 
-  const { overdueTasks, upcomingTasks } = useMemo(() => {
+  // Process tasks on CLIENT-SIDE ONLY to avoid hydration mismatch
+  useEffect(() => {
     if (!tasks || tasks.length === 0) {
-      return { overdueTasks: [], upcomingTasks: [] };
+      setProcessedTasks({ overdueTasks: [], upcomingTasks: [] });
+      setIsLoading(false);
+      return;
     }
 
+    // All date calculations happen here, on client only
     const today = startOfDay(new Date());
     const overdue: any[] = [];
     const upcoming: any[] = [];
@@ -63,23 +69,30 @@ export default function TasksPage() {
       }
     });
 
-    return { overdueTasks: overdue, upcomingTasks: upcoming };
-  }, [tasks]);
+    setProcessedTasks({ overdueTasks: overdue, upcomingTasks: upcoming });
+    setIsLoading(false);
+  }, [tasks, t, dateLocale]);
+
+  const { overdueTasks, upcomingTasks } = processedTasks;
 
   const handleToggleExpand = (taskId: string) => {
     setExpandedTaskId(prevId => (prevId === taskId ? null : taskId));
   };
 
-  const renderTaskSection = (tasks: any[], title: string, emptyMessage: string, isOverdue: boolean = false) => (
-    <section className="mb-8" suppressHydrationWarning>
-      <h3 className={`text-xl font-semibold mb-4 ${isOverdue ? 'text-red-600' : ''}`}>
-        {title}
-        {tasks.length > 0 && (
-          <span className={`ml-2 text-sm font-normal ${isOverdue ? 'text-red-500' : 'text-gray-500'}`}>
-            ({tasks.length} {tasks.length === 1 ? t.tasks.task : t.tasks.tasks})
-          </span>
-        )}
-      </h3>
+  const renderTaskSection = (tasks: any[], title: string, emptyMessage: string, isOverdue: boolean = false) => {
+    // Calculate total number of individual tasks (not task groups)
+    const totalTasks = tasks.reduce((sum, group) => sum + (group.items?.length || 0), 0);
+
+    return (
+      <section className="mb-8">
+        <h3 className={`text-xl font-semibold mb-4 ${isOverdue ? 'text-red-600' : ''}`}>
+          {title}
+          {totalTasks > 0 && (
+            <span className={`ml-2 text-sm font-normal ${isOverdue ? 'text-red-500' : 'text-gray-500'}`}>
+              ({totalTasks})
+            </span>
+          )}
+        </h3>
       {isLoading ? (
         <div className="flex items-center justify-center py-12">
           <Loader2 className="h-8 w-8 animate-spin text-gray-400" />
@@ -87,8 +100,8 @@ export default function TasksPage() {
       ) : (
         <div className="space-y-6">
           {tasks.map((group: any) => (
-            <div key={group.date} suppressHydrationWarning>
-              <h4 className={`font-semibold mb-2 ${isOverdue ? 'text-red-600' : 'text-gray-600'}`} suppressHydrationWarning>
+            <div key={group.date}>
+              <h4 className={`font-semibold mb-2 ${isOverdue ? 'text-red-600' : 'text-gray-600'}`}>
                 {group.formattedDate}
               </h4>
               <div className="space-y-3">
@@ -115,8 +128,9 @@ export default function TasksPage() {
           )}
         </div>
       )}
-    </section>
-  );
+      </section>
+    );
+  };
 
   return (
     <div className="p-4 pb-20">

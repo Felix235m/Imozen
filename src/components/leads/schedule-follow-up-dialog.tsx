@@ -25,6 +25,8 @@ import {
 import { DatePicker } from '@/components/ui/date-picker';
 import { useLanguage } from '@/hooks/useLanguage';
 import { useToast } from '@/hooks/use-toast';
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { LeadBadgeGroup } from './lead-badges';
 
 interface ScheduleFollowUpDialogProps {
   open: boolean;
@@ -32,6 +34,11 @@ interface ScheduleFollowUpDialogProps {
   lead: {
     lead_id: string;
     name: string;
+    image_url?: string;
+    lead_type?: 'Buyer' | 'Seller';
+    temperature?: string;
+    stage?: string;
+    lead_stage?: string;
   };
   onSuccess?: () => void; // Callback to refresh leads list
 }
@@ -200,25 +207,42 @@ export function ScheduleFollowUpDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-[480px]">
+      <DialogContent className="max-w-[90%] sm:max-w-[480px] rounded-2xl p-6">
         <DialogHeader>
-          <DialogTitle>
+          <DialogTitle className="text-xl font-semibold text-gray-800 text-center mb-3">
             {t.leads.scheduleFollowUpDialog.title.replace('{{name}}', lead.name)}
           </DialogTitle>
-          <DialogDescription>
+          <div className="flex flex-col items-center gap-3 py-3">
+            <Avatar className="h-14 w-14">
+              <AvatarImage src={lead.image_url} alt={lead.name} />
+              <AvatarFallback className="text-lg font-semibold">
+                {lead.name.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2)}
+              </AvatarFallback>
+            </Avatar>
+            <div className="text-center">
+              <h3 className="font-semibold text-lg mb-2">{lead.name}</h3>
+              <LeadBadgeGroup
+                leadType={lead.lead_type}
+                temperature={lead.temperature}
+                stage={lead.lead_stage || lead.stage}
+                className="justify-center"
+              />
+            </div>
+          </div>
+          <DialogDescription className="sr-only">
             {t.leads.scheduleFollowUpDialog.description}
           </DialogDescription>
         </DialogHeader>
 
-        <div className="space-y-4 py-4">
+        <div className="space-y-5 mt-2">
           {/* Date Shortcuts Dropdown */}
           <div className="space-y-2">
-            <Label htmlFor="date-shortcut" className="text-sm font-medium flex items-center gap-2">
+            <Label htmlFor="date-shortcut" className="text-sm font-medium text-gray-700 flex items-center gap-2">
               <CalendarIcon className="h-4 w-4" />
               {t.leads.scheduleFollowUpDialog.followUpDate}
             </Label>
             <Select value={selectedShortcut} onValueChange={setSelectedShortcut}>
-              <SelectTrigger id="date-shortcut" className="w-full">
+              <SelectTrigger id="date-shortcut" className="w-full bg-gray-50 border-gray-200">
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
@@ -247,7 +271,7 @@ export function ScheduleFollowUpDialog({
           {/* Custom Date Picker - Show when "custom" is selected */}
           {selectedShortcut === 'custom' && (
             <div className="space-y-2">
-              <Label htmlFor="custom-date" className="text-sm font-medium">
+              <Label htmlFor="custom-date" className="text-sm font-medium text-gray-700">
                 {t.leads.scheduleFollowUpDialog.selectDate}
               </Label>
               <DatePicker
@@ -260,7 +284,7 @@ export function ScheduleFollowUpDialog({
 
           {/* Note Textarea */}
           <div className="space-y-2">
-            <Label htmlFor="schedule-note" className="text-sm font-medium">
+            <Label htmlFor="schedule-note" className="text-sm font-medium text-gray-700">
               {t.leads.scheduleFollowUpDialog.noteLabel}
             </Label>
             <Textarea
@@ -269,27 +293,29 @@ export function ScheduleFollowUpDialog({
               onChange={(e) => setNote(e.target.value)}
               placeholder={t.leads.scheduleFollowUpDialog.notePlaceholder}
               rows={4}
-              className="resize-none"
+              className="bg-gray-50 border-gray-200 resize-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
             />
           </div>
         </div>
 
-        <DialogFooter>
+        <div className="flex gap-3 justify-center mt-6">
           <Button
             variant="outline"
             onClick={() => onOpenChange(false)}
             disabled={isLoading}
+            className="h-11 px-6 border-gray-200 text-gray-600 hover:bg-gray-50"
           >
             {t.common.cancel}
           </Button>
           <Button
             onClick={handleSchedule}
             disabled={isLoading || (selectedShortcut === 'custom' && !customDate)}
+            className="h-11 px-6 bg-blue-600 hover:bg-blue-700 text-white"
           >
             {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
             {isLoading ? t.leads.scheduleFollowUpDialog.scheduling : t.leads.scheduleFollowUpDialog.scheduleButton}
           </Button>
-        </DialogFooter>
+        </div>
       </DialogContent>
     </Dialog>
   );

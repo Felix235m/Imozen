@@ -4,6 +4,8 @@
  * Handles field name mapping, type conversions, and data structure transformation
  */
 
+import { extractLeadType, extractLeadStage, extractTemperature } from './lead-normalization';
+
 type WebhookLeadData = {
   row_number?: number;
   lead_id: string;
@@ -48,12 +50,19 @@ export function transformWebhookResponseToLeadListItem(response: any): any {
     return null;
   }
 
+  // Use centralized normalization functions
+  const leadType = extractLeadType(data);
+  const leadStage = extractLeadStage(data);
+  const temperature = extractTemperature(data);
+  console.log(`🔍 transformWebhookResponseToLeadListItem - lead_type: ${leadType}`);
+
   return {
     lead_id: data.lead_id,
     name: data.name || '',
-    temperature: data['Hot/Warm/Cold'] || data.temperature || 'Cold',
-    stage: data.Stage || 'New Lead',
-    lead_stage: data.Stage || 'New Lead',
+    temperature,
+    stage: leadStage,
+    lead_stage: leadStage,
+    lead_type: leadType,
     created_at: data.created_at,
     next_follow_up: {
       status: data['follow-up_task'] || '',
@@ -74,17 +83,29 @@ export function transformWebhookResponseToLeadData(response: any): any {
     return null;
   }
 
-  // Parse location preferences
-  const locations = data.location_preference
-    ? data.location_preference.split(',').map(loc => loc.trim())
-    : [];
+  // Parse location preferences (handle both array and string formats)
+  let locations: string[] = [];
+  if (data.location_preference) {
+    if (Array.isArray(data.location_preference)) {
+      locations = data.location_preference.map((loc: any) => String(loc).trim());
+    } else if (typeof data.location_preference === 'string') {
+      locations = data.location_preference.split(',').map(loc => loc.trim());
+    }
+  }
+
+  // Use centralized normalization functions
+  const leadType = extractLeadType(data);
+  const leadStage = extractLeadStage(data);
+  const temperature = extractTemperature(data);
+  console.log(`🔍 transformWebhookResponseToLeadData - lead_type: ${leadType}`);
 
   return {
     lead_id: data.lead_id,
     name: data.name || '',
-    temperature: data['Hot/Warm/Cold'] || data.temperature || 'Cold',
-    stage: data.Stage || 'New Lead',
-    lead_stage: data.Stage || 'New Lead',
+    temperature,
+    stage: leadStage,
+    lead_stage: leadStage,
+    lead_type: leadType,
     next_follow_up: {
       date: data['next follow-up date'] || null,
       status: data['follow-up_task'] || '',
@@ -94,7 +115,7 @@ export function transformWebhookResponseToLeadData(response: any): any {
     contact: {
       email: String(data.email || ''),
       phone: data.phone || '',
-      language: data['Language preference'] || 'English',
+      language: data['Language preference'] || data['Language_preference'] || 'English',
     },
     property: {
       type: data.property_type || '',
@@ -128,9 +149,75 @@ export function transformWebhookResponseToLeadData(response: any): any {
 
 
 /**
+ * Transform new backend response structure to frontend format
+ * Handles the new backend structure where:
+ * - property.types (array) -> property.type (string)
+ * - property.budget (string "€10000") -> property.budget (number)
+ * - management.created_at -> created_at (top-level)
+ * - management.language -> contact.language
+ */
+export function transformNewBackendResponse(backendLead: any): any {
+  if (!backendLead) return backendLead;
+
+  // Parse budget: "€10000" -> 10000
+  const budgetNum = parseBudget(backendLead.property?.budget);
+
+  // Parse bedrooms if it's a string
+  const bedroomsNum = typeof backendLead.property?.bedrooms === 'string'
+    ? parseInt(backendLead.property.bedrooms) || 0
+    : backendLead.property?.bedrooms || 0;
+
+  // Use centralized normalization for lead_type
+  const leadType = extractLeadType(backendLead);
+  console.log(`🔍 transformNewBackendResponse - lead_type: ${leadType}`);
+
+  return {
+    ...backendLead,
+    // Set lead_type with proper fallback
+    lead_type: leadType,
+    // Move created_at to top level from management
+    created_at: backendLead.management?.created_at || backendLead.created_at,
+    created_at_formatted: formatDate(backendLead.management?.created_at || backendLead.created_at),
+
+    // Fix property fields
+    property: {
+      ...backendLead.property,
+      // Convert types array to single type string
+      type: backendLead.property?.types?.[0] || backendLead.property?.type || '',
+      // Convert budget string to number and format
+      budget: budgetNum,
+      budget_formatted: budgetNum ? `€${budgetNum.toLocaleString()}` : '€0',
+      // Convert bedrooms string to number
+      bedrooms: bedroomsNum,
+    },
+
+    // Move language from management to contact
+    contact: {
+      ...backendLead.contact,
+      language: backendLead.management?.language || backendLead.contact?.language || 'English',
+    },
+  };
+}
+
+/**
+ * Parse budget string to number
+ * Handles formats like "€10000", "€10,000", "10000"
+ */
+function parseBudget(budgetStr: any): number {
+  if (!budgetStr) return 0;
+  if (typeof budgetStr === 'number') return budgetStr;
+
+  // Remove currency symbols, spaces, and commas
+  const cleaned = String(budgetStr).replace(/[€$,\s]/g, '');
+  const parsed = parseInt(cleaned);
+  return isNaN(parsed) ? 0 : parsed;
+}
+
+/**
  * Format ISO date string to readable format
  */
 function formatDate(isoDate: string): string {
+  if (!isoDate) return '';
   try {
     const date = new Date(isoDate);
     return date.toLocaleDateString('en-US', {

@@ -24,11 +24,16 @@ import {
 } from '@/components/ui/select';
 import { DatePicker } from '@/components/ui/date-picker';
 import { useLanguage } from "@/hooks/useLanguage";
+import { BalancedLeadHeader } from "@/components/leads/lead-headers";
 
 interface CancelTaskDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   leadName?: string;
+  leadImageUrl?: string;
+  leadType?: 'Buyer' | 'Seller';
+  leadTemperature?: string;
+  leadStage?: string;
   onConfirm: (note: string, nextFollowUpDate?: Date, scheduleNext?: boolean) => void;
   isLoading?: boolean;
 }
@@ -37,6 +42,10 @@ export function CancelTaskDialog({
   open,
   onOpenChange,
   leadName,
+  leadImageUrl,
+  leadType,
+  leadTemperature,
+  leadStage,
   onConfirm,
   isLoading = false,
 }: CancelTaskDialogProps) {
@@ -120,11 +129,20 @@ export function CancelTaskDialog({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-[90%] sm:max-w-[480px] rounded-2xl p-6">
         <DialogHeader>
-          <DialogTitle className="text-xl font-semibold text-gray-800 text-center">
-            {leadName ? t.taskDialogs.cancelFollowUp + ` - ${leadName}` : t.taskDialogs.cancelFollowUp}
+          <DialogTitle className="text-xl font-semibold text-gray-800 text-center mb-3">
+            {t.taskDialogs.cancelFollowUp}
           </DialogTitle>
+          {leadName && (
+            <BalancedLeadHeader
+              name={leadName}
+              imageUrl={leadImageUrl}
+              leadType={leadType}
+              temperature={leadTemperature}
+              stage={leadStage}
+            />
+          )}
           <DialogDescription className="sr-only">
-            Cancel this follow-up permanently
+            {t.taskDialogs.cancelFollowUpPermanentDescription} - {leadName}
           </DialogDescription>
         </DialogHeader>
 

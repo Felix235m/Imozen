@@ -28,6 +28,7 @@ import { useState, useEffect } from "react";
 import { Loader2, Home, Building, Warehouse, Mountain, Minus, Plus, X, ChevronsUpDown, DollarSign, CreditCard } from "lucide-react";
 import { useLanguage } from "@/hooks/useLanguage";
 import { cn } from "@/lib/utils";
+import { extractLeadType, extractLeadStage, extractTemperature } from "@/lib/lead-normalization";
 import { Badge } from "@/components/ui/badge";
 import { DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuCheckboxItem } from "@/components/ui/dropdown-menu";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -35,6 +36,7 @@ import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Separator } from "@/components/ui/separator";
 import { useLeads, useNotifications } from "@/hooks/useAppData";
 import { localStorageManager } from "@/lib/local-storage-manager";
+import { processNewLeadResponse } from "@/lib/new-lead-processor";
 import type { Notification } from "@/types/app-data";
 
 // Constants
@@ -70,6 +72,7 @@ const propertiesViewedOptions = ["No", "A few", "Many"];
 // Combined form schema with all fields
 const formSchema = z.object({
   // Step 1: Contact Information
+  leadType: z.enum(['Buyer', 'Seller']).default('Buyer'),
   firstName: z.string().min(1, "First name is required"),
   lastName: z.string().min(1, "Last name is required"),
   countryCode: z.string().min(1, "Country code is required"),
@@ -110,6 +113,7 @@ export default function NewLeadPage() {
     resolver: zodResolver(formSchema),
     defaultValues: {
       // Step 1 defaults
+      leadType: "Buyer",
       firstName: "",
       lastName: "",
       countryCode: "+351",
@@ -170,6 +174,7 @@ export default function NewLeadPage() {
   }, [form]);
 
   // Watch values for conditional logic
+  const leadType = form.watch("leadType");
   const propertyType = form.watch("propertyType");
   const bedrooms = form.watch("bedrooms");
   const locations = form.watch("locations") || [];
@@ -177,6 +182,7 @@ export default function NewLeadPage() {
 
   const isBedroomsDisabled = propertyType === 'Commercial' || propertyType === 'Land';
   const isCreditPreApprovalDisabled = financingType !== 'Credit';
+  const isBuyer = leadType === 'Buyer';
 
   // Auto-disable bedrooms for Commercial/Land
   useEffect(() => {
@@ -226,6 +232,7 @@ export default function NewLeadPage() {
 
     // Prepare payload for webhook
     const payload = {
+      leadType: values.leadType,
       firstName: values.firstName,
       lastName: values.lastName,
       phoneNumber: completePhoneNumber,
@@ -253,6 +260,7 @@ export default function NewLeadPage() {
       temperature: 'Warm' as const,
       stage: 'New Lead' as const,
       lead_stage: 'New Lead' as const,
+      lead_type: values.leadType as 'Buyer' | 'Seller',
       next_follow_up: {
         status: 'Not set',
         date: null,
@@ -321,30 +329,59 @@ export default function NewLeadPage() {
       }
 
       const responseData = await response.json();
-      const serverLead = Array.isArray(responseData) ? responseData[0] : responseData;
 
-      // SUCCESS: Update localStorage with complete server data
-      updateSingleLead(leadId, {
-        ...optimisticLead,
-        // Map server fields to our structure
-        temperature: serverLead['Hot/Warm/Cold'] || optimisticLead.temperature,
-        stage: serverLead.Stage || optimisticLead.stage,
-        lead_stage: serverLead.Stage || optimisticLead.lead_stage,
-        // Add any additional server fields
-        ...serverLead,
+      // Process comprehensive server response (extracts lead, notes, tasks, communication history)
+      console.log('📥 Processing comprehensive new lead response...');
+      const processed = processNewLeadResponse(responseData);
+
+      console.log('✅ Extracted from server response:', {
+        lead_id: processed.lead.lead_id,
+        lead_type: processed.lead.lead_type,
+        notes: processed.metadata.notesCount,
+        tasks: processed.metadata.tasksCount,
+        history: processed.metadata.historyCount,
       });
 
-      // Add success notification
+      // Store ALL components in a single atomic transaction
+      localStorageManager.processNewLeadData(
+        leadId,
+        processed.lead,
+        processed.notes,
+        processed.tasks,
+        processed.communicationHistory
+      );
+
+      console.log(`✅ New lead ${leadId} created with lead_type: ${processed.lead.lead_type}`);
+
+      // Update dashboard stats
+      const currentDashboard = localStorageManager.getDashboard();
+      const updatedDashboard = {
+        success: true,
+        counts: {
+          all: currentDashboard.counts.all + 1,
+          new_this_week: currentDashboard.counts.new_this_week + 1,
+          hot: currentDashboard.counts.hot + (processed.lead.temperature === 'Hot' ? 1 : 0),
+        },
+        conversion_rate: currentDashboard.conversion_rate,
+      };
+      localStorageManager.updateDashboard(updatedDashboard);
+
+      // Add enhanced success notification with metadata
       const notifications = localStorageManager.getNotifications();
       const successNotification: Notification = {
         id: `notif-success-${Date.now()}`,
         type: 'new_lead',
         title: 'Lead Created Successfully',
-        message: `${optimisticLead.name} has been added to your leads.`,
+        message: `${processed.lead.name} added with ${processed.metadata.notesCount} notes and ${processed.metadata.tasksCount} tasks`,
         timestamp: Date.now(),
         priority: 'medium',
         read: false,
         lead_id: leadId,
+        metadata: {
+          lead_type: processed.lead.lead_type,
+          temperature: processed.lead.temperature,
+          stage: processed.lead.lead_stage,
+        },
       };
       updateNotifications([successNotification, ...notifications]);
 
@@ -420,6 +457,68 @@ export default function NewLeadPage() {
                   <CardDescription>Basic contact details for the lead</CardDescription>
                 </CardHeader>
                 <CardContent className="space-y-6">
+                  {/* Lead Type Selection */}
+                  <FormField
+                    control={form.control}
+                    name="leadType"
+                    render={({ field }) => (
+                      <FormItem className="space-y-3">
+                        <FormLabel className="text-base font-semibold">Lead Type <span className="text-red-500">*</span></FormLabel>
+                        <FormControl>
+                          <RadioGroup
+                            onValueChange={field.onChange}
+                            defaultValue={field.value}
+                            className="grid grid-cols-2 gap-4"
+                          >
+                            <FormItem>
+                              <FormLabel className="cursor-pointer">
+                                <div className={cn(
+                                  "flex items-center justify-center p-4 rounded-lg border-2 transition-all",
+                                  field.value === "Buyer"
+                                    ? "border-green-500 bg-green-50 dark:bg-green-900/20"
+                                    : "border-gray-200 hover:border-gray-300"
+                                )}>
+                                  <FormControl>
+                                    <RadioGroupItem value="Buyer" className="sr-only" />
+                                  </FormControl>
+                                  <span className={cn(
+                                    "text-lg font-semibold",
+                                    field.value === "Buyer" ? "text-green-700 dark:text-green-300" : "text-gray-700"
+                                  )}>
+                                    Buyer
+                                  </span>
+                                </div>
+                              </FormLabel>
+                            </FormItem>
+                            <FormItem>
+                              <FormLabel className="cursor-pointer">
+                                <div className={cn(
+                                  "flex items-center justify-center p-4 rounded-lg border-2 transition-all",
+                                  field.value === "Seller"
+                                    ? "border-purple-500 bg-purple-50 dark:bg-purple-900/20"
+                                    : "border-gray-200 hover:border-gray-300"
+                                )}>
+                                  <FormControl>
+                                    <RadioGroupItem value="Seller" className="sr-only" />
+                                  </FormControl>
+                                  <span className={cn(
+                                    "text-lg font-semibold",
+                                    field.value === "Seller" ? "text-purple-700 dark:text-purple-300" : "text-gray-700"
+                                  )}>
+                                    Seller
+                                  </span>
+                                </div>
+                              </FormLabel>
+                            </FormItem>
+                          </RadioGroup>
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+
+                  <Separator />
+
                   <FormField
                     control={form.control}
                     name="firstName"
@@ -584,7 +683,11 @@ export default function NewLeadPage() {
                     name="locations"
                     render={({ field }) => (
                       <FormItem className="flex flex-col">
-                        <FormLabel>{t.newLead.locationPreferences || "Location Preferences"}</FormLabel>
+                        <FormLabel className="transition-all duration-300">
+                          {isBuyer
+                            ? (t.newLead.desiredLocations || "Desired Locations")
+                            : (t.newLead.propertyLocation || "Property Location")}
+                        </FormLabel>
                         <DropdownMenu>
                           <DropdownMenuTrigger asChild>
                             <Button
@@ -636,7 +739,11 @@ export default function NewLeadPage() {
                   />
 
                   <FormItem>
-                    <FormLabel>{t.leads.budget || "Budget"}</FormLabel>
+                    <FormLabel className="transition-all duration-300">
+                      {isBuyer
+                        ? (t.newLead.budget || "Budget")
+                        : (t.newLead.askingPrice || "Asking Price")}
+                    </FormLabel>
                     <div className="flex items-center gap-2">
                       <FormField
                         control={form.control}
@@ -718,15 +825,20 @@ export default function NewLeadPage() {
               <Card>
                 <CardHeader>
                   <CardTitle>{t.newLead.qualificationDetails || "Qualification Details"}</CardTitle>
-                  <CardDescription>Understanding the lead's buying position</CardDescription>
+                  <CardDescription>
+                    {isBuyer ? "Understanding the lead's buying position" : "Understanding the lead's selling position"}
+                  </CardDescription>
                 </CardHeader>
                 <CardContent className="space-y-6">
-                  <FormField
-                    control={form.control}
-                    name="financingType"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>{t.newLead.financingType || "Financing Type"}</FormLabel>
+                  {/* Financing Type - Buyer Only */}
+                  {isBuyer && (
+                    <div className="transition-all duration-300 ease-in-out">
+                      <FormField
+                        control={form.control}
+                        name="financingType"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>{t.newLead.financingType || "Financing Type"}</FormLabel>
                         <FormControl>
                           <div className="grid grid-cols-2 gap-4">
                             {financingTypes.map((type) => (
@@ -746,38 +858,49 @@ export default function NewLeadPage() {
                           </div>
                         </FormControl>
                         <FormMessage />
-                      </FormItem>
-                    )}
-                  />
+                          </FormItem>
+                        )}
+                      />
+                    </div>
+                  )}
 
-                  <FormField
-                    control={form.control}
-                    name="creditPreApproval"
-                    render={({ field }) => (
-                      <FormItem className={cn("flex flex-row items-start space-x-3 space-y-0 rounded-md border p-4", isCreditPreApprovalDisabled && "opacity-50 cursor-not-allowed")}>
-                        <FormControl>
-                          <Checkbox
-                            checked={field.value}
-                            onCheckedChange={field.onChange}
-                            disabled={isCreditPreApprovalDisabled}
-                          />
-                        </FormControl>
-                        <div className="space-y-1 leading-none">
-                          <FormLabel className={cn(isCreditPreApprovalDisabled && "cursor-not-allowed")}>
-                            {t.newLead.creditPreApproval || "Credit Pre-Approval"}
-                          </FormLabel>
-                          <FormMessage />
-                        </div>
-                      </FormItem>
-                    )}
-                  />
+                  {/* Credit Pre-Approval - Buyer Only */}
+                  {isBuyer && (
+                    <div className="transition-all duration-300 ease-in-out">
+                      <FormField
+                        control={form.control}
+                        name="creditPreApproval"
+                        render={({ field }) => (
+                          <FormItem className={cn("flex flex-row items-start space-x-3 space-y-0 rounded-md border p-4", isCreditPreApprovalDisabled && "opacity-50 cursor-not-allowed")}>
+                            <FormControl>
+                              <Checkbox
+                                checked={field.value}
+                                onCheckedChange={field.onChange}
+                                disabled={isCreditPreApprovalDisabled}
+                              />
+                            </FormControl>
+                            <div className="space-y-1 leading-none">
+                              <FormLabel className={cn(isCreditPreApprovalDisabled && "cursor-not-allowed")}>
+                                {t.newLead.creditPreApproval || "Credit Pre-Approval"}
+                              </FormLabel>
+                              <FormMessage />
+                            </div>
+                          </FormItem>
+                        )}
+                      />
+                    </div>
+                  )}
 
                   <FormField
                     control={form.control}
                     name="purchaseTimeframe"
                     render={({ field }) => (
                       <FormItem className="space-y-3">
-                        <FormLabel>{t.newLead.whenPlanning || "When are they planning to purchase?"}</FormLabel>
+                        <FormLabel className="transition-all duration-300">
+                          {isBuyer
+                            ? (t.newLead.whenPlanning || "When are they planning to purchase?")
+                            : (t.newLead.whenPlanningSell || "When are they planning to sell?")}
+                        </FormLabel>
                         <FormControl>
                           <RadioGroup
                             onValueChange={field.onChange}
@@ -804,7 +927,11 @@ export default function NewLeadPage() {
                     name="searchDuration"
                     render={({ field }) => (
                       <FormItem className="space-y-3">
-                        <FormLabel>{t.newLead.howLongLooking || "How long have they been looking?"}</FormLabel>
+                        <FormLabel className="transition-all duration-300">
+                          {isBuyer
+                            ? (t.newLead.howLongLooking || "How long have they been looking?")
+                            : (t.newLead.howLongInMarket || "How long have they been in the market?")}
+                        </FormLabel>
                         <FormControl>
                           <RadioGroup
                             onValueChange={field.onChange}
@@ -826,12 +953,15 @@ export default function NewLeadPage() {
                     )}
                   />
 
-                  <FormField
-                    control={form.control}
-                    name="propertiesViewed"
-                    render={({ field }) => (
-                      <FormItem className="space-y-3">
-                        <FormLabel>{t.newLead.seenOtherProperties || "Have they seen other properties?"}</FormLabel>
+                  {/* Properties Viewed - Buyer Only */}
+                  {isBuyer && (
+                    <div className="transition-all duration-300 ease-in-out">
+                      <FormField
+                        control={form.control}
+                        name="propertiesViewed"
+                        render={({ field }) => (
+                          <FormItem className="space-y-3">
+                            <FormLabel>{t.newLead.seenOtherProperties || "Have they seen other properties?"}</FormLabel>
                         <FormControl>
                           <RadioGroup
                             onValueChange={field.onChange}
@@ -849,9 +979,11 @@ export default function NewLeadPage() {
                           </RadioGroup>
                         </FormControl>
                         <FormMessage />
-                      </FormItem>
-                    )}
-                  />
+                          </FormItem>
+                        )}
+                      />
+                    </div>
+                  )}
                 </CardContent>
               </Card>
 

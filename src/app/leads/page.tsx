@@ -17,6 +17,7 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import { useLanguage } from '@/hooks/useLanguage';
 import { LeadStatusDialog } from '@/components/leads/lead-status-dialog';
 import { ScheduleFollowUpDialog } from '@/components/leads/schedule-follow-up-dialog';
+import { LeadTypeBadge } from '@/components/leads/lead-badges';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -45,6 +46,7 @@ import { RetryPopup } from '@/components/notifications/retry-popup';
 import type { OptimisticOperation } from '@/types/app-data';
 import { checkForDraft, clearDraft, type DraftInfo } from '@/lib/draft-detector';
 import { DraftResumeDialog } from '@/components/leads/draft-resume-dialog';
+import { navigationOptimizer } from '@/lib/navigation-optimizer';
 
 
 type LeadTemperature = 'Hot' | 'Warm' | 'Cold';
@@ -68,6 +70,7 @@ type Lead = {
   temperature: LeadTemperature;
   stage: LeadStage;
   lead_stage?: LeadStage;
+  lead_type?: 'Buyer' | 'Seller';
   next_follow_up: {
     status: string;
     date: string | null;
@@ -147,6 +150,22 @@ function LeadsPageContent() {
     }
   };
 
+  // Helper function to format created date with Portugal timezone
+  const formatCreatedDate = (isoDate: string): string => {
+    if (!isoDate) return '';
+    try {
+      const date = new Date(isoDate);
+      return date.toLocaleDateString('en-US', {
+        month: 'short',
+        day: 'numeric',
+        year: 'numeric',
+        timeZone: 'Europe/Lisbon'
+      });
+    } catch {
+      return '';
+    }
+  };
+
   const LEAD_STAGES: { value: LeadStage; label: string; color: string; description: string, icon: React.ElementType }[] = [
     { value: 'New Lead', label: t.leads.stages.newLead, color: 'bg-blue-100 text-blue-700', description: t.leads.stageDescriptions.newLead, icon: UserPlus },
     { value: 'Contacted', label: t.leads.stages.contacted, color: 'bg-purple-100 text-purple-700', description: t.leads.stageDescriptions.contacted, icon: PhoneCall },
@@ -164,7 +183,13 @@ function LeadsPageContent() {
   useEffect(() => {
     // Data is loaded from localStorage via useLeads hook
     setIsLoading(false);
-  }, []);
+    
+    // PERFORMANCE FIX: Preload first few leads for instant navigation
+    const firstFewLeads = leads.slice(0, 5).map(lead => lead.lead_id);
+    if (firstFewLeads.length > 0) {
+      navigationOptimizer.preloadMultipleLeads(firstFewLeads);
+    }
+  }, [leads]);
 
   // Apply filters based on URL parameters from dashboard
   useEffect(() => {
@@ -274,7 +299,7 @@ function LeadsPageContent() {
 
     if (showOverdue || showUpcoming || showNoDate) {
       results = results.filter(lead => {
-        const followUpDate = lead.next_follow_up.date;
+        const followUpDate = lead.next_follow_up?.date;
 
         if (showNoDate && (!followUpDate || followUpDate === '-')) return true;
 
@@ -361,7 +386,33 @@ function LeadsPageContent() {
         return;
     }
     setIsNavigating(leadId);
-    // Data is already in localStorage, navigate directly
+    
+    // PERFORMANCE FIX: Preload lead details in background for instant navigation
+    // Check if lead details exist in localStorage
+    const { localStorageManager } = require('@/lib/local-storage-manager');
+    const leadDetails = localStorageManager.getLeadDetails(leadId);
+    
+    if (!leadDetails) {
+      // If details don't exist, fetch them in background before navigation
+      try {
+        const { cachedCallLeadApi } = require('@/lib/cached-api');
+        const { transformNewBackendResponse } = require('@/lib/lead-transformer');
+        
+        const response = await cachedCallLeadApi('get_lead_details', { lead_id: leadId });
+        const apiLead = Array.isArray(response) ? response[0] : response;
+        
+        if (apiLead) {
+          const transformed = transformNewBackendResponse(apiLead);
+          localStorageManager.updateLeadDetails(leadId, transformed);
+          console.log(`🚀 Preloaded lead ${leadId} details for instant navigation`);
+        }
+      } catch (error) {
+        console.warn(`Failed to preload lead ${leadId}:`, error);
+        // Continue with navigation even if preload fails
+      }
+    }
+    
+    // Navigate immediately - data should be available from localStorage
     router.push(`/leads/${leadId}`);
   };
 
@@ -774,16 +825,22 @@ function LeadsPageContent() {
                 )}
               </div>
               <div className="flex items-center gap-2 flex-wrap">
+                <LeadTypeBadge leadType={lead.lead_type} />
                 <Badge variant="outline" className={cn("text-xs", getStatusBadgeClass(lead.temperature))}>{getPriorityLabel(lead.temperature)}</Badge>
                 <span className="text-gray-400">•</span>
                 <p className="text-sm text-gray-500 flex items-center gap-1">
                   <Calendar className="h-3 w-3 sm:hidden" />
                   <span className="hidden sm:inline">{t.leads.nextFollowUp}</span>
                   <span className="sm:ml-1">
-                    {formatFollowUpDate(lead.next_follow_up.date)}
+                    {formatFollowUpDate(lead.next_follow_up?.date)}
                   </span>
                 </p>
               </div>
+              {lead.created_at && (
+                <p className="text-xs text-gray-400 mt-1">
+                  {t.leads.created} {formatCreatedDate(lead.created_at || lead.lead_id)}
+                </p>
+              )}
             </div>
           </div>
           {isNavigating === lead.lead_id && <Loader2 className="h-5 w-5 animate-spin text-primary" />}

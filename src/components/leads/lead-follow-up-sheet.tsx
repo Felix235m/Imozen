@@ -16,6 +16,8 @@ import { callFollowUpApi } from '@/lib/auth-api';
 import { useToast } from '@/hooks/use-toast';
 import { useLanguage } from '@/hooks/useLanguage';
 import { Input } from '../ui/input';
+import { LeadTypeBadge } from './lead-badges';
+import { CompactLeadHeader } from './lead-headers';
 
 type LeadFollowUpSheetProps = {
   open: boolean;
@@ -98,38 +100,32 @@ export function LeadFollowUpSheet({ open, onOpenChange, lead }: LeadFollowUpShee
                     </SheetDescription>
                 </SheetHeader>
 
-                <div className="flex-1 overflow-y-auto p-4 space-y-6">
-                    <div className="flex items-start gap-4">
-                        <Avatar className="h-12 w-12">
-                            <AvatarImage src={lead.image_url} />
-                            <AvatarFallback>{lead.name.split(' ').map(n=>n[0]).join('')}</AvatarFallback>
-                        </Avatar>
-                        <div>
-                            <div className="flex items-center gap-2">
-                                <h3 className="text-lg font-bold">{lead.name}</h3>
-                                <Badge variant="outline" className={cn("text-sm", getStatusBadgeClass(lead.temperature))}>{lead.temperature}</Badge>
-                            </div>
-                            <p className="text-sm text-gray-500">{String(lead.contact.phone || '')}</p>
-                            <p className="text-sm text-gray-500">{lead.contact.email}</p>
-                            <p className="text-xs text-gray-400 mt-1">{t.leads.source} {lead.management.source} | {t.leads.created} {lead.created_at_formatted}</p>
-                        </div>
+                <div className="flex-1 overflow-y-auto p-3 space-y-3">
+                    <CompactLeadHeader
+                        name={lead.name}
+                        imageUrl={lead.image_url}
+                        leadType={lead.lead_type}
+                        temperature={lead.temperature}
+                        stage={lead.lead_stage || lead.stage}
+                    />
+
+                    <div className="text-sm text-gray-600">
+                        {String(lead.contact.phone || '')} • {lead.contact.email}
                     </div>
-                    
-                    <div className="space-y-2">
+
+                    <div className="space-y-1.5">
                         <Label htmlFor="language">{t.leads.messageLanguage}</Label>
                         <Input id="language" value={language} readOnly className="bg-gray-100" />
                     </div>
 
                     <div>
-                        <h4 className="text-lg font-semibold mb-2">{t.leads.aiGeneratedMessage}</h4>
-                         <Card className="bg-blue-50 border-blue-200">
-                            <CardContent className="p-4">
-                                <p className="text-blue-900 whitespace-pre-wrap">{aiMessage}</p>
-                            </CardContent>
-                        </Card>
+                        <h4 className="text-base font-semibold mb-1.5">{t.leads.aiGeneratedMessage}</h4>
+                        <div className="bg-blue-50 border border-blue-200 rounded-lg p-3">
+                            <p className="text-blue-900 whitespace-pre-wrap text-sm">{aiMessage}</p>
+                        </div>
                     </div>
 
-                    <div className="space-y-3">
+                    <div className="space-y-2">
                          <Button variant="outline" className="w-full h-12" onClick={handleRegenerate} disabled={isRegenerating}>
                             {isRegenerating ? <Loader2 className="mr-2 h-5 w-5 animate-spin" /> : <RefreshCw className="mr-2 h-5 w-5" />}
                             {t.leads.regenerateMessage}

@@ -5,6 +5,7 @@ export type LeadData = {
     temperature: 'Hot' | 'Warm' | 'Cold';
     stage: string;
     lead_stage?: string;
+    lead_type?: 'Buyer' | 'Seller';
     next_follow_up: {
         date: string | null;
         status: string;
@@ -13,7 +14,7 @@ export type LeadData = {
     };
     contact: {
         email: string;
-        phone: number;
+        phone: string;
         language: string;
     };
     property: {
