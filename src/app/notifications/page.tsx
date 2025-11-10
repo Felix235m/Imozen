@@ -39,32 +39,57 @@ export default function NotificationsPage() {
 
     // Handle notification click for retry actions and navigation
     const handleNotificationClick = (notif: any) => {
-        // Check if notification has a retry action
-        if (notif.action_type === 'retry_create_lead' && notif.action_data) {
-            // Store failed form data in sessionStorage for retry
-            sessionStorage.setItem('leadFormData', JSON.stringify(notif.action_data));
-            sessionStorage.setItem('lead_id', crypto.randomUUID()); // Generate new UUID for retry
+        // Use requestAnimationFrame for smoother navigation
+        requestAnimationFrame(() => {
+            // Check if notification has a retry action
+            if (notif.action_type === 'retry_create_lead' && notif.action_data) {
+                // Store failed form data in sessionStorage for retry
+                sessionStorage.setItem('leadFormData', JSON.stringify(notif.action_data));
+                sessionStorage.setItem('lead_id', crypto.randomUUID()); // Generate new UUID for retry
 
-            // Mark notification as read
-            const updatedNotifications = notificationsFromStorage.map(n =>
-                n.id === notif.id ? { ...n, read: true } : n
-            );
-            updateNotifications(updatedNotifications);
+                // Mark notification as read
+                const updatedNotifications = notificationsFromStorage.map(n =>
+                    n.id === notif.id ? { ...n, read: true } : n
+                );
+                updateNotifications(updatedNotifications);
 
-            // Navigate to form
-            router.push(notif.action_target || '/leads/new');
-        }
-        // Check if notification is for a new lead creation
-        else if (notif.type === 'new_lead' && notif.lead_id) {
-            // Mark notification as read
-            const updatedNotifications = notificationsFromStorage.map(n =>
-                n.id === notif.id ? { ...n, read: true } : n
-            );
-            updateNotifications(updatedNotifications);
+                // Navigate to form
+                router.push(notif.action_target || '/leads/new');
+            }
+            // Check if notification is for a new lead creation
+            else if (notif.type === 'new_lead' && notif.lead_id) {
+                // Mark notification as read
+                const updatedNotifications = notificationsFromStorage.map(n =>
+                    n.id === notif.id ? { ...n, read: true } : n
+                );
+                updateNotifications(updatedNotifications);
 
-            // Navigate to lead detail page
-            router.push(`/leads/${notif.lead_id}`);
-        }
+                // Navigate to lead detail page
+                router.push(`/leads/${notif.lead_id}`);
+            }
+            // Check if notification is for priority change
+            else if (notif.type === 'priority_changed' && notif.lead_id) {
+                // Mark notification as read
+                const updatedNotifications = notificationsFromStorage.map(n =>
+                    n.id === notif.id ? { ...n, read: true } : n
+                );
+                updateNotifications(updatedNotifications);
+
+                // Navigate to lead detail page
+                router.push(notif.action_target || `/leads/${notif.lead_id}`);
+            }
+            // Check if notification is for stage change
+            else if (notif.type === 'stage_changed' && notif.lead_id) {
+                // Mark notification as read
+                const updatedNotifications = notificationsFromStorage.map(n =>
+                    n.id === notif.id ? { ...n, read: true } : n
+                );
+                updateNotifications(updatedNotifications);
+
+                // Navigate to lead detail page
+                router.push(notif.action_target || `/leads/${notif.lead_id}`);
+            }
+        });
     };
 
     // Filter and transform notifications (client-side only to avoid hydration issues)
@@ -88,7 +113,7 @@ export default function NotificationsPage() {
                 ? new Date(notif.timestamp)
                 : new Date(),
             read: notif.read || false,
-            isClickable: notif.action_type === 'retry_create_lead' || (notif.type === 'new_lead' && notif.lead_id),
+            isClickable: notif.action_type === 'retry_create_lead' || (notif.type === 'new_lead' && notif.lead_id) || (notif.type === 'priority_changed' && notif.lead_id),
             originalNotif: notif, // Keep original for click handler
         };
     });
@@ -130,7 +155,7 @@ export default function NotificationsPage() {
                                     <p className="text-xs text-primary font-medium mt-2">
                                         {notification.originalNotif.action_type === 'retry_create_lead'
                                             ? t.notifications.tapToRetry
-                                            : t.notifications.tapToView}
+                                            : 'View Lead Details'}
                                     </p>
                                 )}
                             </div>

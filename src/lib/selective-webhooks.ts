@@ -52,25 +52,6 @@ export async function refreshTasks(): Promise<void> {
   }
 }
 
-/**
- * Refresh specific lead details
- * Called after: task operations for specific lead (20 second delay)
- */
-export async function refreshLeadDetails(leadId: string): Promise<void> {
-  try {
-    console.log(`🔄 Selective refresh: Lead details for ${leadId}`);
-    const response = await cachedCallLeadApi('get_lead_details', { lead_id: leadId }, { forceRefetch: true });
-    const data = Array.isArray(response) ? response[0] : response;
-
-    if (data) {
-      localStorageManager.updateLeadDetails(leadId, data);
-      console.log(`✅ Lead details refreshed for ${leadId}`);
-    }
-  } catch (error) {
-    console.error(`❌ Failed to refresh lead details for ${leadId}:`, error);
-    // Silent fail - don't block user experience
-  }
-}
 
 /**
  * Refresh all leads list
@@ -115,12 +96,10 @@ export async function refreshAllLeads(): Promise<void> {
 }
 
 /**
- * Refresh after task operation (tasks + lead details, 20 second delay)
- * This combines both refreshes needed after task operations
+ * Refresh after task operation (tasks only, 20 second delay)
+ * Lead details are no longer refreshed via API - they use localStorage
  */
-export async function refreshAfterTaskOperation(leadId: string): Promise<void> {
-  await Promise.all([
-    refreshTasks(),
-    refreshLeadDetails(leadId)
-  ]);
+export async function refreshAfterTaskOperation(): Promise<void> {
+  // Lead details now come from localStorage - no API refresh needed
+  await refreshTasks();
 }

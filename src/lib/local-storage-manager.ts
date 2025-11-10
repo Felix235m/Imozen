@@ -51,7 +51,7 @@ export class LocalStorageManager {
   private subscribers: Set<StorageChangeCallback> = new Set();
   private cache: AppData | null = null; // PERFORMANCE: Cache parsed data
   private cacheTimestamp: number = 0;
-  private CACHE_TTL = 50; // Reduced to 50ms for even faster access
+  private CACHE_TTL = 1000; // Increased to 1 second to reduce repeated parsing
 
   constructor() {
     // Listen for storage changes from other tabs

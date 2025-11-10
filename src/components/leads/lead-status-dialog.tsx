@@ -55,12 +55,12 @@ export function LeadStatusDialog({ open, onOpenChange, lead, onSave }: LeadStatu
       return;
     }
     setIsSaving(true);
-    // Simulate async operation
-    setTimeout(() => {
-      onSave(lead.id, newStatus, note);
-      setIsSaving(false);
-      setNote('');
-    }, 500);
+    // Call onSave immediately without timeout
+    onSave(lead.id, newStatus, note);
+    // Close dialog immediately after calling onSave
+    onOpenChange(false);
+    setIsSaving(false);
+    setNote('');
   };
   
   useEffect(() => {

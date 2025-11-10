@@ -23,7 +23,6 @@ import { cn } from '@/lib/utils';
 import { navigationOptimizer } from '@/lib/navigation-optimizer';
 
 export default function AgentDashboardPage() {
-  const [isCheckingSession, setIsCheckingSession] = useState(false);
   const [agentName, setAgentName] = useState('');
   const [isLoading, setIsLoading] = useState(true);
   const router = useRouter();
@@ -88,9 +87,6 @@ export default function AgentDashboardPage() {
 
     // Navigate instantly to the new lead form
     router.push('/leads/new');
-
-    // Optionally validate session in background (non-blocking)
-    validateSessionInBackground();
   };
 
   const handleContinueDraft = () => {
@@ -106,54 +102,41 @@ export default function AgentDashboardPage() {
     startNewLead();
   };
 
-  const validateSessionInBackground = async () => {
-    try {
-      const agentDataString = localStorage.getItem('agent_data');
-      if (!agentDataString) return;
-
-      const agentData = JSON.parse(agentDataString);
-
-      await callAuthApi('validate_session', {
-        agent: agentData,
-        agent_id: agentData.agent_id,
-      });
-    } catch (error) {
-      // Silent fail - session validation is not critical for form opening
-      console.error('Background session validation failed:', error);
-    }
-  };
 
   const handleCardClick = async (cardTitle: string) => {
     // PERFORMANCE FIX: Preload leads data before navigation for instant experience
-    try {
-      const { localStorageManager } = require('@/lib/local-storage-manager');
-      const leads = localStorageManager.getLeads();
-      
-      // If leads are not in localStorage or are stale, preload them
-      if (!leads || leads.length === 0 || localStorageManager.isStale()) {
-        const { fetchAgentDatabase } = require('@/lib/auth-api');
-        const token = localStorage.getItem('auth_token');
+    // Use setTimeout to not block UI
+    setTimeout(async () => {
+      try {
+        const { localStorageManager } = require('@/lib/local-storage-manager');
+        const leads = localStorageManager.getLeads();
         
-        if (token) {
-          fetchAgentDatabase(token)
-            .then(response => {
-              if (response && response.success) {
-                localStorageManager.initializeFromAgentDatabase(response);
-                console.log('🚀 Preloaded leads data for instant navigation');
-              }
-            })
-            .catch(error => {
+        // If leads are not in localStorage or are stale, preload them
+        if (!leads || leads.length === 0 || localStorageManager.isStale()) {
+          const { fetchAgentDatabase } = require('@/lib/auth-api');
+          const token = localStorage.getItem('auth_token');
+          
+          if (token) {
+            fetchAgentDatabase(token)
+              .then((response: any) => {
+                if (response && response.success) {
+                  localStorageManager.initializeFromAgentDatabase(response);
+                  console.log('🚀 Preloaded leads data for instant navigation');
+                }
+              })
+            .catch((error: any) => {
               console.warn('Failed to preload leads data:', error);
               // Continue with navigation even if preload fails
             });
+          }
         }
+      } catch (error) {
+        console.warn('Error during leads preloading:', error);
+        // Continue with navigation even if preload fails
       }
-    } catch (error) {
-      console.warn('Error during leads preloading:', error);
-      // Continue with navigation even if preload fails
-    }
+    }, 0); // Use setTimeout to not block UI
     
-    // Navigate to leads page with appropriate filter
+    // Navigate immediately - don't wait for preload
     switch (cardTitle) {
       case t.dashboard.stats.leadsForFollowUp:
         router.push('/leads?filter=upcoming');
@@ -174,7 +157,7 @@ export default function AgentDashboardPage() {
     if (!dashboardData) return initialStats;
     const counts = dashboardData.counts || {};
     return [
-      { title: t.dashboard.stats.leadsForFollowUp, value: counts.leads_for_followup?.toString() || '0', icon: Users },
+      { title: t.dashboard.stats.leadsForFollowUp, value: (counts as any).leads_for_followup?.toString() || '0', icon: Users },
       { title: t.dashboard.stats.newLeadsThisWeek, value: counts.new_this_week?.toString() || '0', icon: ClipboardList },
       { title: t.dashboard.stats.hotLeads, value: counts.hot?.toString() || '0', icon: Flame, color: "text-red-500" },
       { title: t.dashboard.stats.conversionRate, value: `${dashboardData.conversion_rate || 0}%`, icon: TrendingUp, color: "text-green-500" },
@@ -219,8 +202,8 @@ export default function AgentDashboardPage() {
       </section>
 
       <section>
-          <Button className="w-full bg-primary" size="lg" onClick={handleAddNewLead} disabled={isCheckingSession}>
-            {isCheckingSession ? <Loader2 className="mr-2 h-5 w-5 animate-spin" /> : <Plus className="mr-2 h-5 w-5" />}
+          <Button className="w-full bg-primary" size="lg" onClick={handleAddNewLead}>
+            <Plus className="mr-2 h-5 w-5" />
             {t.dashboard.addNewLead}
           </Button>
       </section>

@@ -17,8 +17,9 @@ import { callLeadApi, callTaskApi, callFollowUpApi, callLeadStatusApi } from './
 import { cacheManager } from './cache-manager';
 import { offlineDetector, OfflineError } from './offline-detector';
 import { failedOperationsManager, FailedOperationsManager, OperationType } from './failed-operations-manager';
+import { localStorageManager } from './local-storage-manager';
 
-type LeadOperation = 'get_dashboard' | 'get_tasks' | 'get_all_leads' | 'get_lead_details' | 'edit_lead' | 'delete_lead' | 'upload_lead_image' | 'delete_lead_image' | 'add_new_note' | 'save_note' | 'get_notes';
+type LeadOperation = 'get_dashboard' | 'get_tasks' | 'get_all_leads' | 'edit_lead' | 'delete_lead' | 'upload_lead_image' | 'delete_lead_image' | 'add_new_note' | 'save_note' | 'get_notes';
 type TaskOperation = 'reschedule_task' | 'cancel_task' | 'mark_task_done' | 'edit_follow_up_message';
 type FollowUpOperation = 'regenerate_follow-up_message';
 
@@ -92,13 +93,10 @@ export async function cachedCallLeadApi(
     // Invalidate related caches
     if (operation === 'edit_lead' || operation === 'delete_lead') {
       cacheManager.invalidatePattern('get_all_leads:*');
-      cacheManager.invalidatePattern('get_lead_details:*');
       cacheManager.invalidatePattern('get_dashboard:*');
     } else if (operation === 'add_new_note' || operation === 'save_note') {
       cacheManager.invalidatePattern('get_notes:*');
-      cacheManager.invalidatePattern('get_lead_details:*');
     } else if (operation === 'upload_lead_image' || operation === 'upload_lead_profile_image' || operation === 'delete_lead_image') {
-      cacheManager.invalidatePattern('get_lead_details:*');
       cacheManager.invalidatePattern('get_all_leads:*');
     }
 
@@ -155,7 +153,6 @@ export async function cachedCallTaskApi(
     // Invalidate related caches
     cacheManager.invalidatePattern('get_tasks:*');
     cacheManager.invalidatePattern('get_dashboard:*');
-    cacheManager.invalidatePattern('get_lead_details:*');
 
     return result;
   } catch (error: any) {
@@ -199,7 +196,6 @@ export async function cachedCallFollowUpApi(
 
     // Invalidate related caches
     cacheManager.invalidatePattern('get_tasks:*');
-    cacheManager.invalidatePattern('get_lead_details:*');
 
     return result;
   } catch (error: any) {
@@ -243,7 +239,6 @@ export async function cachedCallLeadStatusApi(
 
     // Invalidate related caches
     cacheManager.invalidatePattern('get_all_leads:*');
-    cacheManager.invalidatePattern('get_lead_details:*');
     cacheManager.invalidatePattern('get_dashboard:*');
 
     return result;

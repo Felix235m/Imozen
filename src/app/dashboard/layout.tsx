@@ -32,6 +32,7 @@ import { localStorageManager } from '@/lib/local-storage-manager';
 import { LoadingModal } from '@/components/ui/loading-modal';
 import { useToast } from '@/hooks/use-toast';
 import { navigationOptimizer } from '@/lib/navigation-optimizer';
+import { performanceLogger } from '@/lib/performance-logger';
 
 export default function DashboardLayout({
   children,
@@ -52,6 +53,17 @@ export default function DashboardLayout({
     { href: '/dashboard', icon: LayoutGrid, label: t.navigation.dashboard },
     { href: '/leads', icon: ClipboardList, label: t.navigation.leads },
   ];
+
+  // Track navigation performance
+  const handleNavigation = (href: string) => {
+    performanceLogger.startNavigation(pathname, href);
+    router.push(href);
+    
+    // End navigation tracking after a delay to allow for page load
+    setTimeout(() => {
+      performanceLogger.endNavigation();
+    }, 1000);
+  };
 
   const getPageTitle = (pathname: string) => {
     if (pathname.startsWith('/tasks')) return t.navigation.tasks;
@@ -191,9 +203,9 @@ export default function DashboardLayout({
           {navItems.map((item) => {
              const isActive = pathname === item.href || (item.href !== '/dashboard' && pathname.startsWith(item.href));
              return (
-                <Link
+                <button
                 key={item.href}
-                href={item.href}
+                onClick={() => handleNavigation(item.href)}
                 className={cn(
                     "flex flex-col items-center justify-center text-gray-500 w-20 h-full",
                     isActive && "text-primary"
@@ -201,7 +213,7 @@ export default function DashboardLayout({
                 >
                 <item.icon className="h-6 w-6" />
                 <span className="text-xs">{item.label}</span>
-                </Link>
+                </button>
              )
           })}
         </div>

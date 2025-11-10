@@ -86,7 +86,17 @@ export const NOTIFICATION_CONFIG: Record<string, NotificationConfig> = {
     color: 'text-orange-600',
     bgColor: 'bg-orange-50'
   },
+  'priority_changed': {
+    icon: Zap,
+    color: 'text-orange-600',
+    bgColor: 'bg-orange-50'
+  },
   'stage_change': {
+    icon: TrendingUp,
+    color: 'text-teal-600',
+    bgColor: 'bg-teal-50'
+  },
+  'stage_changed': {
     icon: TrendingUp,
     color: 'text-teal-600',
     bgColor: 'bg-teal-50'

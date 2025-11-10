@@ -1,0 +1,121 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Test New Lead Flow</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            line-height: 1.6;
+        }
+        .test-section {
+            background-color: #f5f5f5;
+            padding: 15px;
+            border-radius: 5px;
+            margin-bottom: 20px;
+        }
+        .success {
+            color: #28a745;
+        }
+        .info {
+            color: #17a2b8;
+        }
+        .warning {
+            color: #ffc107;
+        }
+        code {
+            background-color: #e9ecef;
+            padding: 2px 4px;
+            border-radius: 3px;
+            font-family: monospace;
+        }
+        .checklist {
+            list-style-type: none;
+            padding-left: 0;
+        }
+        .checklist li {
+            margin-bottom: 8px;
+            position: relative;
+            padding-left: 25px;
+        }
+        .checklist li:before {
+            content: "□";
+            position: absolute;
+            left: 0;
+            color: #6c757d;
+        }
+        .checklist li.checked:before {
+            content: "✓";
+            color: #28a745;
+        }
+    </style>
+</head>
+<body>
+    <h1>Test: New Lead Flow Without validate_session API</h1>
+    
+    <div class="test-section">
+        <h2 class="info">Objective</h2>
+        <p>Verify that the "Add New Lead" functionality works without triggering the <code>validate_session</code> webhook API call.</p>
+    </div>
+    
+    <div class="test-section">
+        <h2 class="info">Changes Made</h2>
+        <ul>
+            <li>Removed <code>validateSessionInBackground</code> function from dashboard and leads page</li>
+            <li>Removed <code>isCheckingSession</code> state and loading indicators</li>
+            <li>Updated <code>startNewLead</code> functions to navigate directly without session validation</li>
+            <li>Removed disabled state from "Add New Lead" buttons</li>
+        </ul>
+    </div>
+    
+    <div class="test-section">
+        <h2 class="info">Test Steps</h2>
+        <ol>
+            <li>Navigate to the dashboard page</li>
+            <li>Click the "Add New Lead" button</li>
+            <li>Verify the new lead form opens immediately without any loading indicators</li>
+            <li>Navigate to the leads list page</li>
+            <li>Click the "+" button to add a new lead</li>
+            <li>Verify the new lead form opens immediately without any loading indicators</li>
+            <li>Check browser's Network tab to confirm no <code>validate_session</code> API calls are made</li>
+        </ol>
+    </div>
+    
+    <div class="test-section">
+        <h2 class="info">Expected Results</h2>
+        <ul class="checklist" id="checklist">
+            <li>New lead form opens immediately when clicking "Add New Lead" on dashboard</li>
+            <li>New lead form opens immediately when clicking "+" button on leads page</li>
+            <li>No loading spinner appears on the buttons</li>
+            <li>No <code>validate_session</code> API call in Network tab</li>
+            <li>Form functions normally for creating new leads</li>
+        </ul>
+    </div>
+    
+    <div class="test-section">
+        <h2 class="warning">Important Notes</h2>
+        <p>The session validation is now completely removed from the add new lead flow. Session validation will only occur when:</p>
+        <ul>
+            <li>Submitting the lead form (which is appropriate)</li>
+            <li>Other operations that require authentication</li>
+        </ul>
+        <p>This change improves performance by eliminating an unnecessary API call when users want to create a new lead.</p>
+    </div>
+    
+    <script>
+        // Simple interactive checklist for manual testing
+        document.addEventListener('DOMContentLoaded', function() {
+            const checklistItems = document.querySelectorAll('.checklist li');
+            checklistItems.forEach(item => {
+                item.addEventListener('click', function() {
+                    this.classList.toggle('checked');
+                });
+            });
+        });
+    </script>
+</body>
+</html>

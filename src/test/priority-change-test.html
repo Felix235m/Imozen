@@ -1,0 +1,119 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Priority Change Test</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            line-height: 1.6;
+        }
+        .test-section {
+            margin-bottom: 30px;
+            padding: 20px;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+        }
+        .success {
+            background-color: #d4edda;
+            border-color: #c3e6cb;
+        }
+        .info {
+            background-color: #d1ecf1;
+            border-color: #bee5eb;
+        }
+        code {
+            background-color: #f8f9fa;
+            padding: 2px 4px;
+            border-radius: 4px;
+            font-family: monospace;
+        }
+        .step {
+            margin-bottom: 10px;
+            padding-left: 20px;
+            position: relative;
+        }
+        .step:before {
+            content: "✓";
+            position: absolute;
+            left: 0;
+            color: #28a745;
+        }
+    </style>
+</head>
+<body>
+    <h1>Priority Change User Experience Test</h1>
+    
+    <div class="test-section info">
+        <h2>Test Overview</h2>
+        <p>This test verifies the improved user experience for changing lead priority and stage:</p>
+        <ul>
+            <li>Dialog closes immediately after clicking "Save Changes"</li>
+            <li>Processing message is shown while API call is in progress</li>
+            <li>Success notification is added to notifications page</li>
+            <li>Clicking the notification redirects to the lead details page</li>
+            <li>Stage change also adds a notification with redirect functionality</li>
+        </ul>
+    </div>
+
+    <div class="test-section success">
+        <h2>Implementation Changes</h2>
+        
+        <h3>1. LeadStatusDialog Component</h3>
+        <div class="step">Modified <code>handleSaveClick</code> to close dialog immediately after calling onSave</div>
+        <div class="step">Removed artificial 500ms delay</div>
+        
+        <h3>2. Lead Details Page</h3>
+        <div class="step">Added processing toast message in <code>handleStatusSave</code></div>
+        <div class="step">Added success notification creation with lead_id and action_target</div>
+        <div class="step">Added storage event dispatch for cross-tab synchronization</div>
+        
+        <h3>3. Notifications Page</h3>
+        <div class="step">Added handling for "priority_changed" notification type</div>
+        <div class="step">Added handling for "stage_changed" notification type</div>
+        <div class="step">Made notifications with lead_id clickable</div>
+        <div class="step">Added click handlers to navigate to lead details page</div>
+        
+        <h3>4. Notification Icons</h3>
+        <div class="step">Added "priority_changed" type to notification configuration</div>
+        <div class="step">Added "stage_changed" type to notification configuration</div>
+        <div class="step">Both use Zap icon with orange color scheme</div>
+    </div>
+
+    <div class="test-section info">
+        <h2>How to Test</h2>
+        <ol>
+            <li>Navigate to a lead details page</li>
+            <li>Click the menu button and select "Priority"</li>
+            <li>Select a new priority and add a note</li>
+            <li>Click "Save Changes"</li>
+            <li>Verify the dialog closes immediately</li>
+            <li>Verify a "Processing..." toast appears</li>
+            <li>Wait for the API call to complete</li>
+            <li>Navigate to the Notifications page</li>
+            <li>Verify a new "Priority Changed" notification exists</li>
+            <li>Click the notification</li>
+            <li>Verify it redirects to the lead details page</li>
+            <li>Verify the notification is marked as read</li>
+            <li>Test stage changes as well (same flow)</li>
+        </ol>
+    </div>
+
+    <div class="test-section success">
+        <h2>Expected User Experience</h2>
+        <p>The user now experiences a much smoother workflow:</p>
+        <ul>
+            <li><strong>Immediate Feedback:</strong> Dialog closes right away, confirming the action was initiated</li>
+            <li><strong>Processing State:</strong> Clear indication that the system is working on their request</li>
+            <li><strong>Success Confirmation:</strong> Toast notification confirms the change was successful</li>
+            <li><strong>Persistent Record:</strong> Notification is saved for future reference</li>
+            <li><strong>Easy Access:</strong> Clicking the notification brings them back to the lead</li>
+            <li><strong>Cross-Tab Sync:</strong> Storage events ensure notifications sync across browser tabs</li>
+        </ul>
+    </div>
+</body>
+</html>

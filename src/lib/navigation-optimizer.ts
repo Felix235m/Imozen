@@ -18,7 +18,8 @@ type NavigationTarget = {
 export class NavigationOptimizer {
   private static instance: NavigationOptimizer;
   private preloadQueue: Map<string, Promise<any>> = new Map();
-  private readonly PRELOAD_TIMEOUT = 2000; // 2 seconds max for preload
+  private readonly PRELOAD_TIMEOUT = 5000; // Increased to 5 seconds for slower networks
+  private isPreloading = false; // Track if preloading is in progress
 
   private constructor() {}
 
@@ -38,16 +39,18 @@ export class NavigationOptimizer {
     const cacheKey = this.getCacheKey(target);
     
     // Skip if already preloading or recently loaded
-    if (this.preloadQueue.has(cacheKey)) {
+    if (this.preloadQueue.has(cacheKey) || this.isPreloading) {
       return this.preloadQueue.get(cacheKey);
     }
 
+    this.isPreloading = true;
     const preloadPromise = this.executePreload(target);
     this.preloadQueue.set(cacheKey, preloadPromise);
 
     // Clean up after timeout
     setTimeout(() => {
       this.preloadQueue.delete(cacheKey);
+      this.isPreloading = false;
     }, this.PRELOAD_TIMEOUT);
 
     return preloadPromise;
@@ -82,16 +85,9 @@ export class NavigationOptimizer {
       return;
     }
 
-    console.log(`🚀 Preloading lead ${leadId} details`);
-    
-    const response = await cachedCallLeadApi('get_lead_details', { lead_id: leadId });
-    const apiLead = Array.isArray(response) ? response[0] : response;
-
-    if (apiLead) {
-      const transformed = transformNewBackendResponse(apiLead);
-      localStorageManager.updateLeadDetails(leadId, transformed);
-      console.log(`✅ Preloaded lead ${leadId} details`);
-    }
+    // Lead details are no longer preloaded via API
+    // They come from the main fetchAgentDatabase() call
+    console.log(`⚠️ Lead ${leadId} details not found in localStorage - cannot preload via API`);
   }
 
   private async preloadLeadsList(): Promise<void> {
@@ -138,17 +134,25 @@ export class NavigationOptimizer {
    */
   smartPreload(currentPath: string): void {
     // Preload likely next destinations based on current path
-    switch (currentPath) {
-      case '/dashboard':
-        // User might go to leads next
-        this.preloadData({ type: 'leads-list' });
-        break;
-      case '/leads':
-        // User might view lead details
-        this.preloadData({ type: 'leads-list' });
-        break;
-      // Add more patterns as needed
-    }
+    // Use setTimeout to avoid blocking the main thread
+    setTimeout(() => {
+      switch (currentPath) {
+        case '/dashboard':
+          // User might go to leads next
+          this.preloadData({ type: 'leads-list' });
+          break;
+        case '/leads':
+          // User might view lead details
+          this.preloadData({ type: 'leads-list' });
+          break;
+        case '/tasks':
+          // User might go to dashboard or leads
+          this.preloadData({ type: 'dashboard' });
+          this.preloadData({ type: 'leads-list' });
+          break;
+        // Add more patterns as needed
+      }
+    }, 100); // Small delay to not block UI
   }
 
   /**

@@ -114,8 +114,6 @@ function LeadsPageContent() {
   const [leadToDelete, setLeadToDelete] = useState<string | null>(null);
   const [leadsToDelete, setLeadsToDelete] = useState<string[] | null>(null);
 
-  const [isCheckingSession, setIsCheckingSession] = useState(false);
-
   const [isLeadStageDialogOpen, setIsLeadStageDialogOpen] = useState(false);
 
   // Retry popup state
@@ -185,10 +183,15 @@ function LeadsPageContent() {
     setIsLoading(false);
     
     // PERFORMANCE FIX: Preload first few leads for instant navigation
-    const firstFewLeads = leads.slice(0, 5).map(lead => lead.lead_id);
-    if (firstFewLeads.length > 0) {
-      navigationOptimizer.preloadMultipleLeads(firstFewLeads);
-    }
+    // Use setTimeout to not block the UI
+    const timer = setTimeout(() => {
+      const firstFewLeads = leads.slice(0, 5).map(lead => lead.lead_id);
+      if (firstFewLeads.length > 0) {
+        navigationOptimizer.preloadMultipleLeads(firstFewLeads);
+      }
+    }, 100); // Small delay to not block UI
+    
+    return () => clearTimeout(timer);
   }, [leads]);
 
   // Apply filters based on URL parameters from dashboard
@@ -244,9 +247,6 @@ function LeadsPageContent() {
 
     // Navigate instantly to the new lead form
     router.push('/leads/new');
-
-    // Optionally validate session in background (non-blocking)
-    validateSessionInBackground();
   };
 
   const handleContinueDraft = () => {
@@ -262,22 +262,6 @@ function LeadsPageContent() {
     startNewLead();
   };
 
-  const validateSessionInBackground = async () => {
-    try {
-      const agentDataString = localStorage.getItem('agent_data');
-      if (!agentDataString) return;
-
-      const agentData = JSON.parse(agentDataString);
-
-      await callAuthApi('validate_session', {
-        agent: agentData,
-        agent_id: agentData.agent_id,
-      });
-    } catch (error) {
-      // Silent fail - session validation is not critical for form opening
-      console.error('Background session validation failed:', error);
-    }
-  };
 
   const filteredLeads = useMemo(() => {
     if (!Array.isArray(leads)) return [];
@@ -387,33 +371,13 @@ function LeadsPageContent() {
     }
     setIsNavigating(leadId);
     
-    // PERFORMANCE FIX: Preload lead details in background for instant navigation
-    // Check if lead details exist in localStorage
-    const { localStorageManager } = require('@/lib/local-storage-manager');
-    const leadDetails = localStorageManager.getLeadDetails(leadId);
+    // Lead details are now managed entirely through localStorage
+    // No API preloading needed - data comes from fetchAgentDatabase()
     
-    if (!leadDetails) {
-      // If details don't exist, fetch them in background before navigation
-      try {
-        const { cachedCallLeadApi } = require('@/lib/cached-api');
-        const { transformNewBackendResponse } = require('@/lib/lead-transformer');
-        
-        const response = await cachedCallLeadApi('get_lead_details', { lead_id: leadId });
-        const apiLead = Array.isArray(response) ? response[0] : response;
-        
-        if (apiLead) {
-          const transformed = transformNewBackendResponse(apiLead);
-          localStorageManager.updateLeadDetails(leadId, transformed);
-          console.log(`🚀 Preloaded lead ${leadId} details for instant navigation`);
-        }
-      } catch (error) {
-        console.warn(`Failed to preload lead ${leadId}:`, error);
-        // Continue with navigation even if preload fails
-      }
-    }
-    
-    // Navigate immediately - data should be available from localStorage
-    router.push(`/leads/${leadId}`);
+    // Use requestAnimationFrame to ensure smooth navigation
+    requestAnimationFrame(() => {
+      router.push(`/leads/${leadId}`);
+    });
   };
 
   const handleSelectLead = (leadId: string) => {
@@ -836,9 +800,9 @@ function LeadsPageContent() {
                   </span>
                 </p>
               </div>
-              {lead.created_at && (
+              {(lead as any).created_at && (
                 <p className="text-xs text-gray-400 mt-1">
-                  {t.leads.created} {formatCreatedDate(lead.created_at || lead.lead_id)}
+                  {t.leads.created} {formatCreatedDate((lead as any).created_at || lead.lead_id)}
                 </p>
               )}
             </div>
@@ -959,13 +923,8 @@ function LeadsPageContent() {
               variant="default"
               className="bg-primary shrink-0"
               onClick={handleAddNewLead}
-              disabled={isCheckingSession}
             >
-              {isCheckingSession ? (
-                <Loader2 className="h-4 w-4 animate-spin md:mr-2" />
-              ) : (
-                <Plus className="h-4 w-4 md:mr-2" />
-              )}
+              <Plus className="h-4 w-4 md:mr-2" />
               <span className="hidden md:inline">{t.leads.addNewLead}</span>
             </Button>
           </>

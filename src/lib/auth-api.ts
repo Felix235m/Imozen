@@ -11,7 +11,7 @@ const AGENT_DATABASE_URL = 'https://eurekagathr.app.n8n.cloud/webhook/agent_data
 
 
 type Operation = 'login' | 'password_reset_request' | 'password_reset_complete' | 'onboard_agent' | 'update_agent' | 'validate_session' | 'agent_image_url';
-type LeadOperation = 'get_dashboard' | 'get_tasks' | 'get_all_leads' | 'get_lead_details' | 'edit_lead' | 'delete_lead' | 'upload_lead_image' | 'upload_lead_profile_image' | 'delete_lead_image' | 'add_new_note' | 'save_note' | 'get_notes';
+type LeadOperation = 'get_dashboard' | 'get_tasks' | 'get_all_leads' | 'edit_lead' | 'delete_lead' | 'upload_lead_image' | 'upload_lead_profile_image' | 'delete_lead_image' | 'add_new_note' | 'save_note' | 'get_notes';
 type LeadStatus = 'active' | 'inactive';
 type FollowUpOperation = 'regenerate_follow-up_message';
 type TaskOperation = 'reschedule_task' | 'cancel_task' | 'mark_task_done' | 'edit_follow_up_message';

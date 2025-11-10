@@ -240,95 +240,7 @@ export default function LeadDetailPage() {
     }
   }, [t]);
 
-  const fetchLeadDetails = useCallback(async () => {
-    try {
-      // PERFORMANCE FIX: If data exists in localStorage, use it directly without transformation
-      if (leadFromStorage) {
-        console.log(`✅ Loading lead ${id} from localStorage (instant)`);
-
-        // Apply transformation to ensure all fields are properly formatted
-        let currentLeadData = transformNewBackendResponse(leadFromStorage);
-
-        // Normalize locations
-        if (currentLeadData.property?.locations) {
-          currentLeadData = {
-            ...currentLeadData,
-            property: {
-              ...currentLeadData.property,
-              locations: normalizeLocations(currentLeadData.property.locations)
-            }
-          };
-        }
-
-        setLead(currentLeadData as LeadData);
-        setOriginalLead(JSON.parse(JSON.stringify(currentLeadData)));
-        setAvatarPreview(currentLeadData.image_url);
-
-        // Parse phone number for edit mode
-        const { code, number } = parsePhoneNumber(currentLeadData.contact.phone);
-        setPhoneCountryCode(code);
-        setPhoneNumber(number);
-
-        // PERFORMANCE FIX: Fetch data in background without blocking UI
-        // This ensures data stays fresh while providing instant navigation
-        cachedCallLeadApi('get_lead_details', { lead_id: id }, { forceRefetch: false })
-          .then(response => {
-            const apiLead = Array.isArray(response) ? response[0] : response;
-            if (apiLead) {
-              const transformed = transformNewBackendResponse(apiLead);
-              if (transformed.property?.locations) {
-                transformed.property.locations = normalizeLocations(transformed.property.locations);
-              }
-              // Update localStorage with fresh data
-              updateLeadDetails(transformed as any);
-              console.log(`🔄 Background updated lead ${id} with fresh data`);
-            }
-          })
-          .catch(error => {
-            console.warn('Background refresh failed:', error);
-            // Don't show error to user as they already have data
-          });
-
-        return; // Exit early - data is ready
-      }
-
-      // Only fetch from API if data doesn't exist in localStorage
-      console.log(`Lead ${id} not in leadDetails, fetching from API...`);
-      const response = await cachedCallLeadApi('get_lead_details', { lead_id: id }, { forceRefetch: true });
-      const apiLead = Array.isArray(response) ? response[0] : response;
-
-      if (!apiLead) {
-        throw new Error('Lead not found in API');
-      }
-
-      console.log('📥 API Response:', apiLead);
-
-      // Transform and store in localStorage for future access
-      const transformed = transformNewBackendResponse(apiLead);
-      console.log('🔄 Transformed lead_type:', transformed.lead_type);
-
-      // Normalize locations
-      if (transformed.property?.locations) {
-        transformed.property.locations = normalizeLocations(transformed.property.locations);
-      }
-
-      updateLeadDetails(transformed as any);
-      setLead(transformed as LeadData);
-      setOriginalLead(JSON.parse(JSON.stringify(transformed)));
-      setAvatarPreview(transformed.image_url);
-      console.log(`✅ Fetched and stored lead ${id} in leadDetails`);
-
-      const { code, number } = parsePhoneNumber(transformed.contact.phone);
-      setPhoneCountryCode(code);
-      setPhoneNumber(number);
-
-    } catch (error) {
-       console.error('Error loading lead:', error);
-       toast({ variant: 'destructive', title: 'Error', description: 'Could not load lead details.' });
-       router.push('/leads');
-    }
-  }, [id, leadFromStorage, updateLeadDetails, toast, router, parsePhoneNumber, normalizeLocations]);
-  
+    
   const prepareSaveChanges = useCallback(() => {
     if (!lead || !originalLead) return;
   
@@ -376,23 +288,20 @@ export default function LeadDetailPage() {
   }, [lead, originalLead, phoneCountryCode, phoneNumber, toast]);
 
   useEffect(() => {
-    fetchLeadDetails();
-    
-    // PERFORMANCE FIX: Preload related leads for instant navigation
-    const { localStorageManager } = require('@/lib/local-storage-manager');
-    const allLeads = localStorageManager.getLeads();
-    
+    // Lead details are now managed entirely through useLeadDetails hook
+    // No manual data loading needed
+
     // Get 3 random leads (excluding current) for potential navigation
-    const otherLeads = allLeads
-      .filter(lead => lead.lead_id !== id)
-      .sort(() => Math.random() - 0.5)
-      .slice(0, 3)
-      .map(lead => lead.lead_id);
-      
-    if (otherLeads.length > 0) {
-      navigationOptimizer.preloadMultipleLeads(otherLeads);
-    }
-  }, [fetchLeadDetails]);
+    // const otherLeads = allLeads
+    //   .filter(lead => lead.lead_id !== id)
+    //   .sort(() => Math.random() - 0.5)
+    //   .slice(0, 3)
+    //   .map(lead => lead.lead_id);
+
+    // if (otherLeads.length > 0) {
+    //   navigationOptimizer.preloadMultipleLeads(otherLeads);
+    // }
+  }, [id]);
 
   useEffect(() => {
     const editMode = searchParams.get('edit') === 'true';
@@ -402,6 +311,95 @@ export default function LeadDetailPage() {
       router.replace(`/leads/${id}`, { scroll: false });
     }
   }, [searchParams, id, router]);
+
+  // CRITICAL FIX: Sync localStorage data to component state
+  useEffect(() => {
+    if (leadFromStorage) {
+      try {
+        console.log('🔄 Syncing lead data from localStorage:', {
+          leadId: id,
+          localStorageLeadId: leadFromStorage.lead_id,
+          name: leadFromStorage.name
+        });
+
+        // Transform localStorage data to LeadData format
+        let transformedLead = transformNewBackendResponse(leadFromStorage);
+
+        if (transformedLead) {
+          // Ensure all required fields are present for LeadData type
+          const completeLead = {
+            ...transformedLead,
+            next_follow_up: transformedLead.next_follow_up || {
+              date: null,
+              status: '',
+              color: '',
+              days_until: null
+            },
+            purchase: transformedLead.purchase || {
+              timeframe: transformedLead.property?.purchase_timeframe || '',
+              financing_type: transformedLead.property?.financing_type || '',
+              credit_pre_approved: transformedLead.property?.credit_pre_approved || false,
+              search_duration: transformedLead.property?.search_duration || '',
+              has_seen_properties: transformedLead.property?.has_seen_properties || 'No'
+            },
+            row_number: transformedLead.row_number || 0,
+            budget_formatted: transformedLead.budget_formatted || transformedLead.property?.budget || ''
+          };
+
+          setLead(completeLead);
+          setOriginalLead(JSON.parse(JSON.stringify(completeLead)));
+          setAvatarPreview(completeLead.image_url);
+
+          console.log('✅ Lead data synced successfully for:', completeLead.name);
+        }
+      } catch (error) {
+        console.error('❌ Failed to transform lead data:', error);
+        // Fallback: use raw data as LeadData
+        const fallbackLead = {
+          ...leadFromStorage,
+          next_follow_up: {
+            date: null,
+            status: '',
+            color: '',
+            days_until: null
+          },
+          purchase: {
+            timeframe: leadFromStorage.property?.purchase_timeframe || '',
+            financing_type: leadFromStorage.property?.financing_type || '',
+            credit_pre_approved: leadFromStorage.property?.credit_pre_approved || false,
+            search_duration: leadFromStorage.property?.search_duration || '',
+            has_seen_properties: leadFromStorage.property?.has_seen_properties || 'No'
+          },
+          row_number: 0
+        };
+
+        setLead(fallbackLead as any);
+        setOriginalLead(JSON.parse(JSON.stringify(fallbackLead)));
+        setAvatarPreview(fallbackLead.image_url || null);
+
+        console.log('⚠️ Used fallback data for:', fallbackLead.name);
+      }
+    } else {
+      console.warn('⚠️ No lead data found in localStorage for ID:', id);
+    }
+  }, [leadFromStorage, id]);
+
+  // Phone number parsing when lead data loads
+  useEffect(() => {
+    if (lead?.contact?.phone) {
+      try {
+        const { code, number } = parsePhoneNumber(lead.contact.phone);
+        setPhoneCountryCode(code);
+        setPhoneNumber(number);
+        console.log('📞 Phone number parsed:', { code, number, original: lead.contact.phone });
+      } catch (error) {
+        console.error('❌ Failed to parse phone number:', lead.contact.phone, error);
+        // Set default values
+        setPhoneCountryCode('');
+        setPhoneNumber('');
+      }
+    }
+  }, [lead, parsePhoneNumber]);
 
   useEffect(() => {
     if (isEditing && lead) {
@@ -510,7 +508,7 @@ export default function LeadDetailPage() {
       setImgSrc('');
 
       // Step 5: Send Cloudinary URL to webhook
-      await callLeadApi('upload_lead_profile_image', {
+      await cachedCallLeadApi('upload_lead_profile_image' as any, {
         lead_id: id,
         image_url: uploadResult.url
       });
@@ -662,6 +660,19 @@ export default function LeadDetailPage() {
   const handleStatusSave = (leadId: string, newStatus: 'Hot' | 'Warm' | 'Cold', note: string) => {
     if (!lead || lead.lead_id !== leadId) return;
 
+    console.log('🔍 DEBUG: Starting priority change:', {
+      leadId,
+      currentStatus: lead.temperature,
+      newStatus,
+      note: note.substring(0, 50) + '...'
+    });
+
+    // Show processing toast immediately
+    toast({
+      title: "Processing...",
+      description: `Changing priority to ${newStatus}. Please wait.`,
+    });
+
     const reconstructedPhone = `(${phoneCountryCode}) ${phoneNumber}`;
 
     const fullPayload = {
@@ -674,18 +685,50 @@ export default function LeadDetailPage() {
         },
     };
 
+    console.log('🔍 DEBUG: Sending payload to API:', {
+      leadId,
+      temperature: fullPayload.temperature,
+    });
+
     cachedCallLeadStatusApi(leadId, "change_priority", fullPayload).then((response) => {
+        console.log('🔍 DEBUG: Webhook response received:', response);
+        
         // Transform webhook response to frontend LeadData format
         const transformedLead = transformWebhookResponseToLeadData(response);
+        console.log('🔍 DEBUG: Transformed lead data:', {
+          leadId: transformedLead?.lead_id,
+          temperature: transformedLead?.temperature,
+        });
 
         if (transformedLead) {
             // Update lead with all server data
             setLead(transformedLead);
             setOriginalLead(JSON.parse(JSON.stringify(transformedLead)));
+            
+            // CRITICAL FIX: Update localStorage with the new priority
+            console.log('🔍 DEBUG: Updating localStorage with new priority');
+            updateLeadDetails(transformedLead as any);
+            
+            // Also update the leads array to ensure consistency
+            const { localStorageManager } = require('@/lib/local-storage-manager');
+            localStorageManager.updateSingleLead(leadId, {
+              temperature: newStatus,
+              'Hot/Warm/Cold': newStatus
+            });
+            console.log('🔍 DEBUG: Updated both leadDetails and leads array in localStorage');
         } else {
             // Fallback: update only temperature if transformation fails
+            console.warn('⚠️ DEBUG: Transform failed, using fallback update');
             setLead(prev => prev ? ({ ...prev, temperature: newStatus }) : null);
             setOriginalLead(prev => prev ? JSON.parse(JSON.stringify({ ...prev, temperature: newStatus })) : null);
+            
+            // CRITICAL FIX: Still update localStorage even with fallback
+            updateLeadDetails({ ...lead, temperature: newStatus } as any);
+            const { localStorageManager } = require('@/lib/local-storage-manager');
+            localStorageManager.updateSingleLead(leadId, {
+              temperature: newStatus,
+              'Hot/Warm/Cold': newStatus
+            });
         }
 
         const newNote: Note = {
@@ -695,13 +738,38 @@ export default function LeadDetailPage() {
         };
         setNotes(prev => [newNote, ...prev]);
 
+        // Add success notification to notifications page
+        const { localStorageManager } = require('@/lib/local-storage-manager');
+        const notificationId = `priority-change-${Date.now()}`;
+        const newNotification = {
+          id: notificationId,
+          title: "Priority Changed",
+          message: `Priority for ${lead.name} changed to ${newStatus}`,
+          type: "priority_changed",
+          timestamp: new Date().toISOString(),
+          read: false,
+          lead_id: leadId,
+          action_target: `/leads/${leadId}`
+        };
+        
+        // Add to notifications
+        const currentNotifications = localStorageManager.getNotifications();
+        const updatedNotifications = [newNotification, ...currentNotifications];
+        localStorageManager.updateNotifications(updatedNotifications);
+        
+        // Force trigger storage event for cross-tab synchronization
+        window.dispatchEvent(new StorageEvent('storage', {
+          key: 'app_data',
+          newValue: JSON.stringify(localStorageManager.getAppData())
+        }));
+
+        // Show success toast
         toast({
             title: "Priority updated",
             description: `Lead priority changed to ${newStatus} and note added.`,
         });
-        setIsStatusDialogOpen(false);
     }).catch((error) => {
-        console.error('Priority update error:', error);
+        console.error('❌ DEBUG: Priority update error:', error);
         toast({ variant: 'destructive', title: 'Error', description: 'Could not update priority.' });
     });
   };
@@ -732,6 +800,13 @@ export default function LeadDetailPage() {
         stage: selectedStage,
         note: stageChangeNote
       };
+      
+      console.log('🔍 DEBUG: Sending stage change webhook:', {
+        lead_id: lead.lead_id,
+        currentStage,
+        selectedStage,
+        payload: webhookPayload
+      });
   
       const response = await fetch(webhookUrl, {
         method: 'POST',
@@ -741,14 +816,67 @@ export default function LeadDetailPage() {
   
       if (!response.ok) {
         const errorText = await response.text();
+        console.error('❌ DEBUG: Webhook failed:', { status: response.status, errorText });
         throw new Error(errorText || 'Failed to update lead stage');
+      }
+      
+      const responseData = await response.json();
+      console.log('🔍 DEBUG: Webhook response received:', responseData);
+      
+      // Check if response contains the expected lead data
+      if (Array.isArray(responseData) && responseData.length > 0) {
+        const leadData = responseData[0];
+        console.log('🔍 DEBUG: Processing lead data from webhook:', {
+          lead_id: leadData.lead_id,
+          stage: leadData.Stage,
+          lead_stage: leadData.lead_stage,
+          name: leadData.name
+        });
+        
+        // Update localStorage with the webhook response data
+        const { localStorageManager } = require('@/lib/local-storage-manager');
+        
+        // Update both leads array and leadDetails
+        localStorageManager.updateSingleLead(lead.lead_id, {
+          stage: selectedStage,
+          lead_stage: selectedStage,
+          Stage: selectedStage
+        });
+        
+        console.log('✅ DEBUG: Updated localStorage with new stage');
       }
   
       setLead(prev => prev ? ({ ...prev, stage: selectedStage, lead_stage: selectedStage } as any) : null);
       setOriginalLead(prev => prev ? JSON.parse(JSON.stringify({ ...prev, stage: selectedStage, lead_stage: selectedStage })) : null);
   
       toast({ title: "Stage Updated", description: `Lead stage changed to "${selectedStage}".` });
+      
+      // Add success notification to notifications page
+      const { localStorageManager } = require('@/lib/local-storage-manager');
+      const stageNotificationId = `stage-change-${Date.now()}`;
+      const newStageNotification = {
+        id: stageNotificationId,
+        title: "Stage Changed",
+        message: `Stage for ${lead.name} changed to "${selectedStage}"`,
+        type: "stage_changed",
+        timestamp: new Date().toISOString(),
+        read: false,
+        lead_id: lead.lead_id,
+        action_target: `/leads/${lead.lead_id}`
+      };
+      
+      // Add to notifications
+      const currentNotifications = localStorageManager.getNotifications();
+      const updatedNotifications = [newStageNotification, ...currentNotifications];
+      localStorageManager.updateNotifications(updatedNotifications);
+      
+      // Force trigger storage event for cross-tab synchronization
+      window.dispatchEvent(new StorageEvent('storage', {
+        key: 'app_data',
+        newValue: JSON.stringify(localStorageManager.getAppData())
+      }));
     } catch (error: any) {
+      console.error('❌ DEBUG: Stage change error:', error);
       toast({ variant: 'destructive', title: 'Error', description: error.message || 'Could not update lead stage.' });
     } finally {
       setIsStageConfirmDialogOpen(false);
@@ -1511,7 +1639,7 @@ function LeadNotesSheet({ open, onOpenChange, lead, currentNote, setCurrentNote,
         if (!noteContent.trim()) {
             toast({
                 variant: 'destructive',
-                title: t.common.error,
+                title: 'Error',
                 description: 'Please enter a note'
             });
             return;
@@ -1536,7 +1664,7 @@ function LeadNotesSheet({ open, onOpenChange, lead, currentNote, setCurrentNote,
                 note_id: operation === 'add_new_note' ? 'temp_' + Date.now() : currentNote?.note_id || '',
                 note: noteContent.trim(),
                 created_at: now.toISOString(),
-                created_at_formatted: formatDateWithTimezone(now.toISOString()),
+                created_at_formatted: new Date().toLocaleString(),
                 created_by: agentName,
                 date: now.toISOString()
             };
@@ -1549,11 +1677,11 @@ function LeadNotesSheet({ open, onOpenChange, lead, currentNote, setCurrentNote,
                     lead_id: lead.lead_id,
                     content: originalNoteContent,
                     current_note: originalNoteContent,
-                    created_at_formatted: currentNote.created_at_formatted || formatDateWithTimezone(now.toISOString()),
+                    created_at_formatted: currentNote.created_at_formatted || new Date().toLocaleString(),
                     created_by: currentNote.created_by || agentName
                 };
                 const updatedHistory = [oldNote, ...notes];
-                setNotes(updatedHistory);
+                setNotes(updatedHistory as any);
             }
 
             setCurrentNote(tempNote);
@@ -1602,7 +1730,7 @@ function LeadNotesSheet({ open, onOpenChange, lead, currentNote, setCurrentNote,
                 setCurrentNote({
                     note_id: latestNote.note_id,
                     note: latestNote.content || latestNote.current_note,
-                    created_at_formatted: formatDateWithTimezone(latestNote.created_at || ''),
+                    created_at_formatted: new Date(latestNote.created_at || '').toLocaleString(),
                     created_by: latestNote.created_by || agentName
                 } as CurrentNote);
 
@@ -1615,7 +1743,7 @@ function LeadNotesSheet({ open, onOpenChange, lead, currentNote, setCurrentNote,
                     note_id: n.note_id,
                     content: n.content || n.current_note,
                     created_at: n.created_at,
-                    created_at_formatted: formatDateWithTimezone(n.created_at || ''),
+                    created_at_formatted: new Date(n.created_at || '').toLocaleString(),
                     created_by: n.created_by || agentName,
                     date: n.created_at
                 }));
@@ -1636,7 +1764,7 @@ function LeadNotesSheet({ open, onOpenChange, lead, currentNote, setCurrentNote,
                     date: n.created_at
                 }));
 
-                updateNotesInStorage(formattedNotes);
+                updateNotesInStorage(formattedNotes as any);
             }
 
             // STEP 6: Success message
@@ -1819,7 +1947,7 @@ function LeadNotesSheet({ open, onOpenChange, lead, currentNote, setCurrentNote,
                                         </Button>
                                         <Button size="sm" onClick={() => handleSaveNote('edit_note')} disabled={isSaving}>
                                             {isSaving ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
-                                            {t.leads.saveChanges || 'Save Changes'}
+                                            {'Save Changes'}
                                         </Button>
                                     </>
                                 )}
