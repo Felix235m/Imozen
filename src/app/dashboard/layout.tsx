@@ -165,7 +165,13 @@ export default function DashboardLayout({
         </div>
         <div className="flex items-center justify-end gap-4">
           <FailedOperationsBadge />
-          <Link href="/notifications">
+          <Link
+            href="/notifications"
+            onMouseEnter={() => {
+              // PERFORMANCE FIX: Preload notifications data on hover
+              navigationOptimizer.preloadData({ type: 'notifications' });
+            }}
+          >
             <Button variant="ghost" size="icon">
               <Bell className="h-6 w-6" />
             </Button>

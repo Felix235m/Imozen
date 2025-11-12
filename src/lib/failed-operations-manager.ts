@@ -72,27 +72,48 @@ export class FailedOperationsManager {
    * Get all failed operations (auto-cleanup expired ones)
    */
   getAll(): FailedOperation[] {
+    console.time('FailedOperationsManager-getAll');
+    console.log('🔍 [PERF] FailedOperationsManager: Getting all operations');
+    
     // Return empty array on server
-    if (typeof window === 'undefined' || !window.localStorage) return [];
+    if (typeof window === 'undefined' || !window.localStorage) {
+      console.log('🔍 [PERF] FailedOperationsManager: Server-side, returning empty');
+      console.timeEnd('FailedOperationsManager-getAll');
+      return [];
+    }
 
     try {
       const stored = localStorage.getItem(STORAGE_KEY);
-      if (!stored) return [];
+      if (!stored) {
+        console.log('🔍 [PERF] FailedOperationsManager: No operations in storage');
+        console.timeEnd('FailedOperationsManager-getAll');
+        return [];
+      }
 
+      console.time('FailedOperationsManager-JSONParse');
       const operations: FailedOperation[] = JSON.parse(stored);
+      console.timeEnd('FailedOperationsManager-JSONParse');
+      console.log(`🔍 [PERF] FailedOperationsManager: Parsed ${operations.length} operations`);
+      
       const now = Date.now();
 
       // Filter out expired operations
+      console.time('FailedOperationsManager-FilterExpired');
       const valid = operations.filter(op => now - op.timestamp < EXPIRY_MS);
+      console.timeEnd('FailedOperationsManager-FilterExpired');
+      console.log(`🔍 [PERF] FailedOperationsManager: Filtered to ${valid.length} valid operations`);
 
       // Save back if any were removed
       if (valid.length !== operations.length) {
+        console.log(`🔍 [PERF] FailedOperationsManager: Removing ${operations.length - valid.length} expired operations`);
         this.save(valid);
       }
 
+      console.timeEnd('FailedOperationsManager-getAll');
       return valid;
     } catch (error) {
       console.error('Failed to retrieve failed operations:', error);
+      console.timeEnd('FailedOperationsManager-getAll');
       return [];
     }
   }
@@ -183,9 +204,16 @@ export class FailedOperationsManager {
    * Subscribe to failed operations changes
    */
   subscribe(callback: OperationCallback): () => void {
+    console.time('FailedOperationsManager-Subscribe');
+    console.log('🔍 [PERF] FailedOperationsManager: Setting up subscription');
+    
     this.subscribers.add(callback);
     // Immediately call with current operations
-    callback(this.getAll());
+    const operations = this.getAll();
+    console.log(`🔍 [PERF] FailedOperationsManager: Calling callback with ${operations.length} operations`);
+    callback(operations);
+    
+    console.timeEnd('FailedOperationsManager-Subscribe');
 
     return () => {
       this.subscribers.delete(callback);

@@ -25,10 +25,16 @@ export function FailedOperationsBadge() {
   const [isOpen, setIsOpen] = React.useState(false);
 
   React.useEffect(() => {
+    console.time('FailedOperationsBadge-Init');
+    console.log('🔍 [PERF] FailedOperationsBadge: Initializing');
+    
     // Subscribe to failed operations changes
     const unsubscribe = failedOperationsManager.subscribe((ops) => {
+      console.log(`🔍 [PERF] FailedOperationsBadge: Received ${ops.length} operations`);
       setOperations(ops);
     });
+    
+    console.timeEnd('FailedOperationsBadge-Init');
 
     return unsubscribe;
   }, []);

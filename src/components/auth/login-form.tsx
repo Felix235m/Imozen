@@ -43,6 +43,11 @@ export function LoginForm({
   const [showPassword, setShowPassword] = React.useState(false);
   const { toast } = useToast();
   const { t, setLanguage } = useLanguage();
+  
+  React.useEffect(() => {
+    console.log('🔍 HYDRATION DEBUG: LoginForm rendered with language:', t.login?.adminTitle ? 'loaded' : 'not loaded');
+    console.log('🔍 HYDRATION DEBUG: LoginForm loginType:', loginType);
+  }, [t, loginType]);
 
   // Create form schema with translated validation messages
   const formSchema = React.useMemo(() => z.object({

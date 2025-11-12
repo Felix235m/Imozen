@@ -24,6 +24,11 @@ export default function LoginPage() {
   const router = useRouter();
   const { t } = useLanguage();
   const { toast } = useToast();
+  
+  React.useEffect(() => {
+    console.log('🔍 HYDRATION DEBUG: LoginPage mounted');
+    console.log('🔍 HYDRATION DEBUG: Current language translations available:', !!t.login);
+  }, [t]);
 
   const handleLoginSuccess = async () => {
     if (loginType === 'agent') {
@@ -126,7 +131,7 @@ export default function LoginPage() {
 
   return (
     <>
-      <main className="relative flex min-h-screen w-full items-center justify-center bg-gray-50 p-4">
+      <main className="relative flex min-h-screen w-full items-center justify-center bg-gray-50 p-4" suppressHydrationWarning>
         {/* Language Selector - Top Right Corner */}
         <div className="absolute top-4 right-4 z-10">
           <LanguageSelector />

@@ -42,10 +42,24 @@ export interface ButtonProps
 const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
   ({ className, variant, size, asChild = false, ...props }, ref) => {
     const Comp = asChild ? Slot : "button"
+    
+    // Debug logging for hydration issues
+    React.useEffect(() => {
+      console.log('🔍 HYDRATION DEBUG: Button rendered', {
+        variant,
+        size,
+        asChild,
+        hasOnClick: !!props.onClick,
+        className: cn(buttonVariants({ variant, size, className })),
+        propsKeys: Object.keys(props)
+      });
+    }, [variant, size, asChild, className, props]);
+    
     return (
       <Comp
         className={cn(buttonVariants({ variant, size, className }))}
         ref={ref}
+        suppressHydrationWarning
         {...props}
       />
     )

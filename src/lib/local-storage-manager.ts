@@ -92,31 +92,48 @@ export class LocalStorageManager {
    * PERFORMANCE: Uses cache to avoid repeated JSON.parse calls
    */
   getAppData(): AppData {
+    console.time('localStorageManager-getAppData');
+    console.log('🔍 [PERF] localStorageManager: Getting app data');
+    
     if (typeof window === 'undefined' || !window.localStorage) {
+      console.log('🔍 [PERF] localStorageManager: Server-side, returning default');
+      console.timeEnd('localStorageManager-getAppData');
       return DEFAULT_APP_DATA;
     }
 
     // PERFORMANCE FIX: Use cache if it's fresh (within 100ms)
     const now = Date.now();
     if (this.cache && (now - this.cacheTimestamp) < this.CACHE_TTL) {
+      console.log(`🔍 [PERF] localStorageManager: Cache hit (${now - this.cacheTimestamp}ms old)`);
+      console.timeEnd('localStorageManager-getAppData');
       return this.cache;
     }
 
+    console.log('🔍 [PERF] localStorageManager: Cache miss, parsing from storage');
+    console.time('localStorageManager-JSONParse');
+    
     try {
       const stored = localStorage.getItem(APP_DATA_KEY);
       if (!stored) {
+        console.log('🔍 [PERF] localStorageManager: No data in storage, returning default');
         this.cache = DEFAULT_APP_DATA;
         this.cacheTimestamp = now;
+        console.timeEnd('localStorageManager-JSONParse');
+        console.timeEnd('localStorageManager-getAppData');
         return DEFAULT_APP_DATA;
       }
 
       const data: AppData = JSON.parse(stored);
+      console.timeEnd('localStorageManager-JSONParse');
+      console.log(`🔍 [PERF] localStorageManager: Parsed ${stored.length} characters`);
 
       // Check if data is expired
       if (this.isExpired(data)) {
+        console.log('🔍 [PERF] localStorageManager: Data expired, clearing');
         this.clearAppData();
         this.cache = DEFAULT_APP_DATA;
         this.cacheTimestamp = now;
+        console.timeEnd('localStorageManager-getAppData');
         return DEFAULT_APP_DATA;
       }
 
@@ -126,17 +143,21 @@ export class LocalStorageManager {
         this.clearAppData();
         this.cache = DEFAULT_APP_DATA;
         this.cacheTimestamp = now;
+        console.timeEnd('localStorageManager-getAppData');
         return DEFAULT_APP_DATA;
       }
 
       // Update cache
       this.cache = data;
       this.cacheTimestamp = now;
+      console.log(`🔍 [PERF] localStorageManager: Cached data with ${data.notifications.length} notifications`);
+      console.timeEnd('localStorageManager-getAppData');
       return data;
     } catch (error) {
       console.error('Failed to get app data:', error);
       this.cache = DEFAULT_APP_DATA;
       this.cacheTimestamp = now;
+      console.timeEnd('localStorageManager-getAppData');
       return DEFAULT_APP_DATA;
     }
   }
@@ -336,14 +357,22 @@ export class LocalStorageManager {
    * Get notifications
    */
   getNotifications(): Notification[] {
-    return this.getAppData().notifications;
+    console.time('localStorageManager-getNotifications');
+    console.log('🔍 [PERF] localStorageManager: Getting notifications');
+    const result = this.getAppData().notifications;
+    console.timeEnd('localStorageManager-getNotifications');
+    console.log(`🔍 [PERF] localStorageManager: Retrieved ${result.length} notifications`);
+    return result;
   }
 
   /**
    * Update notifications
    */
   updateNotifications(notifications: Notification[]): void {
+    console.time('localStorageManager-updateNotifications');
+    console.log(`🔍 [PERF] localStorageManager: Updating ${notifications.length} notifications`);
     this.setAppData({ notifications });
+    console.timeEnd('localStorageManager-updateNotifications');
   }
 
   /**

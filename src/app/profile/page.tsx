@@ -14,6 +14,7 @@ import { useLanguage } from '@/hooks/useLanguage';
 import { callAuthApi } from '@/lib/auth-api';
 import { LANGUAGE_MAP } from '@/types/agent';
 import { uploadToCloudinary } from '@/lib/cloudinary-upload';
+import { formatPhoneNumber } from '@/lib/utils';
 
 type ProfileData = {
   name: string;
@@ -41,21 +42,32 @@ export default function ProfilePage() {
       if (agentDataString) {
         const agentData = JSON.parse(agentDataString);
 
-        // Parse phone into country code and number
+        // Parse phone into country code and number - using robust approach from lead detail page
         const fullPhone = agentData.agent_phone || '';
         let phoneCountryCode = '';
         let phoneNumber = '';
 
+        console.log('🔍 DEBUG - Phone parsing - fullPhone:', fullPhone);
+        console.log('🔍 DEBUG - Phone parsing - agentData:', agentData);
+
         if (fullPhone) {
-          // Try to extract country code (e.g., "+351" or "(+351)")
-          const countryCodeMatch = fullPhone.match(/^\(?(\+\d+)\)?/);
-          if (countryCodeMatch) {
-            phoneCountryCode = countryCodeMatch[1];
-            phoneNumber = fullPhone.replace(/^\(?(\+\d+)\)?\s*/, '').trim();
+          // Try multiple patterns for phone number parsing
+          const match = fullPhone.match(/\((.*?)\)\s*(.*)/);
+          if (match) {
+            phoneCountryCode = match[1];
+            phoneNumber = match[2];
           } else {
-            // If no country code found, treat entire string as phone number
-            phoneNumber = fullPhone;
+            const codeMatch = fullPhone.match(/^\+(\d{1,3})/);
+            if (codeMatch) {
+              phoneCountryCode = codeMatch[0];
+              phoneNumber = fullPhone.substring(codeMatch[0].length).trim();
+            } else {
+              // Default to Portugal country code if no pattern matches
+              phoneCountryCode = '+351';
+              phoneNumber = fullPhone;
+            }
           }
+          console.log('🔍 DEBUG - Phone parsing - extracted - phoneCountryCode:', phoneCountryCode, 'phoneNumber:', phoneNumber);
         }
 
         const profileData = {
@@ -130,8 +142,8 @@ export default function ProfilePage() {
 
       const agentData = JSON.parse(agentDataString);
 
-      // Combine phone fields
-      const combinedPhone = `${profile.phoneCountryCode} ${profile.phoneNumber}`.trim();
+      // Combine phone fields with the required format "(+countrycode) phonenumber"
+      const combinedPhone = formatPhoneNumber(profile.phoneCountryCode, profile.phoneNumber);
 
       // Prepare update payload
       const updatePayload = {
@@ -156,23 +168,63 @@ export default function ProfilePage() {
       // Call update_agent webhook
       const response = await callAuthApi('update_agent', updatePayload);
 
-      if (response.success) {
-        // Update localStorage with new data
-        const updatedAgentData = {
-          ...agentData,
-          agent_name: profile.name,
-          agent_email: profile.email,
-          agent_phone: combinedPhone,
-          agent_language: profile.language,
-          agent_image_url: avatarPreview || profile.avatar,
-        };
-        localStorage.setItem('agent_data', JSON.stringify(updatedAgentData));
+      // Handle array response (webhook returns array with single object)
+      const updatedAgentData = Array.isArray(response) ? response[0] : response;
 
-        // Update language context
-        const languageCode = LANGUAGE_MAP[profile.language] || 'pt';
+      if (updatedAgentData || response.success) {
+        // Update localStorage with data from webhook response
+        const agentDataForStorage = {
+          ...agentData,
+          agent_name: updatedAgentData?.agent_name || profile.name,
+          agent_email: updatedAgentData?.agent_email || profile.email,
+          agent_phone: updatedAgentData?.agent_phone || combinedPhone,
+          agent_language: updatedAgentData?.agent_language || profile.language,
+          agent_image_url: updatedAgentData?.agent_image_url || avatarPreview || profile.avatar,
+        };
+        localStorage.setItem('agent_data', JSON.stringify(agentDataForStorage));
+
+        // Update language context with the language from webhook response
+        const languageCode = LANGUAGE_MAP[updatedAgentData?.agent_language || profile.language] || 'pt';
         setLanguage(languageCode);
 
-        const updatedProfile = { ...profile, avatar: avatarPreview || profile.avatar };
+        // Update profile state with data from webhook response
+        console.log('🔍 DEBUG - Save - updatedAgentData:', updatedAgentData);
+        console.log('🔍 DEBUG - Save - updatedAgentData?.agent_phone:', updatedAgentData?.agent_phone);
+        
+        const phoneFromResponse = updatedAgentData?.agent_phone;
+        let phoneCountryCodeFromResponse = '';
+        let phoneNumberFromResponse = '';
+        
+        if (phoneFromResponse) {
+          // Use same robust parsing as in load function
+          const match = phoneFromResponse.match(/\((.*?)\)\s*(.*)/);
+          if (match) {
+            phoneCountryCodeFromResponse = match[1];
+            phoneNumberFromResponse = match[2];
+          } else {
+            const codeMatch = phoneFromResponse.match(/^\+(\d{1,3})/);
+            if (codeMatch) {
+              phoneCountryCodeFromResponse = codeMatch[0];
+              phoneNumberFromResponse = phoneFromResponse.substring(codeMatch[0].length).trim();
+            } else {
+              // Default to Portugal country code if no pattern matches
+              phoneCountryCodeFromResponse = '+351';
+              phoneNumberFromResponse = phoneFromResponse;
+            }
+          }
+        }
+        
+        console.log('🔍 DEBUG - Save - extracted - phoneCountryCodeFromResponse:', phoneCountryCodeFromResponse, 'phoneNumberFromResponse:', phoneNumberFromResponse);
+        
+        const updatedProfile = {
+          ...profile,
+          name: updatedAgentData?.agent_name || profile.name,
+          email: updatedAgentData?.agent_email || profile.email,
+          phoneCountryCode: phoneCountryCodeFromResponse || profile.phoneCountryCode,
+          phoneNumber: phoneNumberFromResponse || profile.phoneNumber,
+          language: updatedAgentData?.agent_language || profile.language,
+          avatar: updatedAgentData?.agent_image_url || avatarPreview || profile.avatar
+        };
         setOriginalProfile(updatedProfile);
         setProfile(updatedProfile);
 

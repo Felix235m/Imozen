@@ -11,7 +11,7 @@ import { cachedCallLeadApi } from './cached-api';
 import { transformNewBackendResponse } from './lead-transformer';
 
 type NavigationTarget = {
-  type: 'lead-detail' | 'leads-list' | 'dashboard';
+  type: 'lead-detail' | 'leads-list' | 'dashboard' | 'notifications';
   params?: { leadId?: string; filter?: string };
 };
 
@@ -68,6 +68,9 @@ export class NavigationOptimizer {
         case 'dashboard':
           await this.preloadDashboard();
           break;
+        case 'notifications':
+          await this.preloadNotifications();
+          break;
       }
     } catch (error) {
       console.warn('Preload failed:', error);
@@ -115,6 +118,21 @@ export class NavigationOptimizer {
     await this.preloadLeadsList();
   }
 
+  private async preloadNotifications(): Promise<void> {
+    console.log('🚀 Preloading notifications data');
+    
+    // Notifications are part of the main app data, so we just need to ensure data is fresh
+    const data = localStorageManager.getAppData();
+    
+    // If data is stale, refresh it
+    if (localStorageManager.isStale()) {
+      console.log('📋 Notifications data is stale, refreshing...');
+      await this.preloadLeadsList(); // This will refresh all data including notifications
+    } else {
+      console.log(`📋 Notifications data is fresh (${data.notifications.length} notifications)`);
+    }
+  }
+
   private getCacheKey(target: NavigationTarget): string {
     switch (target.type) {
       case 'lead-detail':
@@ -123,6 +141,8 @@ export class NavigationOptimizer {
         return `leads-list:${target.params?.filter || 'all'}`;
       case 'dashboard':
         return 'dashboard';
+      case 'notifications':
+        return 'notifications';
       default:
         return 'unknown';
     }
@@ -138,17 +158,20 @@ export class NavigationOptimizer {
     setTimeout(() => {
       switch (currentPath) {
         case '/dashboard':
-          // User might go to leads next
+          // User might go to leads or notifications next
           this.preloadData({ type: 'leads-list' });
+          this.preloadData({ type: 'notifications' });
           break;
         case '/leads':
-          // User might view lead details
+          // User might view lead details or check notifications
           this.preloadData({ type: 'leads-list' });
+          this.preloadData({ type: 'notifications' });
           break;
         case '/tasks':
-          // User might go to dashboard or leads
+          // User might go to dashboard, leads, or notifications
           this.preloadData({ type: 'dashboard' });
           this.preloadData({ type: 'leads-list' });
+          this.preloadData({ type: 'notifications' });
           break;
         // Add more patterns as needed
       }

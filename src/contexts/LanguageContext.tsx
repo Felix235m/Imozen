@@ -40,22 +40,40 @@ export function LanguageProvider({ children }: { children: ReactNode }) {
   // Initialize with 'pt' as default - this will be the same on both server and client
   // preventing hydration mismatches. The language will update after mount via useEffect.
   const [language, setLanguageState] = useState<Language>('pt');
+  const [isMounted, setIsMounted] = React.useState(false);
 
-  useEffect(() => {
-    // Priority 1: Agent profile language (highest priority)
-    const agentLanguage = getLanguageFromAgentData();
-    if (agentLanguage) {
-      setLanguageState(agentLanguage);
-      return;
-    }
+  React.useEffect(() => {
+    setIsMounted(true);
+    console.log('🔍 HYDRATION DEBUG: LanguageProvider mounted on client');
+    console.log('🔍 HYDRATION DEBUG: Initial language state:', language);
+    
+    // Defer language detection to next tick to ensure hydration is complete
+    const timer = setTimeout(() => {
+      console.log('🔍 HYDRATION DEBUG: Language update effect running');
+      
+      // Priority 1: Agent profile language (highest priority)
+      const agentLanguage = getLanguageFromAgentData();
+      console.log('🔍 HYDRATION DEBUG: Agent language from localStorage:', agentLanguage);
+      
+      if (agentLanguage) {
+        console.log('🔍 HYDRATION DEBUG: Setting language from agent data:', agentLanguage);
+        setLanguageState(agentLanguage);
+        return;
+      }
 
-    // Priority 2: Standalone localStorage language (fallback)
-    const savedLanguage = localStorage.getItem('language') as Language;
-    if (savedLanguage && (savedLanguage === 'pt' || savedLanguage === 'en')) {
-      setLanguageState(savedLanguage);
-    }
+      // Priority 2: Standalone localStorage language (fallback)
+      const savedLanguage = localStorage.getItem('language') as Language;
+      console.log('🔍 HYDRATION DEBUG: Saved language from localStorage:', savedLanguage);
+      
+      if (savedLanguage && (savedLanguage === 'pt' || savedLanguage === 'en')) {
+        console.log('🔍 HYDRATION DEBUG: Setting language from localStorage:', savedLanguage);
+        setLanguageState(savedLanguage);
+      }
 
-    // Priority 3: Default Portuguese (final fallback - already set in useState)
+      // Priority 3: Default Portuguese (final fallback - already set in useState)
+    }, 0);
+    
+    return () => clearTimeout(timer);
   }, []);
 
   const setLanguage = (lang: Language) => {
@@ -78,10 +96,12 @@ export function LanguageProvider({ children }: { children: ReactNode }) {
   // Always provide consistent context to prevent hydration mismatch
   // The language state starts as 'pt' on both server and client, then updates via useEffect
   const value = {
-    language,
+    language: isMounted ? language : 'pt', // Force 'pt' during SSR to prevent hydration mismatch
     setLanguage,
-    t: translations[language],
+    t: translations[isMounted ? language : 'pt'], // Use 'pt' translations during SSR
   };
+
+  console.log('🔍 HYDRATION DEBUG: LanguageProvider render - isMounted:', isMounted, 'language:', value.language);
 
   return (
     <LanguageContext.Provider value={value}>
