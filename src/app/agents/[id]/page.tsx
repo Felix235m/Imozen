@@ -12,6 +12,7 @@ import { useToast } from '@/hooks/use-toast';
 import { Loader2 } from 'lucide-react';
 import { useParams } from 'next/navigation';
 import { callAuthApi } from '@/lib/auth-api';
+import { formatPhoneNumber } from '@/lib/utils';
 
 const initialAgentData = {
   name: 'Sophia Carter',
@@ -66,10 +67,44 @@ export default function AgentDetailPage() {
   const handleSave = async () => {
     setIsSaving(true);
     try {
+      // Format phone number if it exists
+      let formattedPhone = agent.phone;
+      if (agent.phone) {
+        // Extract country code and number from phone if it's in the old format
+        let phoneCountryCode = '';
+        let phoneNumber = '';
+        
+        const match = agent.phone.match(/\((.*?)\)\s*(.*)/);
+        if (match) {
+          // Already in correct format
+          formattedPhone = agent.phone;
+        } else {
+          const codeMatch = agent.phone.match(/^\+(\d{1,3})/);
+          if (codeMatch) {
+            phoneCountryCode = codeMatch[0];
+            phoneNumber = agent.phone.substring(codeMatch[0].length).trim();
+          } else {
+            // Default to Portugal country code if no pattern matches
+            phoneCountryCode = '+351';
+            phoneNumber = agent.phone;
+          }
+          
+          // Format with our utility function
+          formattedPhone = formatPhoneNumber(phoneCountryCode, phoneNumber);
+        }
+      }
+      
       const agentPayload = {
         ...agent,
         agent_id: agent.id, // The API might expect agent_id
+        agent_phone: formattedPhone, // Use formatted phone number
       };
+      
+      // Debug logging
+      console.log('🔍 DEBUG - agents/[id]/page.tsx - agent.phone:', agent.phone);
+      console.log('🔍 DEBUG - agents/[id]/page.tsx - formattedPhone:', formattedPhone);
+      console.log('🔍 DEBUG - agents/[id]/page.tsx - agentPayload:', JSON.stringify(agentPayload, null, 2));
+      
       await callAuthApi('update_agent', agentPayload);
 
       toast({

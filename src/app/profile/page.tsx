@@ -144,6 +144,11 @@ export default function ProfilePage() {
 
       // Combine phone fields with the required format "(+countrycode) phonenumber"
       const combinedPhone = formatPhoneNumber(profile.phoneCountryCode, profile.phoneNumber);
+      
+      // Debug logging to verify phone format
+      console.log('🔍 DEBUG - Phone formatting - phoneCountryCode:', profile.phoneCountryCode);
+      console.log('🔍 DEBUG - Phone formatting - phoneNumber:', profile.phoneNumber);
+      console.log('🔍 DEBUG - Phone formatting - combinedPhone:', combinedPhone);
 
       // Prepare update payload
       const updatePayload = {
@@ -156,6 +161,9 @@ export default function ProfilePage() {
         login_username: agentData.login_username,
         sheet_url: agentData.sheet_url || '',
       };
+      
+      // Debug logging to verify the payload
+      console.log('🔍 DEBUG - Update payload being sent to webhook:', JSON.stringify(updatePayload, null, 2));
 
       // Call agent_image_url webhook if image was updated
       if (avatarPreview && avatarPreview !== profile.avatar) {

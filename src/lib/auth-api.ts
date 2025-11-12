@@ -117,6 +117,14 @@ export async function callAuthApi(operation: Operation, payload: any) {
   } else {
     body = { operation, ...payload };
   }
+  
+  // Debug logging for update_agent operation
+  if (operation === 'update_agent') {
+    console.log('🔍 DEBUG - callAuthApi - update_agent operation');
+    console.log('🔍 DEBUG - callAuthApi - agent_phone in payload:', body.agent_phone);
+    console.log('🔍 DEBUG - callAuthApi - full payload:', JSON.stringify(body, null, 2));
+  }
+  
   return callApi(url, body);
 }
 
