@@ -307,6 +307,8 @@ export const pt = {
   },
   newLead: {
     title: "Novo Lead",
+    addNewLead: "Adicionar Novo Lead",
+    fillInformation: "Preencha todas as informações abaixo",
     step1Title: "Informações de Contato",
     step2Title: "Requisitos de Propriedade",
     step3Title: "Qualificação",
@@ -325,10 +327,12 @@ export const pt = {
     credit: "Crédito",
     creditPreApproval: "Pré-aprovação de Crédito",
     whenPlanning: "Quando estão planejando comprar?",
+    whenPlanningSell: "Quando eles planejam vender?",
     immediately: "Imediatamente (menos de 3 meses)",
     shortTerm: "3-6 meses",
     afterSixMonths: "Após 6 meses",
     howLongLooking: "Há quanto tempo estão procurando?",
+    howLongInMarket: "Há quanto tempo estão no mercado?",
     startingNow: "Começando agora",
     zeroToTwoMonths: "0-2 meses",
     threeToSixMonths: "3-6 meses",
@@ -342,8 +346,6 @@ export const pt = {
     propertyLocation: "Localização da Propriedade",
     priceRange: "Faixa de Preço",
     askingPrice: "Preço Pedido",
-    whenPlanningSell: "Quando eles planejam vender?",
-    howLongInMarket: "Há quanto tempo estão no mercado?",
     selectLocations: "Selecionar localizações...",
     numberOfBedrooms: "Número de Quartos",
     firstName: "Primeiro Nome",
@@ -363,6 +365,49 @@ export const pt = {
     location: "Localização",
     specificRequirements: "Requisitos Específicos",
     timeframe: "Prazo",
+    // Form sections
+    contactInformation: "Informações de Contato",
+    contactInformationDescription: "Dados de contato básicos para o lead",
+    propertyRequirements: "Requisitos de Propriedade",
+    propertyRequirementsDescription: "Especifique as preferências de propriedade",
+    qualificationDetailsBuyer: "Entendendo a posição de compra do lead",
+    qualificationDetailsSeller: "Entendendo a posição de venda do lead",
+    // Form labels
+    leadType: "Tipo de Lead",
+    buyer: "Comprador",
+    seller: "Vendedor",
+    enterBudget: "Digite o orçamento",
+    // Property types
+    propertyTypes: {
+      apartment: "Apartamento",
+      house: "Casa",
+      commercial: "Comercial",
+      land: "Terreno",
+    },
+    // Financing types
+    financingTypes: {
+      cash: "Dinheiro",
+      credit: "Crédito",
+    },
+    // Purchase timeframes
+    purchaseTimeframes: {
+      immediately: "Imediatamente (menos de 3 meses)",
+      threeToSixMonths: "3-6 meses",
+      afterSixMonths: "Após 6 meses",
+    },
+    // Search durations
+    searchDurations: {
+      startingNow: "Começando agora",
+      zeroToTwoMonths: "0-2 meses",
+      threeToSixMonths: "3-6 meses",
+      moreThanSixMonths: "Mais de 6 meses",
+    },
+    // Properties viewed options
+    propertiesViewed: {
+      no: "Não",
+      aFew: "Algumas",
+      many: "Muitas",
+    },
     placeholders: {
       firstName: "Digite o primeiro nome",
       lastName: "Digite o sobrenome",
@@ -381,6 +426,8 @@ export const pt = {
       maxArea: "Área máxima (m²)",
       specificRequirements: "Digite quaisquer requisitos específicos...",
       selectTimeframe: "Selecione o prazo",
+      enterBudget: "Digite o orçamento",
+      noteExample: "ex., Cliente está muito interessado em propriedades com quintal para seu cachorro. Prefere arquitetura moderna...",
     },
     validation: {
       firstNameRequired: "Primeiro nome é obrigatório",
@@ -388,7 +435,13 @@ export const pt = {
       phoneRequired: "Número de telefone é obrigatório",
       phoneNumberRequired: "Número de telefone é obrigatório",
       countryCodeRequired: "Código do país é obrigatório",
-      invalidEmail: "Endereço de email inválido",
+      invalidEmail: "Email inválido",
+      bedroomsNegative: "Quartos não podem ser negativos",
+    },
+    // Contextual note examples
+    noteExamples: {
+      buyer: "ex., Cliente muito interessado em apartamentos com 2+ quartos próximos ao metro. Trabalha em Lisboa e precisa de estacionamento.",
+      seller: "ex., Dono do imóvel há 15 anos, quer vender para se mudar para casa mais pequena. Imóvel muito bem conservado.",
     },
     labels: {
       firstName: "Primeiro Nome",
@@ -397,16 +450,6 @@ export const pt = {
       email: "Email",
       language: "Idioma",
       leadSource: "Fonte do Lead",
-    },
-    placeholders: {
-      firstName: "Digite o primeiro nome",
-      lastName: "Digite o sobrenome",
-      phoneNumber: "Número de telefone",
-      email: "Digite o endereço de email",
-      selectLanguage: "Selecione um idioma",
-      selectSource: "Selecione uma fonte",
-      enterBudget: "Digite o orçamento",
-      noteExample: "ex., Cliente está muito interessado em propriedades com quintal para seu cachorro. Prefere arquitetura moderna...",
     },
     languages: {
       english: "Inglês",

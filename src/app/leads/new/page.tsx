@@ -41,10 +41,10 @@ import type { Notification } from "@/types/app-data";
 
 // Constants
 const propertyTypes = [
-  { name: "Apartment", icon: Building },
-  { name: "House", icon: Home },
-  { name: "Commercial", icon: Warehouse },
-  { name: "Land", icon: Mountain },
+  { name: "Apartment", nameKey: "apartment", icon: Building },
+  { name: "House", nameKey: "house", icon: Home },
+  { name: "Commercial", nameKey: "commercial", icon: Warehouse },
+  { name: "Land", nameKey: "land", icon: Mountain },
 ];
 
 const allLocations = [
@@ -61,46 +61,61 @@ const allLocations = [
 ];
 
 const financingTypes = [
-  { name: "Cash", icon: DollarSign },
-  { name: "Credit", icon: CreditCard },
+  { name: "Cash", nameKey: "cash", icon: DollarSign },
+  { name: "Credit", nameKey: "credit", icon: CreditCard },
 ];
 
-const purchaseTimeframes = ["Immediately (under 3 months)", "3-6 months", "After 6 months"];
-const searchDurations = ["Starting now", "0-2 months", "3-6 months", "More than 6 months"];
-const propertiesViewedOptions = ["No", "A few", "Many"];
+const purchaseTimeframes = [
+  { key: "immediately", nameKey: "immediately" },
+  { key: "threeToSixMonths", nameKey: "threeToSixMonths" },
+  { key: "afterSixMonths", nameKey: "afterSixMonths" }
+];
 
-// Combined form schema with all fields
-const formSchema = z.object({
-  // Step 1: Contact Information
-  leadType: z.enum(['Buyer', 'Seller']).default('Buyer'),
-  firstName: z.string().min(1, "First name is required"),
-  lastName: z.string().min(1, "Last name is required"),
-  countryCode: z.string().min(1, "Country code is required"),
-  phoneNumber: z.string().min(1, "Phone number is required"),
-  email: z.string().email("Invalid email").optional().or(z.literal('')),
-  language: z.string().optional(),
-  leadSource: z.string().optional(),
+const searchDurations = [
+  { key: "startingNow", nameKey: "startingNow" },
+  { key: "zeroToTwoMonths", nameKey: "zeroToTwoMonths" },
+  { key: "threeToSixMonths", nameKey: "threeToSixMonths" },
+  { key: "moreThanSixMonths", nameKey: "moreThanSixMonths" }
+];
 
-  // Step 2: Property Requirements
-  propertyType: z.string().optional(),
-  locations: z.array(z.string()).optional(),
-  budget: z.number().optional(),
-  budgetCurrency: z.string(),
-  bedrooms: z.number().min(0, "Bedrooms cannot be negative"),
-
-  // Step 3: Qualification
-  financingType: z.string().optional(),
-  creditPreApproval: z.boolean().default(false),
-  purchaseTimeframe: z.string().optional(),
-  searchDuration: z.string().optional(),
-  propertiesViewed: z.string().optional(),
-
-  // Step 4: Initial Note
-  initialNote: z.string().optional(),
-});
+const propertiesViewedOptions = [
+  { key: "no", nameKey: "no" },
+  { key: "aFew", nameKey: "aFew" },
+  { key: "many", nameKey: "many" }
+];
 
 export default function NewLeadPage() {
   const { t } = useLanguage();
+
+  // Combined form schema with all fields
+  const formSchema = z.object({
+    // Step 1: Contact Information
+    leadType: z.enum(['Buyer', 'Seller']).default('Buyer'),
+    firstName: z.string().min(1, t.newLead.validation.firstNameRequired),
+    lastName: z.string().min(1, t.newLead.validation.lastNameRequired),
+    countryCode: z.string().min(1, t.newLead.validation.countryCodeRequired),
+    phoneNumber: z.string().min(1, t.newLead.validation.phoneNumberRequired),
+    email: z.string().email(t.newLead.validation.invalidEmail).optional().or(z.literal('')),
+    language: z.string().optional(),
+    leadSource: z.string().optional(),
+
+    // Step 2: Property Requirements
+    propertyType: z.string().optional(),
+    locations: z.array(z.string()).optional(),
+    budget: z.number().optional(),
+    budgetCurrency: z.string(),
+    bedrooms: z.number().min(0, t.newLead.validation.bedroomsNegative),
+
+    // Step 3: Qualification
+    financingType: z.string().optional(),
+    creditPreApproval: z.boolean().default(false),
+    purchaseTimeframe: z.string().optional(),
+    searchDuration: z.string().optional(),
+    propertiesViewed: z.string().optional(),
+
+    // Step 4: Initial Note
+    initialNote: z.string().optional(),
+  });
   const router = useRouter();
   const { toast } = useToast();
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -439,8 +454,8 @@ export default function NewLeadPage() {
       {/* Header */}
       <div className="sticky top-0 z-10 bg-white p-4 border-b">
         <div className="max-w-2xl mx-auto">
-          <h1 className="text-2xl font-bold">Add New Lead</h1>
-          <p className="text-sm text-muted-foreground mt-1">Fill in all the information below</p>
+          <h1 className="text-2xl font-bold">{t.newLead.addNewLead}</h1>
+          <p className="text-sm text-muted-foreground mt-1">{t.newLead.fillInformation}</p>
         </div>
       </div>
 
@@ -453,8 +468,8 @@ export default function NewLeadPage() {
               {/* SECTION 1: Contact Information */}
               <Card>
                 <CardHeader>
-                  <CardTitle>Contact Information</CardTitle>
-                  <CardDescription>Basic contact details for the lead</CardDescription>
+                  <CardTitle>{t.newLead.contactInformation}</CardTitle>
+                  <CardDescription>{t.newLead.contactInformationDescription}</CardDescription>
                 </CardHeader>
                 <CardContent className="space-y-6">
                   {/* Lead Type Selection */}
@@ -463,7 +478,7 @@ export default function NewLeadPage() {
                     name="leadType"
                     render={({ field }) => (
                       <FormItem className="space-y-3">
-                        <FormLabel className="text-base font-semibold">Lead Type <span className="text-red-500">*</span></FormLabel>
+                        <FormLabel className="text-base font-semibold">{t.newLead.leadType} <span className="text-red-500">*</span></FormLabel>
                         <FormControl>
                           <RadioGroup
                             onValueChange={field.onChange}
@@ -485,7 +500,7 @@ export default function NewLeadPage() {
                                     "text-lg font-semibold",
                                     field.value === "Buyer" ? "text-green-700 dark:text-green-300" : "text-gray-700"
                                   )}>
-                                    Buyer
+                                    {t.newLead.buyer}
                                   </span>
                                 </div>
                               </FormLabel>
@@ -505,7 +520,7 @@ export default function NewLeadPage() {
                                     "text-lg font-semibold",
                                     field.value === "Seller" ? "text-purple-700 dark:text-purple-300" : "text-gray-700"
                                   )}>
-                                    Seller
+                                    {t.newLead.seller}
                                   </span>
                                 </div>
                               </FormLabel>
@@ -645,8 +660,8 @@ export default function NewLeadPage() {
               {/* SECTION 2: Property Requirements */}
               <Card>
                 <CardHeader>
-                  <CardTitle>{t.leads.propertyRequirements || "Property Requirements"}</CardTitle>
-                  <CardDescription>Specify the property preferences</CardDescription>
+                  <CardTitle>{t.newLead.propertyRequirements}</CardTitle>
+                  <CardDescription>{t.newLead.propertyRequirementsDescription}</CardDescription>
                 </CardHeader>
                 <CardContent className="space-y-6">
                   <FormField
@@ -654,7 +669,7 @@ export default function NewLeadPage() {
                     name="propertyType"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>{t.leads.propertyType || "Property Type"}</FormLabel>
+                        <FormLabel>{t.newLead.propertyType}</FormLabel>
                         <FormControl>
                           <div className="grid grid-cols-2 gap-4">
                             {propertyTypes.map((type) => (
@@ -668,7 +683,7 @@ export default function NewLeadPage() {
                                 className={cn("h-auto py-4 flex flex-col gap-2 transition-all", field.value === type.name ? "bg-primary text-primary-foreground" : "bg-card hover:bg-accent hover:text-accent-foreground")}
                               >
                                 <type.icon className="h-6 w-6" />
-                                <span>{type.name}</span>
+                                <span>{t.newLead.propertyTypes[type.nameKey as keyof typeof t.newLead.propertyTypes]}</span>
                               </Button>
                             ))}
                           </div>
@@ -685,8 +700,8 @@ export default function NewLeadPage() {
                       <FormItem className="flex flex-col">
                         <FormLabel className="transition-all duration-300">
                           {isBuyer
-                            ? (t.newLead.desiredLocations || "Desired Locations")
-                            : (t.newLead.propertyLocation || "Property Location")}
+                            ? t.newLead.desiredLocations
+                            : t.newLead.propertyLocation}
                         </FormLabel>
                         <DropdownMenu>
                           <DropdownMenuTrigger asChild>
@@ -714,7 +729,7 @@ export default function NewLeadPage() {
                                     )
                                   })
                                 ) : (
-                                  <span className="text-muted-foreground">{t.newLead.selectLocations || "Select locations"}</span>
+                                  <span className="text-muted-foreground">{t.newLead.selectLocations}</span>
                                 )}
                               </div>
                               <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
@@ -741,8 +756,8 @@ export default function NewLeadPage() {
                   <FormItem>
                     <FormLabel className="transition-all duration-300">
                       {isBuyer
-                        ? (t.newLead.budget || "Budget")
-                        : (t.newLead.askingPrice || "Asking Price")}
+                        ? t.newLead.budget
+                        : t.newLead.askingPrice}
                     </FormLabel>
                     <div className="flex items-center gap-2">
                       <FormField
@@ -769,7 +784,7 @@ export default function NewLeadPage() {
                           <FormControl>
                             <Input
                               type="number"
-                              placeholder="Enter budget"
+                              placeholder={t.newLead.enterBudget}
                               {...field}
                               onChange={e => field.onChange(Number(e.target.value))}
                               onFocus={(e) => {
@@ -790,7 +805,7 @@ export default function NewLeadPage() {
                     name="bedrooms"
                     render={({ field }) => (
                       <FormItem className={cn(isBedroomsDisabled && "opacity-50")}>
-                        <FormLabel>{t.newLead.numberOfBedrooms || "Number of Bedrooms"}</FormLabel>
+                        <FormLabel>{t.newLead.numberOfBedrooms}</FormLabel>
                         <FormControl>
                           <div className="flex items-center justify-center gap-4 p-2 border rounded-lg">
                             <Button
@@ -824,9 +839,9 @@ export default function NewLeadPage() {
               {/* SECTION 3: Qualification */}
               <Card>
                 <CardHeader>
-                  <CardTitle>{t.newLead.qualificationDetails || "Qualification Details"}</CardTitle>
+                  <CardTitle>{t.newLead.qualificationDetails}</CardTitle>
                   <CardDescription>
-                    {isBuyer ? "Understanding the lead's buying position" : "Understanding the lead's selling position"}
+                    {isBuyer ? t.newLead.qualificationDetailsBuyer : t.newLead.qualificationDetailsSeller}
                   </CardDescription>
                 </CardHeader>
                 <CardContent className="space-y-6">
@@ -838,7 +853,7 @@ export default function NewLeadPage() {
                         name="financingType"
                         render={({ field }) => (
                           <FormItem>
-                            <FormLabel>{t.newLead.financingType || "Financing Type"}</FormLabel>
+                            <FormLabel>{t.newLead.financingType}</FormLabel>
                         <FormControl>
                           <div className="grid grid-cols-2 gap-4">
                             {financingTypes.map((type) => (
@@ -852,7 +867,7 @@ export default function NewLeadPage() {
                                 className={cn("h-auto py-4 flex flex-col gap-2 transition-all", field.value === type.name ? "bg-primary text-primary-foreground" : "bg-card hover:bg-accent hover:text-accent-foreground")}
                               >
                                 <type.icon className="h-6 w-6" />
-                                <span>{type.name}</span>
+                                <span>{t.newLead.financingTypes[type.nameKey as keyof typeof t.newLead.financingTypes]}</span>
                               </Button>
                             ))}
                           </div>
@@ -881,7 +896,7 @@ export default function NewLeadPage() {
                             </FormControl>
                             <div className="space-y-1 leading-none">
                               <FormLabel className={cn(isCreditPreApprovalDisabled && "cursor-not-allowed")}>
-                                {t.newLead.creditPreApproval || "Credit Pre-Approval"}
+                                {t.newLead.creditPreApproval}
                               </FormLabel>
                               <FormMessage />
                             </div>
@@ -898,8 +913,8 @@ export default function NewLeadPage() {
                       <FormItem className="space-y-3">
                         <FormLabel className="transition-all duration-300">
                           {isBuyer
-                            ? (t.newLead.whenPlanning || "When are they planning to purchase?")
-                            : (t.newLead.whenPlanningSell || "When are they planning to sell?")}
+                            ? t.newLead.whenPlanning
+                            : t.newLead.whenPlanningSell}
                         </FormLabel>
                         <FormControl>
                           <RadioGroup
@@ -908,11 +923,13 @@ export default function NewLeadPage() {
                             className="flex flex-col space-y-1"
                           >
                             {purchaseTimeframes.map((item) => (
-                              <FormItem key={item} className="flex items-center space-x-3 space-y-0">
+                              <FormItem key={item.key} className="flex items-center space-x-3 space-y-0">
                                 <FormControl>
-                                  <RadioGroupItem value={item} />
+                                  <RadioGroupItem value={item.nameKey} />
                                 </FormControl>
-                                <FormLabel className="font-normal">{item}</FormLabel>
+                                <FormLabel className="font-normal">
+                                  {t.newLead.purchaseTimeframes[item.nameKey as keyof typeof t.newLead.purchaseTimeframes]}
+                                </FormLabel>
                               </FormItem>
                             ))}
                           </RadioGroup>
@@ -929,8 +946,8 @@ export default function NewLeadPage() {
                       <FormItem className="space-y-3">
                         <FormLabel className="transition-all duration-300">
                           {isBuyer
-                            ? (t.newLead.howLongLooking || "How long have they been looking?")
-                            : (t.newLead.howLongInMarket || "How long have they been in the market?")}
+                            ? t.newLead.howLongLooking
+                            : t.newLead.howLongInMarket}
                         </FormLabel>
                         <FormControl>
                           <RadioGroup
@@ -939,11 +956,13 @@ export default function NewLeadPage() {
                             className="flex flex-col space-y-1"
                           >
                             {searchDurations.map((item) => (
-                              <FormItem key={item} className="flex items-center space-x-3 space-y-0">
+                              <FormItem key={item.key} className="flex items-center space-x-3 space-y-0">
                                 <FormControl>
-                                  <RadioGroupItem value={item} />
+                                  <RadioGroupItem value={item.nameKey} />
                                 </FormControl>
-                                <FormLabel className="font-normal">{item}</FormLabel>
+                                <FormLabel className="font-normal">
+                                  {t.newLead.searchDurations[item.nameKey as keyof typeof t.newLead.searchDurations]}
+                                </FormLabel>
                               </FormItem>
                             ))}
                           </RadioGroup>
@@ -961,7 +980,7 @@ export default function NewLeadPage() {
                         name="propertiesViewed"
                         render={({ field }) => (
                           <FormItem className="space-y-3">
-                            <FormLabel>{t.newLead.seenOtherProperties || "Have they seen other properties?"}</FormLabel>
+                            <FormLabel>{t.newLead.seenOtherProperties}</FormLabel>
                         <FormControl>
                           <RadioGroup
                             onValueChange={field.onChange}
@@ -969,11 +988,13 @@ export default function NewLeadPage() {
                             className="flex flex-col space-y-1"
                           >
                             {propertiesViewedOptions.map((item) => (
-                              <FormItem key={item} className="flex items-center space-x-3 space-y-0">
+                              <FormItem key={item.key} className="flex items-center space-x-3 space-y-0">
                                 <FormControl>
-                                  <RadioGroupItem value={item} />
+                                  <RadioGroupItem value={item.nameKey} />
                                 </FormControl>
-                                <FormLabel className="font-normal">{item}</FormLabel>
+                                <FormLabel className="font-normal">
+                                  {t.newLead.propertiesViewed[item.nameKey as keyof typeof t.newLead.propertiesViewed]}
+                                </FormLabel>
                               </FormItem>
                             ))}
                           </RadioGroup>
@@ -990,8 +1011,8 @@ export default function NewLeadPage() {
               {/* SECTION 4: Initial Note */}
               <Card>
                 <CardHeader>
-                  <CardTitle>{t.newLead.initialNote || "Initial Note"}</CardTitle>
-                  <CardDescription>{t.newLead.initialNoteDescription || "Add any additional notes about this lead"}</CardDescription>
+                  <CardTitle>{t.newLead.initialNote}</CardTitle>
+                  <CardDescription>{t.newLead.initialNoteDescription}</CardDescription>
                 </CardHeader>
                 <CardContent>
                   <FormField
@@ -999,10 +1020,10 @@ export default function NewLeadPage() {
                     name="initialNote"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>{t.newLead.note || "Note"}</FormLabel>
+                        <FormLabel>{t.newLead.note}</FormLabel>
                         <FormControl>
                           <Textarea
-                            placeholder="e.g., Client is very interested in properties with a backyard for their dog. Prefers modern architecture..."
+                            placeholder={isBuyer ? t.newLead.noteExamples.buyer : t.newLead.noteExamples.seller}
                             className="min-h-[200px]"
                             {...field}
                           />
