@@ -2,7 +2,8 @@
 
 import * as React from 'react';
 import { format } from 'date-fns';
-import { getEventConfig } from '@/lib/communication-history-utils';
+import { ptBR } from 'date-fns/locale';
+import { getEventConfig, getCurrentAgentLanguage } from '@/lib/communication-history-utils';
 import { cn } from '@/lib/utils';
 
 export interface CommunicationEvent {
@@ -24,6 +25,9 @@ export function CommunicationHistoryTimeline({
   events,
   className,
 }: CommunicationHistoryTimelineProps) {
+  // Get agent's language preference
+  const agentLanguage = React.useMemo(() => getCurrentAgentLanguage(), []);
+
   // Sort events by timestamp (newest first)
   const sortedEvents = React.useMemo(() => {
     return [...events].sort((a, b) => {
@@ -44,19 +48,22 @@ export function CommunicationHistoryTimeline({
   return (
     <div className={cn("relative", className)}>
       {sortedEvents.map((event, index) => {
-        const config = getEventConfig(event.event_type);
+        const config = getEventConfig(event.event_type, agentLanguage);
         const Icon = config.icon;
         const isLast = index === sortedEvents.length - 1;
 
-        // Format timestamp
+        // Format timestamp with locale
         let formattedDate = 'Date not available';
         try {
-          const timestamp = typeof event.timestamp === 'number' 
-            ? event.timestamp 
+          const timestamp = typeof event.timestamp === 'number'
+            ? event.timestamp
             : new Date(event.timestamp).getTime();
-          
+
           if (!isNaN(timestamp)) {
-            formattedDate = format(new Date(timestamp), 'MMM d, yyyy - h:mm a');
+            const date = new Date(timestamp);
+            const locale = agentLanguage === 'pt' ? ptBR : undefined;
+            const formatStr = agentLanguage === 'pt' ? 'd MMM yyyy - HH:mm' : 'MMM d, yyyy - h:mm a';
+            formattedDate = format(date, formatStr, { locale });
           }
         } catch (error) {
           console.error('Error formatting date:', error);

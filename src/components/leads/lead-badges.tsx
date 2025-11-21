@@ -38,10 +38,26 @@ interface TemperatureBadgeProps {
 }
 
 export function TemperatureBadge({ temperature, className }: TemperatureBadgeProps) {
+  const { t } = useLanguage();
+
   const colorClasses = {
     Hot: 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-300',
     Warm: 'bg-orange-100 text-orange-800 dark:bg-orange-900/30 dark:text-orange-300',
     Cold: 'bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-300',
+  };
+
+  // Get translated temperature label
+  const getTemperatureTranslation = (temp: string): string => {
+    switch (temp) {
+      case 'Hot':
+        return t.leads.priorityHot;
+      case 'Warm':
+        return t.leads.priorityWarm;
+      case 'Cold':
+        return t.leads.priorityCold;
+      default:
+        return temp;
+    }
   };
 
   return (
@@ -52,7 +68,7 @@ export function TemperatureBadge({ temperature, className }: TemperatureBadgePro
         className
       )}
     >
-      {temperature}
+      {getTemperatureTranslation(temperature)}
     </span>
   );
 }
@@ -63,6 +79,27 @@ interface StageBadgeProps {
 }
 
 export function StageBadge({ stage, className }: StageBadgeProps) {
+  const { t } = useLanguage();
+
+  // Get translated stage label
+  const getStageTranslation = (stageValue: string): string => {
+    const stageMap: Record<string, string> = {
+      'New Lead': t.leads.stages.newLead,
+      'Contacted': t.leads.stages.contacted,
+      'Qualified': t.leads.stages.qualified,
+      'Viewing Scheduled': t.leads.stages.viewingScheduled,
+      'Property Viewed': t.leads.stages.propertyViewed,
+      'Offer Made': t.leads.stages.offerMade,
+      'Negotiation': t.leads.stages.negotiation,
+      'Under Contract': t.leads.stages.underContract,
+      'Converted': t.leads.stages.converted,
+      'Lost': t.leads.stages.lost,
+      'Not Interested': t.leads.stages.notInterested,
+    };
+
+    return stageMap[stageValue] || stageValue;
+  };
+
   return (
     <span
       className={cn(
@@ -71,7 +108,7 @@ export function StageBadge({ stage, className }: StageBadgeProps) {
         className
       )}
     >
-      {stage}
+      {getStageTranslation(stage)}
     </span>
   );
 }

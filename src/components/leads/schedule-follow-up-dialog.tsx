@@ -27,6 +27,10 @@ import { useLanguage } from '@/hooks/useLanguage';
 import { useToast } from '@/hooks/use-toast';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { LeadBadgeGroup } from './lead-badges';
+import { localStorageManager } from '@/lib/local-storage-manager';
+import { dispatchThrottledStorageEvent } from '@/lib/storage-event-throttle';
+import { transformBackendTask } from '@/lib/task-transformer';
+import type { Notification } from '@/types/app-data';
 
 interface ScheduleFollowUpDialogProps {
   open: boolean;
@@ -107,6 +111,8 @@ export function ScheduleFollowUpDialog({
   }, [open]);
 
   const handleSchedule = async () => {
+    console.log('🔍 [DEBUG] handleSchedule called');
+    
     if (!selectedDate) {
       toast({
         variant: 'destructive',
@@ -117,6 +123,8 @@ export function ScheduleFollowUpDialog({
     }
 
     setIsLoading(true);
+    console.log('🔍 [DEBUG] isLoading set to true');
+    
     try {
       const token = localStorage.getItem('auth_token') || sessionStorage.getItem('sessionToken');
       if (!token) throw new Error('No authentication token found');
@@ -125,9 +133,11 @@ export function ScheduleFollowUpDialog({
 
       // Format date to ISO string for API
       const followUpDate = selectedDate.toISOString();
+      console.log('🔍 [DEBUG] Follow-up date:', followUpDate);
 
       // Generate unique task ID
       const taskId = generateTaskId();
+      console.log('🔍 [DEBUG] Generated task ID:', taskId);
 
       const webhookPayload = {
         lead_id: lead.lead_id,
@@ -136,7 +146,33 @@ export function ScheduleFollowUpDialog({
         follow_up_date: followUpDate,
         ...(note.trim() && { note: note.trim() }), // Only include note if not empty
       };
+      console.log('🔍 [DEBUG] Webhook payload:', webhookPayload);
 
+      // Store request data in localStorage for retry functionality
+      const followUpRequestData = {
+        ...webhookPayload,
+        lead_name: lead.name,
+        timestamp: Date.now()
+      };
+      localStorage.setItem('pending_follow_up', JSON.stringify(followUpRequestData));
+      console.log('🔍 [DEBUG] Stored pending follow-up data');
+
+      // Show immediate progress notification
+      createProgressNotification(lead.name, selectedDate);
+      console.log('🔍 [DEBUG] Created progress notification');
+
+      // Close dialog immediately after showing progress notification
+      onOpenChange(false);
+      console.log('🔍 [DEBUG] Dialog closed');
+
+      // Call success callback to refresh leads list
+      if (onSuccess) {
+        onSuccess();
+      }
+      console.log('🔍 [DEBUG] Success callback called');
+
+      // Process webhook in background
+      console.log('🔍 [DEBUG] Starting webhook call in background');
       const response = await fetch(webhookUrl, {
         method: 'POST',
         headers: {
@@ -145,6 +181,7 @@ export function ScheduleFollowUpDialog({
         },
         body: JSON.stringify(webhookPayload)
       });
+      console.log('🔍 [DEBUG] Webhook response received:', response.status);
 
       if (!response.ok) {
         if (response.status >= 500) {
@@ -154,22 +191,32 @@ export function ScheduleFollowUpDialog({
         throw new Error(errorText || 'Failed to schedule follow-up');
       }
 
-      // Success
-      const dateLocale = language === 'pt' ? ptBR : undefined;
-      const formattedDate = format(selectedDate, 'MMM d, yyyy', { locale: dateLocale });
-
-      toast({
-        title: t.leads.messages.followUpScheduled,
-        description: t.leads.messages.followUpScheduledDescription.replace('{{date}}', formattedDate),
-      });
-
-      onOpenChange(false);
-
-      // Call success callback to refresh leads list
-      if (onSuccess) {
-        onSuccess();
+      // Process successful response
+      const responseData = await response.json();
+      const data = Array.isArray(responseData) ? responseData[0] : responseData;
+      console.log('🔍 [DEBUG] Webhook response data:', data);
+      
+      if (data.success) {
+        // Update progress notification to success
+        updateProgressNotificationToSuccess(lead.name, lead.lead_id, selectedDate);
+        console.log('🔍 [DEBUG] Updated progress notification to success');
+        
+        await processFollowUpResponse(data, lead.lead_id, lead.name);
+        console.log('🔍 [DEBUG] Processed follow-up response');
+        
+        // Clear pending request data
+        localStorage.removeItem('pending_follow_up');
+        console.log('🔍 [DEBUG] Cleared pending follow-up data');
+      } else {
+        throw new Error(data.message || 'Failed to schedule follow-up');
       }
     } catch (error: any) {
+      console.error('🔍 [DEBUG] Error in handleSchedule:', error);
+      
+      // Update progress notification to error with retry
+      updateProgressNotificationToError(lead.name, error.message);
+      console.log('🔍 [DEBUG] Updated progress notification to error');
+      
       toast({
         variant: 'destructive',
         title: 'Error',
@@ -177,7 +224,233 @@ export function ScheduleFollowUpDialog({
       });
     } finally {
       setIsLoading(false);
+      console.log('🔍 [DEBUG] isLoading set to false');
     }
+  };
+
+  // Process webhook response and update all relevant components
+  const processFollowUpResponse = async (data: any, leadId: string, leadName: string) => {
+    try {
+      const leadData = data.data?.lead;
+      if (!leadData) return;
+
+      // Update lead details with new data
+      if (leadData) {
+        localStorageManager.updateLeadDetails(leadId, leadData);
+      }
+
+      // Update lead list item with next follow-up date
+      if (leadData.management?.next_followUp_date) {
+        localStorageManager.updateSingleLead(leadId, {
+          next_follow_up: {
+            status: 'Scheduled',
+            date: leadData.management.next_followUp_date
+          }
+        });
+      }
+
+      // Add new task if due_date is within 10 days
+      if (leadData.tasks && leadData.tasks.length > 0) {
+        const newTask = leadData.tasks[0];
+        const taskDueDate = new Date(newTask.due_date);
+        const tenDaysFromNow = new Date();
+        tenDaysFromNow.setDate(tenDaysFromNow.getDate() + 10);
+
+        if (taskDueDate <= tenDaysFromNow) {
+          const transformedTask = transformBackendTask(newTask);
+          // Update AI-generated message in task for follow-up popup
+          if (newTask.followUpMessage) {
+            transformedTask.followUpMessage = newTask.followUpMessage;
+          }
+          localStorageManager.addTaskToGroup(transformedTask);
+        }
+
+        // Update dashboard counts for follow-ups within 7 days
+        const sevenDaysFromNow = new Date();
+        sevenDaysFromNow.setDate(sevenDaysFromNow.getDate() + 7);
+        
+        if (taskDueDate <= sevenDaysFromNow) {
+          const dashboard = localStorageManager.getDashboard();
+          const updatedCounts = {
+            ...dashboard.counts,
+            leads_for_followup: (dashboard.counts.leads_for_followup || 0) + 1
+          };
+          localStorageManager.updateDashboard({
+            ...dashboard,
+            counts: updatedCounts
+          });
+        }
+      }
+
+      // Add new communication event to history
+      if (leadData.communication_history && leadData.communication_history.length > 0) {
+        const newEvent = leadData.communication_history.find(
+          (event: any) => event.event_type === 'Follow-up Scheduled'
+        );
+        if (newEvent) {
+          localStorageManager.addCommunicationEvent(leadId, newEvent);
+        }
+      }
+
+      // Add new note to notes section
+      if (leadData.notes && leadData.notes.length > 0) {
+        const newNote = leadData.notes[0];
+        localStorageManager.addNote(leadId, newNote);
+      }
+
+      // SUCCESS NOTIFICATION REMOVED: updateProgressNotificationToSuccess() already handles creating the success notification
+      // This prevents duplicate notifications from appearing
+    } catch (error) {
+      console.error('Error processing follow-up response:', error);
+    }
+  };
+
+  // Create progress notification
+  const createProgressNotification = (leadName: string, followUpDate: Date) => {
+    console.log('🔍 [DEBUG] Creating progress notification for:', leadName);
+    const dateLocale = language === 'pt' ? ptBR : undefined;
+    const formattedDate = format(followUpDate, 'MMM d, yyyy', { locale: dateLocale });
+    
+    const notification: Notification = {
+      id: `follow_up_progress_${Date.now()}`,
+      type: 'follow_up_in_progress',
+      title: 'Scheduling Follow-up...',
+      message: `Scheduling follow-up for ${leadName} on ${formattedDate}`,
+      timestamp: Date.now(),
+      priority: 'medium' as const,
+      read: false,
+      lead_id: lead.lead_id,
+    };
+
+    console.log('🔍 [DEBUG] Progress notification created:', notification);
+    const currentNotifications = localStorageManager.getNotifications();
+    console.log('🔍 [DEBUG] Current notifications count:', currentNotifications.length);
+    const updatedNotifications = [notification, ...currentNotifications];
+    console.log('🔍 [DEBUG] Updated notifications count:', updatedNotifications.length);
+    localStorageManager.updateNotifications(updatedNotifications);
+    
+    // Store the notification ID for later updates
+    sessionStorage.setItem('current_follow_up_notification_id', notification.id);
+    console.log('🔍 [DEBUG] Stored notification ID in sessionStorage:', notification.id);
+    
+    // Force a throttled storage event to ensure UI updates without causing render storms
+    dispatchThrottledStorageEvent('app_data', JSON.stringify(localStorageManager.getAppData()));
+  };
+
+  // Update progress notification to success
+  const updateProgressNotificationToSuccess = (leadName: string, leadId: string, followUpDate: Date) => {
+    const notificationId = sessionStorage.getItem('current_follow_up_notification_id');
+    if (!notificationId) return;
+    
+    const dateLocale = language === 'pt' ? ptBR : undefined;
+    const formattedDate = format(followUpDate, 'MMM d, yyyy', { locale: dateLocale });
+    
+    // Check if follow-up is within 7 days
+    const sevenDaysFromNow = new Date();
+    sevenDaysFromNow.setDate(sevenDaysFromNow.getDate() + 7);
+    const isWithin7Days = followUpDate <= sevenDaysFromNow;
+    
+    const currentNotifications = localStorageManager.getNotifications();
+    const updatedNotifications = currentNotifications.map(notif => {
+      if (notif.id === notificationId) {
+        return {
+          ...notif,
+          id: `follow_up_success_${Date.now()}`, // New ID for success state
+          type: 'follow_up_scheduled',
+          title: 'Follow-up Scheduled',
+          message: `Follow-up scheduled for ${leadName} on ${formattedDate}`,
+          priority: 'medium',
+          read: false,
+          lead_id: leadId,
+          action_type: 'navigate_to_task',
+          action_target: `/tasks?expand=task_${leadId}_${followUpDate.getTime()}`,
+          action_data: {
+            leadId,
+            followUpDate: followUpDate.toISOString(),
+            taskId: `task_${leadId}_${followUpDate.getTime()}`,
+            leadName: leadName
+          }
+        };
+      }
+      return notif;
+    });
+    
+    localStorageManager.updateNotifications(updatedNotifications);
+    sessionStorage.removeItem('current_follow_up_notification_id');
+  };
+
+  // Update progress notification to error
+  const updateProgressNotificationToError = (leadName: string, errorMessage: string) => {
+    const notificationId = sessionStorage.getItem('current_follow_up_notification_id');
+    if (!notificationId) return;
+    
+    const pendingData = localStorage.getItem('pending_follow_up');
+    const requestData = pendingData ? JSON.parse(pendingData) : null;
+    
+    const currentNotifications = localStorageManager.getNotifications();
+    const updatedNotifications = currentNotifications.map(notif => {
+      if (notif.id === notificationId) {
+        return {
+          ...notif,
+          id: `follow_up_error_${Date.now()}`, // New ID for error state
+          type: 'follow_up_failed',
+          title: 'Failed to Schedule Follow-up',
+          message: `Could not schedule follow-up for ${leadName}: ${errorMessage}`,
+          priority: 'high',
+          read: false,
+          lead_id: lead.lead_id,
+          action_type: 'retry_follow_up',
+          action_data: requestData,
+          action_target: `/leads/${lead.lead_id}`
+        };
+      }
+      return notif;
+    });
+    
+    localStorageManager.updateNotifications(updatedNotifications);
+    sessionStorage.removeItem('current_follow_up_notification_id');
+  };
+
+  // Create success notification (legacy, kept for compatibility)
+  const createSuccessNotification = (leadName: string) => {
+    const notification: Notification = {
+      id: `follow_up_success_${Date.now()}`,
+      type: 'follow_up_scheduled',
+      title: 'Follow-up Scheduled',
+      message: `New follow-up scheduled for ${leadName}`,
+      timestamp: Date.now(),
+      priority: 'medium',
+      read: false,
+      lead_id: lead.lead_id,
+    };
+
+    const currentNotifications = localStorageManager.getNotifications();
+    const updatedNotifications = [notification, ...currentNotifications];
+    localStorageManager.updateNotifications(updatedNotifications);
+  };
+
+  // Create error notification with retry button
+  const createErrorNotification = (leadName: string, errorMessage: string) => {
+    const pendingData = localStorage.getItem('pending_follow_up');
+    const requestData = pendingData ? JSON.parse(pendingData) : null;
+
+    const notification: Notification = {
+      id: `follow_up_error_${Date.now()}`,
+      type: 'follow_up_failed',
+      title: 'Failed to Schedule Follow-up',
+      message: `Could not schedule follow-up for ${leadName}: ${errorMessage}`,
+      timestamp: Date.now(),
+      priority: 'high',
+      read: false,
+      lead_id: lead.lead_id,
+      action_type: 'retry_follow_up',
+      action_data: requestData,
+      action_target: `/leads/${lead.lead_id}`
+    };
+
+    const currentNotifications = localStorageManager.getNotifications();
+    const updatedNotifications = [notification, ...currentNotifications];
+    localStorageManager.updateNotifications(updatedNotifications);
   };
 
   const getShortcutLabel = (shortcut: string): string => {

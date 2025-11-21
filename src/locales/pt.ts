@@ -199,6 +199,179 @@ export const pt = {
     lastUpdated: "Última atualização:",
     noPastNotes: "Nenhuma nota anterior para este lead.",
     communicationHistory: "Histórico de Comunicação",
+    eventTypes: {
+      // Lead Events
+      "lead_created": "Lead Criado",
+      "lead_updated": "Lead Atualizado",
+      "lead_image_uploaded": "Imagem Adicionada",
+      "lead_image_deleted": "Imagem Removida",
+      "lead_deleted": "Lead Excluído",
+      // Priority/Stage Events
+      "priority_changed": "Prioridade Alterada",
+      "stage_changed": "Estágio Alterado",
+      // Follow-up/Task Events
+      "follow_up_scheduled": "Acompanhamento Agendado",
+      "follow_up_rescheduled": "Acompanhamento Reagendado",
+      "follow_up_completed": "Acompanhamento Concluído",
+      "follow_up_cancelled": "Acompanhamento Cancelado",
+      "follow_up_message_edited": "Mensagem Editada",
+      "follow_up_message_regenerated": "Mensagem Regenerada",
+      "follow_up_overdue": "Acompanhamento Atrasado",
+      // Communication Events
+      "note_added": "Nota Adicionada",
+      "note_edited": "Nota Editada",
+      "note_deleted": "Nota Excluída",
+      "whatsapp_sent": "WhatsApp Enviado",
+      "email_sent": "Email Enviado",
+      "phone_call_logged": "Chamada Registrada",
+      // Property/Transaction Events
+      "viewing_scheduled": "Visita Agendada",
+      "viewing_completed": "Visita Concluída",
+      "viewing_cancelled": "Visita Cancelada",
+      "offer_made": "Oferta Feita",
+      "offer_accepted": "Oferta Aceita",
+      "offer_rejected": "Oferta Rejeitada",
+      "contract_sent": "Contrato Enviado",
+      "contract_signed": "Contrato Assinado",
+      "deal_closed": "Negócio Fechado",
+      "deal_lost": "Negócio Perdido",
+    },
+    events: {
+      // Lead Events
+      leadCreated: {
+        title: "Lead Criado",
+        description: "Lead criado por {{agent}} em {{date}}.",
+      },
+      leadUpdated: {
+        title: "Lead Atualizado",
+        description: "Dados do lead atualizados por {{agent}} em {{date}}.",
+      },
+      leadImageUploaded: {
+        title: "Imagem Adicionada",
+        description: "Imagem do lead adicionada por {{agent}} em {{date}}.",
+      },
+      leadImageDeleted: {
+        title: "Imagem Removida",
+        description: "Imagem do lead removida por {{agent}} em {{date}}.",
+      },
+      leadDeleted: {
+        title: "Lead Excluído",
+        description: "Lead excluído por {{agent}} em {{date}}.",
+      },
+      // Priority/Stage Events
+      priorityChanged: {
+        title: "Prioridade Alterada",
+        description: "Prioridade alterada de \"{{from}}\" para \"{{to}}\" por {{agent}}.{{reason}}",
+        reasonPrefix: " Motivo: {{reason}}",
+      },
+      stageChanged: {
+        title: "Estágio Alterado",
+        description: "Estágio alterado de \"{{from}}\" para \"{{to}}\" por {{agent}}.{{reason}}",
+        reasonPrefix: " Motivo: {{reason}}",
+      },
+      // Follow-up/Task Events
+      followUpScheduled: {
+        title: "Acompanhamento Agendado",
+        description: "Acompanhamento agendado por {{agent}} para {{date}}.",
+      },
+      followUpRescheduled: {
+        title: "Acompanhamento Reagendado",
+        description: "Acompanhamento reagendado por {{agent}} para {{date}}.{{reason}}",
+        reasonPrefix: " Motivo: {{reason}}",
+      },
+      followUpCompleted: {
+        title: "Acompanhamento Concluído",
+        description: "Acompanhamento concluído por {{agent}} em {{date}}.{{reason}}",
+        reasonPrefix: " Resultado: {{reason}}",
+      },
+      followUpCancelled: {
+        title: "Acompanhamento Cancelado",
+        description: "Acompanhamento cancelado por {{agent}} em {{date}}.{{reason}}",
+        reasonPrefix: " Motivo: {{reason}}",
+      },
+      followUpMessageEdited: {
+        title: "Mensagem Editada",
+        description: "Mensagem de acompanhamento editada por {{agent}} em {{date}}.",
+      },
+      followUpMessageRegenerated: {
+        title: "Mensagem Regenerada",
+        description: "Mensagem de acompanhamento regenerada por {{agent}} em {{date}}.",
+      },
+      followUpOverdue: {
+        title: "Acompanhamento Atrasado",
+        description: "Acompanhamento está atrasado desde {{date}}.",
+      },
+      // Communication Events
+      noteAdded: {
+        title: "Nota Adicionada",
+        description: "Nota adicionada por {{agent}} em {{date}}.",
+      },
+      noteEdited: {
+        title: "Nota Editada",
+        description: "Nota editada por {{agent}} em {{date}}.",
+      },
+      noteDeleted: {
+        title: "Nota Excluída",
+        description: "Nota excluída por {{agent}} em {{date}}.",
+      },
+      whatsappSent: {
+        title: "WhatsApp Enviado",
+        description: "Mensagem WhatsApp enviada por {{agent}} para {{lead}} em {{date}}.",
+      },
+      emailSent: {
+        title: "Email Enviado",
+        description: "Email enviado por {{agent}} para {{lead}} em {{date}}.",
+      },
+      phoneCallLogged: {
+        title: "Chamada Registrada",
+        description: "Chamada telefônica registrada por {{agent}} com {{lead}} em {{date}}.{{reason}}",
+        reasonPrefix: " Observações: {{reason}}",
+      },
+      // Property/Transaction Events
+      viewingScheduled: {
+        title: "Visita Agendada",
+        description: "Visita ao imóvel agendada por {{agent}} para {{date}}.",
+      },
+      viewingCompleted: {
+        title: "Visita Concluída",
+        description: "Visita ao imóvel concluída por {{agent}} em {{date}}.{{reason}}",
+        reasonPrefix: " Feedback: {{reason}}",
+      },
+      viewingCancelled: {
+        title: "Visita Cancelada",
+        description: "Visita ao imóvel cancelada por {{agent}} em {{date}}.{{reason}}",
+        reasonPrefix: " Motivo: {{reason}}",
+      },
+      offerMade: {
+        title: "Oferta Feita",
+        description: "Oferta de {{amount}} feita por {{agent}} para {{lead}} em {{date}}.",
+      },
+      offerAccepted: {
+        title: "Oferta Aceita",
+        description: "Oferta de {{amount}} aceita por {{lead}} em {{date}}.",
+      },
+      offerRejected: {
+        title: "Oferta Rejeitada",
+        description: "Oferta de {{amount}} rejeitada por {{lead}} em {{date}}.",
+      },
+      contractSent: {
+        title: "Contrato Enviado",
+        description: "Contrato enviado por {{agent}} para {{lead}} em {{date}}.",
+      },
+      contractSigned: {
+        title: "Contrato Assinado",
+        description: "Contrato assinado por {{lead}} em {{date}}.",
+      },
+      dealClosed: {
+        title: "Negócio Fechado",
+        description: "Negócio fechado com {{lead}} em {{date}} por {{amount}}.",
+      },
+      dealLost: {
+        title: "Negócio Perdido",
+        description: "Negócio perdido com {{lead}} em {{date}}.{{reason}}",
+        reasonPrefix: " Motivo: {{reason}}",
+      },
+    },
     sendToWhatsApp: "Enviar para WhatsApp",
     messageLanguage: "Idioma da Mensagem",
     aiGeneratedMessage: "Mensagem de Acompanhamento Gerada por IA",
@@ -558,6 +731,19 @@ export const pt = {
     tapToView: "Toque para visualizar",
     noNotificationsTitle: "Nenhuma Notificação Ainda",
     noNotificationsDescription: "Avisaremos quando algo importante acontecer.",
+    followUpCancelled: "Acompanhamento Cancelado",
+    followUpRescheduled: "Acompanhamento Reagendado",
+    cancellationFailed: "Falha no Cancelamento",
+    tapToRetryCancellation: "Toque para Tentar Cancelar Novamente",
+    viewCancellationDetails: "Ver Detalhes do Cancelamento",
+    viewLeadDetails: "Ver Detalhes do Lead",
+    viewFollowUps: "Ver Acompanhamentos",
+    viewTask: "Ver Tarefa",
+    viewFollowUp: "Ver Acompanhamento",
+    viewRescheduledFollowUp: "Ver Acompanhamento Reagendado",
+    notesAdded: "Nota Adicionada",
+    notesUpdated: "Anotações Atualizadas",
+    tapToViewNotes: "Toque para Visualizar Anotações",
   },
 };
 

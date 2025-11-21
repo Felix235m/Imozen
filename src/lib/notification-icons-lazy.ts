@@ -141,6 +141,36 @@ const NOTIFICATION_CONFIG_STATIC: Record<string, Omit<NotificationConfig, 'icon'
     color: 'text-green-600',
     bgColor: 'bg-green-50'
   },
+  'follow_up_scheduled': {
+    iconName: 'Calendar',
+    color: 'text-blue-600',
+    bgColor: 'bg-blue-50'
+  },
+  'follow_up_in_progress': {
+    iconName: 'Clock',
+    color: 'text-yellow-600',
+    bgColor: 'bg-yellow-50'
+  },
+  'follow_up_failed': {
+    iconName: 'XCircle',
+    color: 'text-red-600',
+    bgColor: 'bg-red-50'
+  },
+  'follow_up_cancellation_in_progress': {
+    iconName: 'Clock',
+    color: 'text-yellow-600',
+    bgColor: 'bg-yellow-50'
+  },
+  'follow_up_cancelled': {
+    iconName: 'CheckCircle',
+    color: 'text-green-600',
+    bgColor: 'bg-green-50'
+  },
+  'follow_up_cancellation_failed': {
+    iconName: 'XCircle',
+    color: 'text-red-600',
+    bgColor: 'bg-red-50'
+  },
 
   // Lead notifications
   'new_lead': {

@@ -59,6 +59,7 @@ import { transformWebhookResponseToLeadData, transformNewBackendResponse } from 
 import { normalizeLeadDetail, extractLeadType } from '@/lib/lead-normalization';
 import { Label } from '@/components/ui/label';
 import { useLeadDetails, useNotes, useLeads } from '@/hooks/useAppData';
+import { localStorageManager } from '@/lib/local-storage-manager';
 import { CommunicationHistoryTimeline } from '@/components/leads/communication-history-timeline';
 import { uploadToCloudinary, canvasToBlob } from '@/lib/cloudinary-upload';
 import { navigationOptimizer } from '@/lib/navigation-optimizer';
@@ -327,8 +328,12 @@ export default function LeadDetailPage() {
 
         if (transformedLead) {
           // Ensure all required fields are present for LeadData type
-          const completeLead = {
+          // Load communication history from localStorage
+        const communicationHistory = localStorageManager.getCommunicationEvents(id) || [];
+
+        const completeLead = {
             ...transformedLead,
+            communication_history: communicationHistory, // Add communication history from localStorage
             next_follow_up: transformedLead.next_follow_up || {
               date: null,
               status: '',
@@ -383,6 +388,41 @@ export default function LeadDetailPage() {
       console.warn('⚠️ No lead data found in localStorage for ID:', id);
     }
   }, [leadFromStorage, id]);
+
+  // Listen for communication history changes and update lead state
+  useEffect(() => {
+    const handleStorageChange = () => {
+      if (lead && id) {
+        try {
+          const communicationHistory = localStorageManager.getCommunicationEvents(id) || [];
+          setLead(prev => prev ? { ...prev, communication_history: communicationHistory } : null);
+          console.log('📞 Communication history updated:', {
+            leadId: id,
+            eventCount: communicationHistory.length
+          });
+        } catch (error) {
+          console.error('❌ Failed to update communication history:', error);
+        }
+      }
+    };
+
+    // Listen for storage events from other tabs
+    const handleStorageEvent = (e: StorageEvent) => {
+      if (e.key === 'app_data' && e.newValue) {
+        handleStorageChange();
+      }
+    };
+
+    window.addEventListener('storage', handleStorageEvent);
+
+    // Also check periodically for local changes (in case of same-tab updates)
+    const interval = setInterval(handleStorageChange, 2000);
+
+    return () => {
+      window.removeEventListener('storage', handleStorageEvent);
+      clearInterval(interval);
+    };
+  }, [lead, id]);
 
   // Phone number parsing when lead data loads
   useEffect(() => {
@@ -757,11 +797,9 @@ export default function LeadDetailPage() {
         const updatedNotifications = [newNotification, ...currentNotifications];
         localStorageManager.updateNotifications(updatedNotifications);
         
-        // Force trigger storage event for cross-tab synchronization
-        window.dispatchEvent(new StorageEvent('storage', {
-          key: 'app_data',
-          newValue: JSON.stringify(localStorageManager.getAppData())
-        }));
+        // Force trigger throttled storage event for cross-tab synchronization
+        const { dispatchThrottledStorageEvent } = require('@/lib/storage-event-throttle');
+        dispatchThrottledStorageEvent('app_data', JSON.stringify(localStorageManager.getAppData()));
 
         // Show success toast
         toast({
@@ -870,11 +908,9 @@ export default function LeadDetailPage() {
       const updatedNotifications = [newStageNotification, ...currentNotifications];
       localStorageManager.updateNotifications(updatedNotifications);
       
-      // Force trigger storage event for cross-tab synchronization
-      window.dispatchEvent(new StorageEvent('storage', {
-        key: 'app_data',
-        newValue: JSON.stringify(localStorageManager.getAppData())
-      }));
+      // Force trigger throttled storage event for cross-tab synchronization
+      const { dispatchThrottledStorageEvent } = require('@/lib/storage-event-throttle');
+      dispatchThrottledStorageEvent('app_data', JSON.stringify(localStorageManager.getAppData()));
     } catch (error: any) {
       console.error('❌ DEBUG: Stage change error:', error);
       toast({ variant: 'destructive', title: 'Error', description: error.message || 'Could not update lead stage.' });

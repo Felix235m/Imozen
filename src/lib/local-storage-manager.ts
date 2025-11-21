@@ -12,6 +12,7 @@
 import type {
   AppData,
   TaskGroup,
+  TaskItem,
   Lead,
   LeadDetail,
   DashboardStats,
@@ -34,7 +35,17 @@ const DEFAULT_APP_DATA: AppData = {
   leads: [],
   dashboard: {
     success: false,
-    counts: { all: 0, new_this_week: 0, hot: 0 },
+    counts: {
+      all: 0,
+      new_this_week: 0,
+      hot: 0,
+      warm: 0,
+      cold: 0,
+      qualified: 0,
+      viewing_scheduled: 0,
+      converted: 0,
+      leads_for_followup: 0,
+    },
     conversion_rate: 0,
   },
   leadDetails: {},
@@ -619,6 +630,242 @@ export class LocalStorageManager {
     if (!stored) return 0;
 
     return new Blob([stored]).size;
+  }
+
+  /**
+   * Add a task to the appropriate task group
+   */
+  addTaskToGroup(task: TaskItem): void {
+    const data = this.getAppData();
+    const taskDate = new Date(task.time || Date.now());
+    const dateKey = taskDate.toISOString().split('T')[0]; // YYYY-MM-DD format
+
+    // Find existing task group for this date
+    const existingGroupIndex = data.tasks.findIndex(group => group.date === dateKey);
+
+    if (existingGroupIndex >= 0) {
+      // Add to existing group
+      data.tasks[existingGroupIndex].items.push(task);
+    } else {
+      // Create new task group
+      const newGroup: TaskGroup = {
+        date: dateKey,
+        items: [task]
+      };
+      data.tasks.push(newGroup);
+      // Sort tasks by date
+      data.tasks.sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
+    }
+
+    this.setAppData({ tasks: data.tasks });
+  }
+
+  /**
+   * Remove a task from its task group by task ID
+   */
+  removeTaskFromGroup(taskId: string): boolean {
+    const data = this.getAppData();
+    let taskRemoved = false;
+
+    // Find and remove the task from all groups
+    const updatedTasks = data.tasks.map(group => {
+      const originalLength = group.items.length;
+      const updatedItems = group.items.filter(task => task.id !== taskId);
+
+      if (updatedItems.length !== originalLength) {
+        taskRemoved = true;
+      }
+
+      return {
+        ...group,
+        items: updatedItems
+      };
+    }).filter(group => group.items.length > 0); // Remove empty groups
+
+    if (taskRemoved) {
+      this.setAppData({ tasks: updatedTasks });
+      return true;
+    }
+
+    return false;
+  }
+
+  /**
+   * Remove a task from a specific task group and date
+   */
+  removeTaskFromSpecificGroup(taskId: string, date: string): boolean {
+    const data = this.getAppData();
+    const groupIndex = data.tasks.findIndex(group => group.date === date);
+
+    if (groupIndex >= 0) {
+      const group = data.tasks[groupIndex];
+      const originalLength = group.items.length;
+      const updatedItems = group.items.filter(task => task.id !== taskId);
+
+      if (updatedItems.length !== originalLength) {
+        if (updatedItems.length === 0) {
+          // Remove the entire group if it's empty
+          data.tasks.splice(groupIndex, 1);
+        } else {
+          // Update the group with remaining items
+          data.tasks[groupIndex] = {
+            ...group,
+            items: updatedItems
+          };
+        }
+
+        this.setAppData({ tasks: data.tasks });
+        return true;
+      }
+    }
+
+    return false;
+  }
+
+  /**
+   * Remove tasks by lead ID (useful for when leads are deleted)
+   */
+  removeTasksByLeadId(leadId: string): number {
+    const data = this.getAppData();
+    let removedCount = 0;
+
+    const updatedTasks = data.tasks.map(group => {
+      const originalLength = group.items.length;
+      const updatedItems = group.items.filter(task => task.leadId !== leadId);
+      const removedFromGroup = originalLength - updatedItems.length;
+
+      removedCount += removedFromGroup;
+
+      return {
+        ...group,
+        items: updatedItems
+      };
+    }).filter(group => group.items.length > 0); // Remove empty groups
+
+    if (removedCount > 0) {
+      this.setAppData({ tasks: updatedTasks });
+    }
+
+    return removedCount;
+  }
+
+  /**
+   * Move a task from one date group to another with updated task data
+   * Used for optimistic reschedule operations
+   */
+  moveTaskToDateGroup(taskId: string, oldDate: string, newDate: string, updatedTask: Partial<TaskItem>): boolean {
+    const data = this.getAppData();
+    let taskFound = false;
+    let taskToMove: TaskItem | null = null;
+
+    // Find and remove task from old group
+    const updatedTasks = data.tasks.map(group => {
+      if (group.date === oldDate) {
+        const updatedItems = group.items.filter(task => {
+          if (task.id === taskId) {
+            taskFound = true;
+            taskToMove = { ...task, ...updatedTask };
+            return false; // Remove from old group
+          }
+          return true;
+        });
+
+        return {
+          ...group,
+          items: updatedItems
+        };
+      }
+      return group;
+    }).filter(group => group.items.length > 0); // Remove empty groups
+
+    if (taskFound && taskToMove) {
+      // Add to new group
+      const newGroupIndex = updatedTasks.findIndex(g => g.date === newDate);
+
+      if (newGroupIndex >= 0) {
+        updatedTasks[newGroupIndex].items.push(taskToMove);
+      } else {
+        updatedTasks.push({ date: newDate, items: [taskToMove] });
+      }
+
+      // Sort by date
+      updatedTasks.sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
+
+      this.setAppData({ tasks: updatedTasks });
+      console.log(`🔄 Task ${taskId} moved from ${oldDate} to ${newDate}`);
+      return true;
+    }
+
+    console.warn(`⚠️ Task ${taskId} not found in group ${oldDate}`);
+    return false;
+  }
+
+  /**
+   * Update dashboard follow-up count by a delta amount
+   * Used for optimistic dashboard updates during reschedule operations
+   */
+  updateDashboardFollowUpCount(delta: number): boolean {
+    try {
+      const data = this.getAppData();
+      const currentCount = data.dashboard.counts.leads_for_followup || 0;
+      const newCount = Math.max(0, currentCount + delta);
+
+      const updatedDashboard = {
+        ...data.dashboard,
+        counts: {
+          ...data.dashboard.counts,
+          leads_for_followup: newCount
+        }
+      };
+
+      this.setAppData({ dashboard: updatedDashboard });
+      console.log(`📊 Dashboard follow-up count updated: ${currentCount} → ${newCount} (delta: ${delta})`);
+      return true;
+    } catch (error) {
+      console.error('❌ Failed to update dashboard follow-up count:', error);
+      return false;
+    }
+  }
+
+  /**
+   * Add a communication event to lead's communication history
+   */
+  addCommunicationEvent(leadId: string, event: CommunicationEvent): void {
+    const data = this.getAppData();
+    const currentHistory = data.communicationHistory[leadId] || [];
+    const updatedHistory = [event, ...currentHistory];
+
+    const newHistory = {
+      ...data.communicationHistory,
+      [leadId]: updatedHistory
+    };
+
+    this.setAppData({ communicationHistory: newHistory });
+  }
+
+  /**
+   * Get communication events for a specific lead
+   */
+  getCommunicationEvents(leadId: string): CommunicationEvent[] {
+    const data = this.getAppData();
+    return data.communicationHistory[leadId] || [];
+  }
+
+  /**
+   * Add a note to lead's notes
+   */
+  addNote(leadId: string, note: Note): void {
+    const data = this.getAppData();
+    const leadDetail = data.leadDetails[leadId];
+    
+    if (leadDetail) {
+      const currentNotes = leadDetail.notes || [];
+      const updatedNotes = [note, ...currentNotes];
+      const updatedLeadDetail = { ...leadDetail, notes: updatedNotes };
+      const newLeadDetails = { ...data.leadDetails, [leadId]: updatedLeadDetail };
+      
+      this.setAppData({ leadDetails: newLeadDetails });
+    }
   }
 
   /**

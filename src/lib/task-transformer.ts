@@ -122,10 +122,13 @@ export function transformBackendTask(backendTask: any): TaskItem {
     leadId: backendTask.lead_id || backendTask.leadId || '',
     leadType: leadType as 'Buyer' | 'Seller' | undefined,
     followUpMessage,
-    time: backendTask.time || backendTask.scheduled_time || '',
+    time: backendTask.time || backendTask.scheduled_time || backendTask.due_date || '',
     leadContact,
     leadStatus: backendTask.lead_stage || backendTask.stage || backendTask.leadStatus || backendTask.status || '',
     leadPriority: (backendTask.temperature || backendTask.leadPriority || backendTask['Hot/Warm/Cold'] || 'Cold') as 'Hot' | 'Warm' | 'Cold',
+    priority: (backendTask.priority || 'Medium') as 'High' | 'Medium' | 'Low',
+    status: (backendTask.status || 'Pending') as 'Pending' | 'Completed' | 'Cancelled',
+    reminder_date: backendTask.reminder_date || undefined,
     propertyRequirements,
   };
 

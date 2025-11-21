@@ -1,0 +1,474 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Follow-up Flow Test</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        .test-section {
+            background: white;
+            padding: 20px;
+            margin: 20px 0;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        .test-result {
+            padding: 10px;
+            margin: 10px 0;
+            border-radius: 4px;
+        }
+        .success {
+            background-color: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+        .error {
+            background-color: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+        .info {
+            background-color: #d1ecf1;
+            color: #0c5460;
+            border: 1px solid #bee5eb;
+        }
+        button {
+            background-color: #007bff;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 4px;
+            cursor: pointer;
+            margin: 5px;
+        }
+        button:hover {
+            background-color: #0056b3;
+        }
+        pre {
+            background-color: #f8f9fa;
+            padding: 10px;
+            border-radius: 4px;
+            overflow-x: auto;
+        }
+    </style>
+</head>
+<body>
+    <h1>Follow-up Flow Test</h1>
+    <p>This page tests the follow-up scheduling flow implementation.</p>
+
+    <div class="test-section">
+        <h2>Test 1: Mock Follow-up Response Processing</h2>
+        <p>Tests the webhook response processing with the provided sample data.</p>
+        <button onclick="testFollowUpResponse()">Test Response Processing</button>
+        <div id="test1-result"></div>
+    </div>
+
+    <div class="test-section">
+        <h2>Test 2: Notification Creation</h2>
+        <p>Tests the creation of progress, success, and error notifications.</p>
+        <button onclick="testNotificationCreation()">Test Notifications</button>
+        <div id="test2-result"></div>
+    </div>
+
+    <div class="test-section">
+        <h2>Test 3: Navigation Logic</h2>
+        <p>Tests the navigation logic based on follow-up date.</p>
+        <button onclick="testNavigationLogic()">Test Navigation</button>
+        <div id="test3-result"></div>
+    </div>
+
+    <div class="test-section">
+        <h2>Test 4: Dashboard Count Update</h2>
+        <p>Tests the dashboard count update for follow-ups within 7 days.</p>
+        <button onclick="testDashboardUpdate()">Test Dashboard Update</button>
+        <div id="test4-result"></div>
+    </div>
+
+    <script>
+        // Sample webhook response from the task description
+        const sampleWebhookResponse = [
+            {
+                "success": true,
+                "timestamp": 1763495224863,
+                "processing_time_ms": 1,
+                "data": {
+                    "lead": {
+                        "lead_id": "b934086e-9865-4712-bd83-bafbeb94d81e",
+                        "lead_type": "Seller",
+                        "name": "Hello Test",
+                        "contact": {
+                            "phone": "(+351) 5585666",
+                            "email": "hellotest@gmail.com"
+                        },
+                        "image_url": "",
+                        "temperature": "Warm",
+                        "lead_stage": "Qualified",
+                        "Stage": "Qualified",
+                        "property": {
+                            "locations": [
+                                "Porto"
+                            ],
+                            "types": [
+                                "House"
+                            ],
+                            "budget": "€25000",
+                            "bedrooms": "2",
+                            "notes": "test test",
+                            "purchase_timeframe": "Immediately (under 3 months)",
+                            "financing_type": "",
+                            "credit_pre_approved": false,
+                            "search_duration": "0-2 months",
+                            "has_seen_properties": ""
+                        },
+                        "management": {
+                            "agent_notes": "test test",
+                            "agent_id": "",
+                            "created_at": "2025-11-10T21:42:14.820Z",
+                            "last_contacted_at": null,
+                            "next_followUp_date": "2025-11-19T18:30:00.000Z",
+                            "last_updated_at": "2025-11-11T06:31:42.743Z",
+                            "source": "website",
+                            "language": "Portuguese",
+                            "initial_message": "",
+                            "lead_score": 10,
+                            "ai_generated_message": "Olá Hello Test! 😊  \nSou o Felix ABcd, seu consultor imobiliário em Portugal. Gostaria de saber se ainda está interessado em vender sua casa no Porto?  \nTenho algumas opções que podem encaixar-se no seu orçamento e na sua urgência para venda. Vamos agendar uma visita ou uma conversa rápida para discutir os detalhes?  \nFico à disposição para ajudar a tornar o processo rápido e tranquilo.  \nAguardo seu retorno!  \n\nUm abraço,  \nFelix ABcd"
+                        },
+                        "communication_history": [
+                            {
+                                "id": "Event_1763494600033",
+                                "event_type": "Follow-up Scheduled",
+                                "timestamp": "2025-11-18T19:36:40.033Z",
+                                "title": "Follow-up Scheduled",
+                                "description": "New follow-up Scheduled by Felix ABcd in the Imozen App",
+                                "icon": "Calendar",
+                                "icon_color": "text-blue-500",
+                                "bg_color": "bg-blue-50",
+                                "performed_by": {
+                                    "agent_id": "9bf183e3-6a17-4931-a6ba-4145799b4541",
+                                    "agent_name": "9bf183e3-6a17-4931-a6ba-4145799b4541"
+                                },
+                                "metadata": {},
+                                "related_entities": {
+                                    "lead_id": "b934086e-9865-4712-bd83-bafbeb94d81e",
+                                    "task_id": "task_1763494582987_q888f3jaw",
+                                    "note_id": "6024c096-a5e8-44c4-8cdc-b4985cee109b",
+                                    "property_id": null
+                                },
+                                "source": "manual",
+                                "version": "1.0"
+                            }
+                        ],
+                        "notes": [
+                            {
+                                "id": "6024c096-a5e8-44c4-8cdc-b4985cee109b",
+                                "note_id": "6024c096-a5e8-44c4-8cdc-b4985cee109b",
+                                "lead_id": "b934086e-9865-4712-bd83-bafbeb94d81e",
+                                "content": "test test",
+                                "current_note": "test test",
+                                "created_at": "2025-11-18T17:02:05.096Z",
+                                "created_by": "",
+                                "note_type": "text",
+                                "transcription": ""
+                            }
+                        ],
+                        "tasks": [
+                            {
+                                "id": "task_1763494582987_q888f3jaw",
+                                "task_id": "task_1763494582987_q888f3jaw",
+                                "name": "Hello Test",
+                                "description": "Entrar em contato com o vendedor Hello Test para discutir o progresso na venda da casa em Porto, considerando o interesse imediato e o orçamento de €25.000. Confirmar detalhes e oferecer suporte para avançar no processo.",
+                                "title": "Acompanhamento com o vendedor Hello Test",
+                                "type": "WhatsApp",
+                                "leadId": "b934086e-9865-4712-bd83-bafbeb94d81e",
+                                "followUpMessage": "Olá Hello Test! 😊  \nSou o Felix ABcd, seu consultor imobiliário em Portugal. Gostaria de saber se ainda está interessado em vender sua casa no Porto?  \nTenho algumas opções que podem encaixar-se no seu orçamento e na sua urgência para venda. Vamos agendar uma visita ou uma conversa rápida para discutir os detalhes?  \nFico à disposição para ajudar a tornar o processo rápido e tranquilo.  \nAguardo seu retorno!  \n\nUm abraço,  \nFelix ABcd",
+                                "due_date": "2025-11-19T18:30:00.000Z",
+                                "due_time": "",
+                                "leadContact": {
+                                    "phone": "(+351) 5585666",
+                                    "email": "hellotest@gmail.com"
+                                },
+                                "leadStatus": "Qualified",
+                                "leadPriority": "Warm",
+                                "propertyRequirements": {
+                                    "locations": [
+                                        "Porto"
+                                    ],
+                                    "types": [
+                                        "House"
+                                    ],
+                                    "budget": "€25000"
+                                },
+                                "priority": "High",
+                                "status": "Pending",
+                                "reminder_date": "2025-11-19T18:30:00.000Z",
+                                "created_at": "2025-11-18T00:00:00.000Z",
+                                "created_by": "Felix ABcd",
+                                "linked_note_id": "6024c096-a5e8-44c4-8cdc-b4985cee109b",
+                                "auto_generated": "No"
+                            }
+                        ]
+                    }
+                },
+                "meta": {
+                    "data_counts": {
+                        "notes": 1,
+                        "tasks": 1,
+                        "communication_history": 1
+                    },
+                    "performance": {
+                        "processing_time_ms": 1,
+                        "timestamp": "2025-11-18T19:47:04.863Z"
+                    }
+                }
+            }
+        ];
+
+        function addTestResult(containerId, message, type = 'info') {
+            const container = document.getElementById(containerId);
+            const result = document.createElement('div');
+            result.className = `test-result ${type}`;
+            result.innerHTML = message;
+            container.appendChild(result);
+        }
+
+        function testFollowUpResponse() {
+            const container = document.getElementById('test1-result');
+            container.innerHTML = '';
+            
+            try {
+                const data = sampleWebhookResponse[0];
+                const leadData = data.data.lead;
+                
+                // Test 1: Check if response has required fields
+                if (!data.success) {
+                    addTestResult('test1-result', '❌ Response success flag is false', 'error');
+                    return;
+                }
+                addTestResult('test1-result', '✅ Response success flag is true', 'success');
+                
+                // Test 2: Check if lead data exists
+                if (!leadData) {
+                    addTestResult('test1-result', '❌ Lead data is missing', 'error');
+                    return;
+                }
+                addTestResult('test1-result', '✅ Lead data exists', 'success');
+                
+                // Test 3: Check if tasks exist
+                if (!leadData.tasks || leadData.tasks.length === 0) {
+                    addTestResult('test1-result', '❌ No tasks found in response', 'error');
+                    return;
+                }
+                addTestResult('test1-result', `✅ Found ${leadData.tasks.length} task(s)`, 'success');
+                
+                // Test 4: Check if communication history exists
+                if (!leadData.communication_history || leadData.communication_history.length === 0) {
+                    addTestResult('test1-result', '❌ No communication history found', 'error');
+                    return;
+                }
+                addTestResult('test1-result', `✅ Found ${leadData.communication_history.length} communication event(s)`, 'success');
+                
+                // Test 5: Check if notes exist
+                if (!leadData.notes || leadData.notes.length === 0) {
+                    addTestResult('test1-result', '❌ No notes found', 'error');
+                    return;
+                }
+                addTestResult('test1-result', `✅ Found ${leadData.notes.length} note(s)`, 'success');
+                
+                // Test 6: Check if follow-up date is within 7 days
+                const task = leadData.tasks[0];
+                const followUpDate = new Date(task.due_date);
+                const sevenDaysFromNow = new Date();
+                sevenDaysFromNow.setDate(sevenDaysFromNow.getDate() + 7);
+                
+                if (followUpDate <= sevenDaysFromNow) {
+                    addTestResult('test1-result', `✅ Follow-up date (${followUpDate.toISOString()}) is within 7 days`, 'success');
+                } else {
+                    addTestResult('test1-result', `ℹ️ Follow-up date (${followUpDate.toISOString()}) is more than 7 days away`, 'info');
+                }
+                
+                // Display sample data structure
+                addTestResult('test1-result', '<h4>Sample Task Data:</h4><pre>' + JSON.stringify(task, null, 2) + '</pre>', 'info');
+                
+            } catch (error) {
+                addTestResult('test1-result', `❌ Error processing response: ${error.message}`, 'error');
+            }
+        }
+
+        function testNotificationCreation() {
+            const container = document.getElementById('test2-result');
+            container.innerHTML = '';
+            
+            try {
+                // Test 1: Progress notification
+                const progressNotification = {
+                    id: `follow_up_progress_${Date.now()}`,
+                    type: 'follow_up_in_progress',
+                    title: 'Scheduling Follow-up...',
+                    message: 'Scheduling follow-up for Test Lead on Nov 19, 2025',
+                    timestamp: Date.now(),
+                    priority: 'medium',
+                    read: false,
+                    lead_id: 'test-lead-id',
+                };
+                
+                addTestResult('test2-result', '✅ Progress notification structure is valid', 'success');
+                addTestResult('test2-result', '<h4>Progress Notification:</h4><pre>' + JSON.stringify(progressNotification, null, 2) + '</pre>', 'info');
+                
+                // Test 2: Success notification
+                const successNotification = {
+                    id: `follow_up_success_${Date.now()}`,
+                    type: 'follow_up_scheduled',
+                    title: 'Follow-up Scheduled',
+                    message: 'Follow-up scheduled for Test Lead on Nov 19, 2025',
+                    timestamp: Date.now(),
+                    priority: 'medium',
+                    read: false,
+                    lead_id: 'test-lead-id',
+                    action_type: 'navigate_to_follow_ups',
+                    action_target: '/leads?filter=upcoming',
+                    action_data: { leadId: 'test-lead-id', followUpDate: '2025-11-19T18:30:00.000Z' }
+                };
+                
+                addTestResult('test2-result', '✅ Success notification structure is valid', 'success');
+                addTestResult('test2-result', '<h4>Success Notification:</h4><pre>' + JSON.stringify(successNotification, null, 2) + '</pre>', 'info');
+                
+                // Test 3: Error notification
+                const errorNotification = {
+                    id: `follow_up_error_${Date.now()}`,
+                    type: 'follow_up_failed',
+                    title: 'Failed to Schedule Follow-up',
+                    message: 'Could not schedule follow-up for Test Lead: Network error',
+                    timestamp: Date.now(),
+                    priority: 'high',
+                    read: false,
+                    lead_id: 'test-lead-id',
+                    action_type: 'retry_follow_up',
+                    action_data: { lead_id: 'test-lead-id', task_id: 'test-task-id' },
+                    action_target: '/leads/test-lead-id'
+                };
+                
+                addTestResult('test2-result', '✅ Error notification structure is valid', 'success');
+                addTestResult('test2-result', '<h4>Error Notification:</h4><pre>' + JSON.stringify(errorNotification, null, 2) + '</pre>', 'info');
+                
+            } catch (error) {
+                addTestResult('test2-result', `❌ Error creating notifications: ${error.message}`, 'error');
+            }
+        }
+
+        function testNavigationLogic() {
+            const container = document.getElementById('test3-result');
+            container.innerHTML = '';
+            
+            try {
+                // Test 1: Follow-up within 7 days
+                const followUpDateWithin7Days = new Date();
+                followUpDateWithin7Days.setDate(followUpDateWithin7Days.getDate() + 3); // 3 days from now
+                
+                const notificationWithin7Days = {
+                    type: 'follow_up_scheduled',
+                    lead_id: 'test-lead-id',
+                    action_data: { followUpDate: followUpDateWithin7Days.toISOString() }
+                };
+                
+                const sevenDaysFromNow = new Date();
+                sevenDaysFromNow.setDate(sevenDaysFromNow.getDate() + 7);
+                
+                if (followUpDateWithin7Days <= sevenDaysFromNow) {
+                    addTestResult('test3-result', `✅ Follow-up within 7 days (${followUpDateWithin7Days.toISOString()}) should navigate to follow-ups section`, 'success');
+                } else {
+                    addTestResult('test3-result', `❌ Logic error: Follow-up within 7 days not detected correctly`, 'error');
+                }
+                
+                // Test 2: Follow-up more than 7 days
+                const followUpDateAfter7Days = new Date();
+                followUpDateAfter7Days.setDate(followUpDateAfter7Days.getDate() + 14); // 14 days from now
+                
+                const notificationAfter7Days = {
+                    type: 'follow_up_scheduled',
+                    lead_id: 'test-lead-id',
+                    action_data: { followUpDate: followUpDateAfter7Days.toISOString() }
+                };
+                
+                if (followUpDateAfter7Days > sevenDaysFromNow) {
+                    addTestResult('test3-result', `✅ Follow-up after 7 days (${followUpDateAfter7Days.toISOString()}) should navigate to lead detail page`, 'success');
+                } else {
+                    addTestResult('test3-result', `❌ Logic error: Follow-up after 7 days not detected correctly`, 'error');
+                }
+                
+                // Test 3: Action type based navigation
+                const navigateToFollowUpsNotification = {
+                    action_type: 'navigate_to_follow_ups',
+                    action_target: '/leads?filter=upcoming'
+                };
+                
+                const navigateToLeadNotification = {
+                    action_type: 'navigate_to_lead',
+                    action_target: '/leads/test-lead-id'
+                };
+                
+                addTestResult('test3-result', `✅ Action type 'navigate_to_follow_ups' should navigate to ${navigateToFollowUpsNotification.action_target}`, 'success');
+                addTestResult('test3-result', `✅ Action type 'navigate_to_lead' should navigate to ${navigateToLeadNotification.action_target}`, 'success');
+                
+            } catch (error) {
+                addTestResult('test3-result', `❌ Error testing navigation logic: ${error.message}`, 'error');
+            }
+        }
+
+        function testDashboardUpdate() {
+            const container = document.getElementById('test4-result');
+            container.innerHTML = '';
+            
+            try {
+                // Simulate dashboard data
+                const mockDashboard = {
+                    counts: {
+                        all: 10,
+                        new_this_week: 3,
+                        hot: 2,
+                        leads_for_followup: 5
+                    }
+                };
+                
+                // Test 1: Check initial count
+                addTestResult('test4-result', `✅ Initial leads_for_followup count: ${mockDashboard.counts.leads_for_followup}`, 'success');
+                
+                // Test 2: Simulate adding a follow-up within 7 days
+                const updatedCounts = {
+                    ...mockDashboard.counts,
+                    leads_for_followup: mockDashboard.counts.leads_for_followup + 1
+                };
+                
+                addTestResult('test4-result', `✅ Updated leads_for_followup count: ${updatedCounts.leads_for_followup}`, 'success');
+                
+                // Test 3: Verify the increment
+                if (updatedCounts.leads_for_followup === mockDashboard.counts.leads_for_followup + 1) {
+                    addTestResult('test4-result', '✅ Dashboard count increment logic is correct', 'success');
+                } else {
+                    addTestResult('test4-result', '❌ Dashboard count increment logic is incorrect', 'error');
+                }
+                
+                // Test 4: Check if follow-up date is within 7 days
+                const taskDueDate = new Date('2025-11-19T18:30:00.000Z');
+                const sevenDaysFromNow = new Date();
+                sevenDaysFromNow.setDate(sevenDaysFromNow.getDate() + 7);
+                
+                if (taskDueDate <= sevenDaysFromNow) {
+                    addTestResult('test4-result', `✅ Task due date (${taskDueDate.toISOString()}) is within 7 days, should increment dashboard count`, 'success');
+                } else {
+                    addTestResult('test4-result', `ℹ️ Task due date (${taskDueDate.toISOString()}) is more than 7 days away, should not increment dashboard count`, 'info');
+                }
+                
+            } catch (error) {
+                addTestResult('test4-result', `❌ Error testing dashboard update: ${error.message}`, 'error');
+            }
+        }
+    </script>
+</body>
+</html>

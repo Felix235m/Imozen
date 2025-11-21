@@ -33,6 +33,8 @@ import { LoadingModal } from '@/components/ui/loading-modal';
 import { useToast } from '@/hooks/use-toast';
 import { navigationOptimizer } from '@/lib/navigation-optimizer';
 import { performanceLogger } from '@/lib/performance-logger';
+import { useNotifications } from '@/hooks/useAppData';
+import { Badge } from '@/components/ui/badge';
 
 export default function DashboardLayout({
   children,
@@ -47,6 +49,10 @@ export default function DashboardLayout({
   const [agentInitial, setAgentInitial] = useState("A");
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [refreshStep, setRefreshStep] = useState(0);
+  
+  // Get unread notifications count
+  const { notifications } = useNotifications();
+  const unreadCount = notifications.filter(n => !n.read).length;
 
   const navItems = [
     { href: '/tasks', icon: CalendarClock, label: t.navigation.tasks },
@@ -172,8 +178,13 @@ export default function DashboardLayout({
               navigationOptimizer.preloadData({ type: 'notifications' });
             }}
           >
-            <Button variant="ghost" size="icon">
+            <Button variant="ghost" size="icon" className="relative">
               <Bell className="h-6 w-6" />
+              {unreadCount > 0 && (
+                <Badge className="absolute -top-1 -right-1 h-5 w-5 flex items-center justify-center rounded-full bg-red-500 text-white text-xs p-0">
+                  {unreadCount > 99 ? '99+' : unreadCount}
+                </Badge>
+              )}
             </Button>
           </Link>
           <DropdownMenu>

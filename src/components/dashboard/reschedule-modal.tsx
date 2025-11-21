@@ -22,7 +22,6 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { DatePicker } from "@/components/ui/date-picker";
-import { TimePicker } from "@/components/ui/time-picker";
 import { useLanguage } from "@/hooks/useLanguage";
 import { BalancedLeadHeader } from "@/components/leads/lead-headers";
 
@@ -30,13 +29,12 @@ interface RescheduleModalProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   currentDate?: Date;
-  currentTime?: string;
   leadName?: string;
   leadImageUrl?: string;
   leadType?: 'Buyer' | 'Seller';
   leadTemperature?: string;
   leadStage?: string;
-  onConfirm: (newDate: Date, newTime: string, note: string) => void;
+  onConfirm: (newDate: Date, note: string, newTime: string) => void;
   isLoading?: boolean;
 }
 
@@ -44,7 +42,6 @@ export function RescheduleModal({
   open,
   onOpenChange,
   currentDate,
-  currentTime = "03:00 PM",
   leadName,
   leadImageUrl,
   leadType,
@@ -55,9 +52,13 @@ export function RescheduleModal({
 }: RescheduleModalProps) {
   const [selectedShortcut, setSelectedShortcut] = React.useState<string>('next_week');
   const [customDate, setCustomDate] = React.useState<Date | undefined>(currentDate || new Date());
-  const [selectedTime, setSelectedTime] = React.useState<string>(currentTime);
   const [note, setNote] = React.useState<string>("");
   const { t, language } = useLanguage();
+
+  // Fixed 8:00 AM Portugal time creation
+  const createFixedPortugalTime = (): string => {
+    return "08:00"; // Always return 8:00 AM in 24-hour format
+  };
 
   // Calculate date from shortcut
   const getDateFromShortcut = (shortcut: string): Date => {
@@ -114,14 +115,14 @@ export function RescheduleModal({
     if (open) {
       setSelectedShortcut('next_week');
       setCustomDate(currentDate || new Date());
-      setSelectedTime(currentTime);
       setNote("");
     }
-  }, [open, currentDate, currentTime]);
+  }, [open, currentDate]);
 
   const handleConfirm = () => {
     if (selectedDate) {
-      onConfirm(selectedDate, selectedTime, note);
+      const fixedTime = createFixedPortugalTime();
+      onConfirm(selectedDate, note, fixedTime);
     }
   };
 
@@ -195,13 +196,12 @@ export function RescheduleModal({
             </div>
           )}
 
-          {/* Time Picker */}
-          <div className="space-y-2">
-            <Label htmlFor="time" className="text-sm font-medium text-gray-700 flex items-center gap-2">
-              <Clock className="h-4 w-4" />
-              {t.taskDialogs.selectTime}
-            </Label>
-            <TimePicker value={selectedTime} onChange={setSelectedTime} />
+          {/* Fixed Time Display */}
+          <div className="bg-blue-50 border border-blue-200 rounded-lg p-3">
+            <div className="flex items-center gap-2">
+              <Clock className="h-4 w-4 text-blue-600" />
+              <span className="text-sm font-medium text-blue-900">8:00 AM Schedule Time</span>
+            </div>
           </div>
 
           {/* Note */}

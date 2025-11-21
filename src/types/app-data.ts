@@ -18,7 +18,19 @@ export interface TaskItem {
   };
   leadStatus?: string;
   leadPriority?: string;
-  propertyRequirements?: any;
+  propertyRequirements?: {
+    locations?: string[];
+    types?: string[];
+    budget?: string;
+    [key: string]: any;
+  };
+  priority?: 'High' | 'Medium' | 'Low';
+  status?: 'Pending' | 'Completed' | 'Cancelled';
+  reminder_date?: string;
+  // Optimistic reschedule fields
+  originalDate?: string; // Store original date for rollback
+  originalTime?: string; // Store original time for rollback
+  isOptimisticallyRescheduled?: boolean; // Track optimistic state
 }
 
 export interface TaskGroup {
@@ -80,8 +92,21 @@ export interface DashboardStats {
     all: number;
     new_this_week: number;
     hot: number;
+    warm: number;
+    cold: number;
+    qualified: number;
+    viewing_scheduled: number;
+    converted: number;
+    leads_for_followup: number;
   };
   conversion_rate: number;
+  metrics?: {
+    total_leads: number;
+    total_tasks: number;
+    total_notes: number;
+    unread_notifications: number;
+    overdue_tasks: number;
+  };
 }
 
 // Note types
@@ -96,6 +121,9 @@ export interface Note {
   created_at_formatted?: string;
   created_by?: string;
   updated_at?: string;
+  // Additional fields for webhook integration
+  note_type?: string;
+  created_at_relative?: string;
 }
 
 // Communication history types
@@ -154,6 +182,8 @@ export interface AppData {
 // Agent database API response
 export interface AgentDatabaseResponse {
   success: boolean;
+  timestamp: number;
+  processing_time_ms?: number;
   data: {
     tasks: TaskGroup[];
     leads: Lead[];
@@ -163,7 +193,6 @@ export interface AgentDatabaseResponse {
     notifications?: Notification[];
     communicationHistory?: Record<string, CommunicationEvent[]>;
   };
-  timestamp: number;
 }
 
 // Optimistic operation context

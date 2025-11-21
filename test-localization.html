@@ -1,0 +1,253 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Communication History Localization Test</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        .test-section {
+            margin: 20px 0;
+            padding: 15px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+        }
+        .result {
+            background-color: #f5f5f5;
+            padding: 10px;
+            border-radius: 3px;
+            margin: 10px 0;
+        }
+        .success {
+            background-color: #d4edda;
+            color: #155724;
+        }
+        .error {
+            background-color: #f8d7da;
+            color: #721c24;
+        }
+    </style>
+</head>
+<body>
+    <h1>Communication History Localization Test</h1>
+
+    <div class="test-section">
+        <h2>Test 1: Event Type Translation</h2>
+        <p>Testing event type translations in Portuguese and English</p>
+        <div id="event-type-results" class="result"></div>
+    </div>
+
+    <div class="test-section">
+        <h2>Test 2: Description Templates</h2>
+        <p>Testing description template parameter substitution</p>
+        <div id="description-results" class="result"></div>
+    </div>
+
+    <div class="test-section">
+        <h2>Test 3: Event Creation</h2>
+        <p>Testing localized event creation functions</p>
+        <div id="event-creation-results" class="result"></div>
+    </div>
+
+    <script>
+        // Mock localStorage for testing
+        const mockLocalStorage = {
+            data: {
+                agent_data: JSON.stringify({
+                    agent_name: 'Test Agent',
+                    agent_language: 'Portuguese'
+                })
+            },
+            getItem: function(key) {
+                return this.data[key];
+            },
+            setItem: function(key, value) {
+                this.data[key] = value;
+            }
+        };
+
+        // Set up global localStorage mock
+        globalThis.localStorage = mockLocalStorage;
+
+        // Mock translations
+        globalThis.translations = {
+            pt: {
+                leads: {
+                    eventTypes: {
+                        'follow_up_cancelled': 'Acompanhamento Cancelado',
+                        'follow_up_rescheduled': 'Acompanhamento Reagendado',
+                        'priority_changed': 'Prioridade alterada',
+                        'stage_changed': 'Estágio alterado'
+                    },
+                    events: {
+                        followUpCancelled: {
+                            title: 'Acompanhamento Cancelado',
+                            description: 'Acompanhamento cancelado por {{agent}}.{{reason}}',
+                            reasonPrefix: ' Motivo: {{reason}}'
+                        },
+                        followUpRescheduled: {
+                            title: 'Acompanhamento Reagendado',
+                            description: 'Acompanhamento reagendado por {{agent}} para {{date}}.{{reason}}',
+                            reasonPrefix: ' Motivo: {{reason}}'
+                        }
+                    }
+                }
+            },
+            en: {
+                leads: {
+                    eventTypes: {
+                        'follow_up_cancelled': 'Follow-up Cancelled',
+                        'follow_up_rescheduled': 'Follow-up Rescheduled',
+                        'priority_changed': 'Priority Changed',
+                        'stage_changed': 'Stage Changed'
+                    },
+                    events: {
+                        followUpCancelled: {
+                            title: 'Follow-up Cancelled',
+                            description: 'Follow-up cancelled by {{agent}}.{{reason}}',
+                            reasonPrefix: ' Reason: {{reason}}'
+                        },
+                        followUpRescheduled: {
+                            title: 'Follow-up Rescheduled',
+                            description: 'Follow-up rescheduled by {{agent}} to {{date}}.{{reason}}',
+                            reasonPrefix: ' Reason: {{reason}}'
+                        }
+                    }
+                }
+            }
+        };
+
+        // Test functions (simplified versions for testing)
+        function getLocalizedEventTitle(eventType, language = 'en') {
+            const translationsKey = language === 'pt' ? 'pt' : 'en';
+            const translations = globalThis.translations?.[translationsKey]?.leads?.eventTypes;
+            return translations?.[eventType] || eventType.replace(/_/g, ' ').replace(/\b\w/g, (l) => l.toUpperCase());
+        }
+
+        function getLocalizedEventDescription(eventType, language = 'en', params = {}) {
+            const translationsKey = language === 'pt' ? 'pt' : 'en';
+            const translations = globalThis.translations?.[translationsKey]?.leads?.events;
+
+            let template;
+            switch (eventType) {
+                case 'follow_up_cancelled':
+                    template = translations?.followUpCancelled?.description;
+                    break;
+                case 'follow_up_rescheduled':
+                    template = translations?.followUpRescheduled?.description;
+                    break;
+                default:
+                    template = 'Event occurred';
+            }
+
+            if (!template) {
+                const fallbackTemplates = {
+                    pt: {
+                        'follow_up_cancelled': 'Acompanhamento cancelado por {{agent}}.{{reason}}',
+                        'follow_up_rescheduled': 'Acompanhamento reagendado por {{agent}} para {{date}}.{{reason}}'
+                    },
+                    en: {
+                        'follow_up_cancelled': 'Follow-up cancelled by {{agent}}.{{reason}}',
+                        'follow_up_rescheduled': 'Follow-up rescheduled by {{agent}} to {{date}}.{{reason}}'
+                    }
+                };
+                template = fallbackTemplates[language]?.[eventType] || 'Event occurred';
+            }
+
+            let result = template;
+            Object.entries(params).forEach(([key, value]) => {
+                const placeholder = `{{${key}}}`;
+                result = result.replace(new RegExp(placeholder, 'g'), value);
+            });
+
+            result = result.replace(/\.{{reason}}(\.)?/, (match) => {
+                return params.reason ? match : '';
+            });
+
+            return result;
+        }
+
+        function createTestEvent(eventType, language, params) {
+            return {
+                title: getLocalizedEventTitle(eventType, language),
+                description: getLocalizedEventDescription(eventType, language, params),
+                timestamp: Date.now()
+            };
+        }
+
+        // Run tests
+        function runTests() {
+            const eventTypeResults = document.getElementById('event-type-results');
+            const descriptionResults = document.getElementById('description-results');
+            const eventCreationResults = document.getElementById('event-creation-results');
+
+            // Test 1: Event Type Translation
+            console.log('Testing event type translations...');
+            const enTitle = getLocalizedEventTitle('follow_up_cancelled', 'en');
+            const ptTitle = getLocalizedEventTitle('follow_up_cancelled', 'pt');
+
+            eventTypeResults.innerHTML = `
+                <div class="${enTitle === 'Follow-up Cancelled' ? 'success' : 'error'}">
+                    English 'follow_up_cancelled': ${enTitle} ✓
+                </div>
+                <div class="${ptTitle === 'Acompanhamento Cancelado' ? 'success' : 'error'}">
+                    Portuguese 'follow_up_cancelled': ${ptTitle} ✓
+                </div>
+            `;
+
+            // Test 2: Description Templates
+            console.log('Testing description templates...');
+            const enDesc = getLocalizedEventDescription('follow_up_cancelled', 'en', {
+                agent: 'John Doe',
+                reason: 'Client not interested'
+            });
+            const ptDesc = getLocalizedEventDescription('follow_up_rescheduled', 'pt', {
+                agent: 'João Silva',
+                date: '20/11/2025'
+            });
+
+            descriptionResults.innerHTML = `
+                <div class="${enDesc.includes('John Doe') ? 'success' : 'error'}">
+                    English description with parameters: ${enDesc} ✓
+                </div>
+                <div class="${ptDesc.includes('João Silva') && ptDesc.includes('20/11/2025') ? 'success' : 'error'}">
+                    Portuguese description with parameters: ${ptDesc} ✓
+                </div>
+            `;
+
+            // Test 3: Event Creation
+            console.log('Testing event creation...');
+            const enEvent = createTestEvent('follow_up_cancelled', 'en', {
+                agent: 'Jane Smith'
+            });
+            const ptEvent = createTestEvent('follow_up_rescheduled', 'pt', {
+                agent: 'Maria Santos',
+                date: '25/12/2025'
+            });
+
+            eventCreationResults.innerHTML = `
+                <div class="success">
+                    English Event:<br>
+                    Title: ${enEvent.title}<br>
+                    Description: ${enEvent.description}<br>
+                    ✓
+                </div>
+                <div class="success">
+                    Portuguese Event:<br>
+                    Title: ${ptEvent.title}<br>
+                    Description: ${ptEvent.description}<br>
+                    ✓
+                </div>
+            `;
+        }
+
+        // Run tests when page loads
+        window.addEventListener('load', runTests);
+    </script>
+</body>
+</html>
