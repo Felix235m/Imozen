@@ -177,10 +177,21 @@ export class LocalStorageManager {
    * Set complete app data
    */
   setAppData(data: Partial<AppData>): void {
-    if (typeof window === 'undefined' || !window.localStorage) return;
+    console.log('🔍 DEBUG: setAppData called with:', {
+      hasData: !!data,
+      dataKeys: data ? Object.keys(data) : 'none',
+      timestamp: Date.now()
+    });
+    
+    if (typeof window === 'undefined' || !window.localStorage) {
+      console.log('🔍 DEBUG: setAppData early return - no window.localStorage');
+      return;
+    }
 
     try {
       const currentData = this.getAppData();
+      console.log('🔍 DEBUG: setAppData - currentData retrieved');
+      
       const newData: AppData = {
         ...currentData,
         ...data,
@@ -188,20 +199,37 @@ export class LocalStorageManager {
         version: DATA_VERSION,
       };
 
+      // Check data size before storing
+      const dataSize = JSON.stringify(newData).length;
+      console.log('🔍 DEBUG: setAppData - data size:', dataSize, 'bytes');
+      
+      console.log('🔍 DEBUG: setAppData - about to call localStorage.setItem');
       localStorage.setItem(APP_DATA_KEY, JSON.stringify(newData));
+      console.log('🔍 DEBUG: setAppData - localStorage.setItem completed');
 
       // Update cache immediately
       this.cache = newData;
       this.cacheTimestamp = Date.now();
+      console.log('🔍 DEBUG: setAppData - cache updated');
 
+      console.log('🔍 DEBUG: setAppData - about to notify subscribers');
       this.notifySubscribers(newData);
+      console.log('🔍 DEBUG: setAppData - subscribers notified');
     } catch (error) {
-      console.error('Failed to set app data:', error);
+      console.error('❌ DEBUG: setAppData failed:', error);
 
       // If quota exceeded, try clearing old data
       if (error instanceof DOMException && error.name === 'QuotaExceededError') {
-        console.warn('localStorage quota exceeded. Clearing old data...');
+        console.warn('❌ DEBUG: localStorage quota exceeded. Clearing old data...');
         this.clearAppData();
+        // Show user-friendly error instead of generic error
+        throw new Error('Storage quota exceeded. Please clear browser data and try again.');
+      } else if (error instanceof DOMException && error.name === 'SecurityError') {
+        console.error('❌ DEBUG: localStorage security error:', error);
+        throw new Error('Storage access denied. Please check browser settings.');
+      } else {
+        console.error('❌ DEBUG: Unexpected localStorage error:', error);
+        throw new Error('Failed to save data. Please refresh the page and try again.');
       }
     }
   }
@@ -211,6 +239,11 @@ export class LocalStorageManager {
    */
   initializeFromAgentDatabase(response: AgentDatabaseResponse): void {
     console.log('🟠 Initializing from agent database:', response);
+    console.log('🔍 DEBUG: initializeFromAgentDatabase called with:', {
+      hasResponse: !!response,
+      responseType: typeof response,
+      responseKeys: response ? Object.keys(response) : 'none'
+    });
 
     // Validate response structure
     if (!response || typeof response !== 'object') {
@@ -227,6 +260,18 @@ export class LocalStorageManager {
       console.error('❌ No data property in response:', response);
       throw new Error('Missing data in agent database response');
     }
+
+    console.log('🔍 DEBUG: Processing response.data:', {
+      hasTasks: !!(response.data.tasks),
+      hasLeads: !!(response.data.leads),
+      hasDashboard: !!(response.data.dashboard),
+      hasLeadDetails: !!(response.data.leadDetails),
+      hasNotes: !!(response.data.notes),
+      hasNotifications: !!(response.data.notifications),
+      hasCommunicationHistory: !!(response.data.communicationHistory),
+      tasksType: typeof response.data.tasks,
+      leadsType: typeof response.data.leads
+    });
 
     const appData: AppData = {
       tasks: transformBackendTasks(response.data.tasks || []),
@@ -245,8 +290,10 @@ export class LocalStorageManager {
       leadsCount: appData.leads.length,
       dashboardCounts: appData.dashboard.counts,
     });
+    console.log('🔍 DEBUG: About to call this.setAppData');
 
     this.setAppData(appData);
+    console.log('🔍 DEBUG: this.setAppData completed');
   }
 
   /**

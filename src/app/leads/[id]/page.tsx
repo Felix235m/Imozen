@@ -115,18 +115,6 @@ const LEAD_STAGES: { value: LeadStage; label: string; color: string; description
   { value: 'Not Interested', label: 'Not Interested', color: 'bg-gray-100 text-gray-700', description: 'Lead no longer interested', icon: UserX },
 ];
 
-const allLocations = [
-    { value: "lisbon", label: "Lisbon" },
-    { value: "porto", label: "Porto" },
-    { value: "faro", label: "Faro" },
-    { value: "coimbra", label: "Coimbra" },
-    { value: "braga", label: "Braga" },
-    { value: "aveiro", label: "Aveiro" },
-    { value: "sintra", label: "Sintra" },
-    { value: "cascais", label: "Cascais" },
-    { value: "funchal", label: "Funchal" },
-    { value: "guimaraes", label: "Guimarães" }
-];
 
 const propertyTypes = [
   { name: "Apartment", icon: Building },
@@ -207,17 +195,6 @@ export default function LeadDetailPage() {
     return { code: '+351', number: phoneStr };
   }, []);
 
-  // Normalize location names to match dropdown values
-  const normalizeLocations = useCallback((locations: string[]) => {
-    return locations.map(loc => {
-      const normalized = loc.toLowerCase();
-      // Find matching location in allLocations array
-      const match = allLocations.find(
-        l => l.label.toLowerCase() === normalized || l.value.toLowerCase() === normalized
-      );
-      return match ? match.value : normalized;
-    });
-  }, []);
 
   // Format ISO date to Portugal timezone
   const formatDateWithTimezone = useCallback((isoDate: string, timezone: string = 'Europe/Lisbon'): string => {
@@ -1274,70 +1251,18 @@ export default function LeadDetailPage() {
                             <p className="text-gray-500 text-sm mb-2">
                               {lead.lead_type === 'Seller' ? t.leads.propertyLocation : t.leads.desiredLocations}
                             </p>
-                            <DropdownMenu>
-                                <DropdownMenuTrigger asChild>
-                                    <Button variant="outline" className="w-full justify-between">
-                                        <span className="text-muted-foreground">
-                                            {lead.property.locations.length > 0
-                                                ? `${lead.property.locations.length} location${lead.property.locations.length > 1 ? 's' : ''} selected`
-                                                : 'Select locations...'}
-                                        </span>
-                                        <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
-                                    </Button>
-                                </DropdownMenuTrigger>
-                                <DropdownMenuContent className="w-[--radix-dropdown-menu-trigger-width]">
-                                    {allLocations.map((location) => {
-                                        const currentLocations = lead.property.locations || [];
-                                        const isSelected = currentLocations.includes(location.value);
-
-                                        return (
-                                            <DropdownMenuCheckboxItem
-                                                key={location.value}
-                                                checked={isSelected}
-                                                onSelect={(e) => e.preventDefault()}
-                                                onClick={() => {
-                                                    if (!lead) return;
-
-                                                    let newLocations;
-                                                    if (isSelected) {
-                                                        // Remove this location
-                                                        newLocations = currentLocations.filter(loc => loc !== location.value);
-                                                    } else {
-                                                        // Add this location
-                                                        newLocations = [...currentLocations, location.value];
-                                                    }
-
-                                                    setLead(prev => prev ? {...prev, property: {...prev.property, locations: newLocations}} : null);
-                                                }}
-                                            >
-                                                {location.label}
-                                            </DropdownMenuCheckboxItem>
-                                        );
-                                    })}
-                                </DropdownMenuContent>
-                            </DropdownMenu>
-
-                            {lead.property.locations.length > 0 && (
-                                <div className="flex gap-2 flex-wrap mt-3">
-                                    {lead.property.locations.map(locValue => (
-                                        <Badge
-                                            key={locValue}
-                                            variant="secondary"
-                                            className="px-3 py-1.5 flex items-center gap-2 cursor-pointer hover:bg-secondary/80"
-                                            onClick={() => {
-                                                setLead(prev => {
-                                                    if (!prev) return null;
-                                                    const newLocations = prev.property.locations.filter(l => l !== locValue);
-                                                    return {...prev, property: {...prev.property, locations: newLocations}};
-                                                });
-                                            }}
-                                        >
-                                            {allLocations.find(l => l.value === locValue)?.label || locValue}
-                                            <X className="h-3 w-3" />
-                                        </Badge>
-                                    ))}
-                                </div>
-                            )}
+                            <Textarea
+                                value={lead.property.locations.join(', ')}
+                                onChange={(e) => {
+                                    const locationsArray = e.target.value.split(',');
+                                    setLead(prev => prev ? {...prev, property: {...prev.property, locations: locationsArray}} : null);
+                                }}
+                                placeholder="Enter location(s). For multiple locations, separate with commas"
+                                className="min-h-[80px]"
+                            />
+                            <p className="text-xs text-muted-foreground mt-1">
+                                You can enter multiple locations separated by commas
+                            </p>
                         </div>
                     </div>
                 ) : (
@@ -1350,7 +1275,7 @@ export default function LeadDetailPage() {
                         <InfoItem label={t.leads.bedrooms} value={lead.property.bedrooms || '-'} />
                         <InfoItem
                           label={lead.lead_type === 'Seller' ? t.leads.propertyLocation : t.leads.desiredLocations}
-                          value={lead.property.locations.map(loc => loc.charAt(0).toUpperCase() + loc.slice(1)).join(', ')}
+                          value={lead.property.locations.join(', ')}
                           className="col-span-2"
                         />
                     </div>

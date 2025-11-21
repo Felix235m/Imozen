@@ -653,7 +653,7 @@ export function TaskCard({
       console.log('🌐 [RESCHEDULE] Task ID:', task.id);
       console.log('🌐 [RESCHEDULE] Lead ID:', task.leadId);
 
-      cachedCallTaskApi("reschedule_task", apiPayload).then((response: any) => {
+      cachedCallTaskApi("reschedule_task", apiPayload).then(async (response: any) => {
         console.log('✅ [RESCHEDULE] API call successful:', response);
 
         // UPDATE LEAD'S NEXT FOLLOW-UP DATE
@@ -811,13 +811,13 @@ export function TaskCard({
         }
 
         // Process notes from webhook response if available
-        if (responseData.current_note || (responseData.notes && responseData.notes.length > 0)) {
+        if (response.data?.current_note || (response.data?.notes && response.data.notes.length > 0)) {
           try {
             console.log('📝 [RESCHEDULE] Processing notes from webhook response...');
             const { processNotesFromWebResponse, mergeNotes } = await import('@/lib/note-transformer');
             const existingNotes = localStorageManager.getNotes(task.leadId) || [];
             const { notes: processedNotes, processedCount, errors } = processNotesFromWebResponse(
-              responseData,
+              response.data,
               task.leadId
             );
 
@@ -829,14 +829,14 @@ export function TaskCard({
               // Update reschedule event to include note information
               if (communicationEvents.length > 0) {
                 const rescheduleEvent = communicationEvents.find(event => event.event_type === 'follow_up_rescheduled');
-                if (rescheduleEvent && responseData.current_note) {
-                  rescheduleEvent.metadata.reschedule_note = responseData.current_note.note;
-                  rescheduleEvent.metadata.note_type = responseData.current_note.note_type || 'reschedule_note';
-                  rescheduleEvent.metadata.note_id = responseData.current_note.note_id;
+                if (rescheduleEvent && response.data.current_note) {
+                  rescheduleEvent.metadata.reschedule_note = response.data.current_note.note;
+                  rescheduleEvent.metadata.note_type = response.data.current_note.note_type || 'reschedule_note';
+                  rescheduleEvent.metadata.note_id = response.data.current_note.note_id;
 
                   // Update description to mention note
-                  if (rescheduleEvent.description && responseData.current_note.note) {
-                    const noteDescription = ` (${responseData.current_note.note})`;
+                  if (rescheduleEvent.description && response.data.current_note.note) {
+                    const noteDescription = ` (${response.data.current_note.note})`;
                     rescheduleEvent.description += noteDescription;
                   }
 

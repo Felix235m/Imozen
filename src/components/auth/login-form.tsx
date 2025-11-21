@@ -141,6 +141,7 @@ export function LoginForm({
                           {...field}
                           className="pl-10"
                           disabled={isLoading}
+                          autoComplete="username"
                           suppressHydrationWarning
                         />
                       </div>
@@ -164,6 +165,7 @@ export function LoginForm({
                           {...field}
                           className="pl-10 pr-10"
                           disabled={isLoading}
+                          autoComplete="current-password"
                           suppressHydrationWarning
                         />
                         <Button

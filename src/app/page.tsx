@@ -71,7 +71,14 @@ export default function LoginPage() {
         await new Promise(resolve => setTimeout(resolve, 200)); // Brief pause for UX
 
         // Navigate to tasks page
-        router.push('/tasks');
+        console.log('🔍 DEBUG: About to call router.push("/tasks")');
+        try {
+          router.push('/tasks');
+          console.log('🔍 DEBUG: router.push("/tasks") completed successfully');
+        } catch (navError) {
+          console.error('❌ DEBUG: Navigation failed:', navError);
+          throw new Error('Navigation failed. Please try refreshing the page.');
+        }
       } catch (error: any) {
         console.error('Failed to load agent database:', error);
 
@@ -89,21 +96,40 @@ export default function LoginPage() {
 
   const handleRetry = async () => {
     setIsRetrying(true);
+    console.log('🔍 DEBUG: Retry attempt started');
     try {
       const token = localStorage.getItem('auth_token');
-      if (!token) throw new Error('Authentication token not found');
+      if (!token) {
+        console.log('🔍 DEBUG: Retry failed - no auth token');
+        throw new Error('Authentication token not found');
+      }
 
+      console.log('🔍 DEBUG: Retry - fetching agent database');
       const response = await fetchAgentDatabase(token);
 
+      console.log('🔍 DEBUG: Retry - response received:', {
+        hasResponse: !!response,
+        success: response?.success,
+        hasData: !!response?.data
+      });
+
       if (!response || !response.success || !response.data) {
+        console.log('🔍 DEBUG: Retry failed - invalid response');
         throw new Error('Invalid response from server');
       }
 
+      console.log('🔍 DEBUG: Retry - calling localStorageManager.initializeFromAgentDatabase');
       localStorageManager.initializeFromAgentDatabase(response);
+      console.log('🔍 DEBUG: Retry - localStorageManager.initializeFromAgentDatabase completed');
+      
       setShowRetryDialog(false);
       setIsRetrying(false);
+      console.log('🔍 DEBUG: Retry - navigating to /tasks');
       router.push('/tasks');
+      console.log('🔍 DEBUG: Retry - navigation completed');
     } catch (error: any) {
+      console.error('❌ DEBUG: Retry failed with error:', error);
+      
       // Second failure - logout
       setIsRetrying(false);
       setShowRetryDialog(false);
@@ -111,11 +137,12 @@ export default function LoginPage() {
       toast({
         variant: 'destructive',
         title: 'Unable to Load Data',
-        description: 'Could not load data after retry. Try again later or contact admin.',
+        description: `Could not load data after retry: ${error.message}. Try again later or contact admin.`,
       });
 
       localStorage.removeItem('auth_token');
       localStorage.removeItem('agent_data');
+      console.log('🔍 DEBUG: Retry failed - logged out user');
     }
   };
 

@@ -47,18 +47,6 @@ const propertyTypes = [
   { name: "Land", nameKey: "land", icon: Mountain },
 ];
 
-const allLocations = [
-  { value: "lisbon", label: "Lisbon" },
-  { value: "porto", label: "Porto" },
-  { value: "faro", label: "Faro" },
-  { value: "coimbra", label: "Coimbra" },
-  { value: "braga", label: "Braga" },
-  { value: "aveiro", label: "Aveiro" },
-  { value: "sintra", label: "Sintra" },
-  { value: "cascais", label: "Cascais" },
-  { value: "funchal", label: "Funchal" },
-  { value: "guimaraes", label: "Guimarães" }
-];
 
 const financingTypes = [
   { name: "Cash", nameKey: "cash", icon: DollarSign },
@@ -101,7 +89,7 @@ export default function NewLeadPage() {
 
     // Step 2: Property Requirements
     propertyType: z.string().optional(),
-    locations: z.array(z.string()).optional(),
+    locations: z.string().optional(),
     budget: z.number().optional(),
     budgetCurrency: z.string(),
     bedrooms: z.number().min(0, t.newLead.validation.bedroomsNegative),
@@ -138,7 +126,7 @@ export default function NewLeadPage() {
       leadSource: "",
       // Step 2 defaults
       propertyType: "",
-      locations: [],
+      locations: "",
       budget: 0,
       budgetCurrency: "EUR",
       bedrooms: 0,
@@ -192,7 +180,7 @@ export default function NewLeadPage() {
   const leadType = form.watch("leadType");
   const propertyType = form.watch("propertyType");
   const bedrooms = form.watch("bedrooms");
-  const locations = form.watch("locations") || [];
+  const locations = form.watch("locations") || "";
   const financingType = form.watch("financingType");
 
   const isBedroomsDisabled = propertyType === 'Commercial' || propertyType === 'Land';
@@ -213,20 +201,6 @@ export default function NewLeadPage() {
     }
   }, [isCreditPreApprovalDisabled, form]);
 
-  // Location handlers
-  const handleLocationSelect = (locationValue: string) => {
-    const currentLocations = form.getValues('locations') || [];
-    if (currentLocations.includes(locationValue)) {
-      form.setValue('locations', currentLocations.filter(loc => loc !== locationValue));
-    } else {
-      form.setValue('locations', [...currentLocations, locationValue]);
-    }
-  };
-
-  const handleLocationRemove = (locationValue: string) => {
-    const currentLocations = form.getValues('locations') || [];
-    form.setValue('locations', currentLocations.filter(loc => loc !== locationValue));
-  };
 
   // Form submission with optimistic updates
   const onSubmit = async (values: z.infer<typeof formSchema>) => {
@@ -255,7 +229,7 @@ export default function NewLeadPage() {
       language: values.language,
       leadSource: values.leadSource,
       propertyType: values.propertyType,
-      locations: values.locations,
+      locations: values.locations ? values.locations.split(',') : [],
       budget: values.budget,
       budgetCurrency: values.budgetCurrency,
       bedrooms: values.bedrooms,
@@ -697,57 +671,22 @@ export default function NewLeadPage() {
                     control={form.control}
                     name="locations"
                     render={({ field }) => (
-                      <FormItem className="flex flex-col">
+                      <FormItem>
                         <FormLabel className="transition-all duration-300">
                           {isBuyer
                             ? t.newLead.desiredLocations
                             : t.newLead.propertyLocation}
                         </FormLabel>
-                        <DropdownMenu>
-                          <DropdownMenuTrigger asChild>
-                            <Button
-                              variant="outline"
-                              className="w-full justify-between h-auto min-h-10"
-                            >
-                              <div className="flex gap-1 flex-wrap items-center">
-                                {locations.length > 0 ? (
-                                  locations.map(locValue => {
-                                    const location = allLocations.find(l => l.value === locValue);
-                                    return (
-                                      <Badge
-                                        key={locValue}
-                                        variant="secondary"
-                                        className="mr-1"
-                                        onClick={(e) => {
-                                          e.stopPropagation();
-                                          handleLocationRemove(locValue);
-                                        }}
-                                      >
-                                        {location?.label}
-                                        <X className="ml-1 h-3 w-3" />
-                                      </Badge>
-                                    )
-                                  })
-                                ) : (
-                                  <span className="text-muted-foreground">{t.newLead.selectLocations}</span>
-                                )}
-                              </div>
-                              <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
-                            </Button>
-                          </DropdownMenuTrigger>
-                          <DropdownMenuContent className="w-[--radix-dropdown-menu-trigger-width]">
-                            {allLocations.map((location) => (
-                              <DropdownMenuCheckboxItem
-                                key={location.value}
-                                checked={locations.includes(location.value)}
-                                onSelect={(e) => e.preventDefault()}
-                                onClick={() => handleLocationSelect(location.value)}
-                              >
-                                {location.label}
-                              </DropdownMenuCheckboxItem>
-                            ))}
-                          </DropdownMenuContent>
-                        </DropdownMenu>
+                        <FormControl>
+                          <Textarea
+                            placeholder="Enter location(s). For multiple locations, separate with commas (e.g., Lisbon, Porto, Faro)"
+                            className="min-h-[80px]"
+                            {...field}
+                          />
+                        </FormControl>
+                        <p className="text-xs text-muted-foreground mt-1">
+                          You can enter multiple locations separated by commas
+                        </p>
                         <FormMessage />
                       </FormItem>
                     )}

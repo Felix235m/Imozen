@@ -1,0 +1,2634 @@
+[
+  {
+    "success": true,
+    "timestamp": 1763706993577,
+    "processing_time_ms": 5,
+    "data": {
+      "tasks": [
+        {
+          "date": "2025-11-21",
+          "items": [
+            {
+              "id": "task_1763663369519_qpl6jhnbo",
+              "name": "maf test",
+              "description": "Ligar ao vendedor Maf Test para verificar se há novidades ou atualizações sobre o apartamento em Lisboa, conforme o agendamento de visualização. Confirmar interesse e próximos passos.",
+              "type": "WhatsApp",
+              "leadId": "4a21063e-e00b-49aa-adaa-9984ba5e95f9",
+              "followUpMessage": "Olá Maf Test! 😊\n\nSou o Felix AB, seu agente de confiança para o mercado imobiliário em Lisboa. Gostaria de saber se ainda está interessado em vender seu apartamento na cidade, especialmente com a sua urgência de vender em até 3 meses. Tenho clientes bastante interessados e posso ajudar a agilizar o processo para você.\n\nVamos marcar uma visita ou uma conversa para alinharmos os detalhes? Estou à disposição neste domingo para conversarmos!\n\nFico no aguardo da sua resposta. 📲\n\nUm abraço,  \nFelix AB",
+              "time": "",
+              "leadContact": {
+                "phone": "(+351) 11251215",
+                "email": "maftest@gmail.com"
+              },
+              "leadStatus": "Property Viewing Scheduled",
+              "leadPriority": "Warm",
+              "propertyRequirements": {
+                "locations": [
+                  "Lisbon"
+                ],
+                "types": [
+                  "Apartment"
+                ],
+                "budget": "€20000"
+              },
+              "priority": "High",
+              "status": "Pending",
+              "reminder_date": "2025-11-21T00:00:00.000Z"
+            }
+          ]
+        },
+        {
+          "date": "2025-11-22",
+          "items": [
+            {
+              "id": "task_1763663262218_e4cdare38",
+              "name": "Hello Test",
+              "description": "Seguir com o vendedor Hello Test para organizar uma visita à propriedade em Porto, considerando o interesse imediato.",
+              "type": "WhatsApp",
+              "leadId": "b934086e-9865-4712-bd83-bafbeb94d81e",
+              "followUpMessage": "Olá Hello Test! 😊\n\nSou o Felix ABcd, seu agente de confiança em Portugal. Vi que está interessado em vender uma casa em Porto e que deseja vender rapidamente, em até 3 meses. Estou aqui para ajudar a potenciar a venda e encontrar o melhor comprador o quanto antes!\n\nVamos agendar uma visita ou uma conversa para discutir os detalhes da sua propriedade e estratégias de venda? Assim, podemos avançar de forma eficiente e atingir o seu objetivo dentro do prazo desejado.\n\nFico a aguardar seu retorno para marcar um horário que seja conveniente para si. Não hesite em perguntar qualquer dúvida!\n\nUm abraço,\nFelix ABcd",
+              "time": "",
+              "leadContact": {
+                "phone": "(+351) 5585666",
+                "email": "hellotest@gmail.com"
+              },
+              "leadStatus": "Qualified",
+              "leadPriority": "Warm",
+              "propertyRequirements": {
+                "locations": [
+                  "Porto"
+                ],
+                "types": [
+                  "House"
+                ],
+                "budget": "€25000"
+              },
+              "priority": "High",
+              "status": "Pending",
+              "reminder_date": "2025-11-27T00:00:00.000Z"
+            }
+          ]
+        },
+        {
+          "date": "2025-11-23",
+          "items": [
+            {
+              "id": "task_1763705502069_pw1fbimaw",
+              "name": "Seller  Test",
+              "description": "Contato de acompanhamento com Seller Test para discutir estratégias de venda do apartamento em Funchal, considerando o orçamento e o prazo de 3-6 meses.",
+              "type": "WhatsApp",
+              "leadId": "4b15459a-f1a5-4140-9e99-9c02ac5bae73",
+              "followUpMessage": "",
+              "time": "",
+              "leadContact": {
+                "phone": "(+351) 9456048",
+                "email": "sellertest@gmail.com"
+              },
+              "leadStatus": "New Lead",
+              "leadPriority": "Cold",
+              "propertyRequirements": {
+                "locations": [
+                  "[\"funchal\"]"
+                ],
+                "types": [
+                  "Apartment"
+                ],
+                "budget": "€10000"
+              },
+              "priority": "High",
+              "status": "Pending",
+              "reminder_date": "2025-11-27T18:30:00.000Z"
+            }
+          ]
+        },
+        {
+          "date": "2025-11-24",
+          "items": [
+            {
+              "id": "task_1762535325794_ruia2ihtk",
+              "name": "Ricardo Antunes",
+              "description": "Follow up on agent's note to contact next Friday.",
+              "type": "Whatsapp",
+              "leadId": "a2ed98d4-fe0a-4973-a4e7-ee117e21f5eb",
+              "followUpMessage": "Hello Ricardo! 😊  \nI hope you're well. I just wanted to check in and see if you're still interested in finding an apartment in Braga within your budget of €10,000. Given your timeframe to purchase immediately, I’d be happy to send you some options and arrange viewings at your earliest convenience.  \n\nPlease let me know if you have any questions or if you'd like to schedule a viewing soon. I’m here to help make your search smooth and successful!  \n\nLooking forward to hearing from you.  \n\nBest regards,  \nFelix AB",
+              "time": "9:00:00",
+              "leadContact": {
+                "phone": "(+351) 962785565",
+                "email": "ferroantunes@gmail.com"
+              },
+              "leadStatus": "New Lead",
+              "leadPriority": "Cold",
+              "propertyRequirements": {
+                "locations": [
+                  "Braga"
+                ],
+                "types": [
+                  "Apartment"
+                ],
+                "budget": "€10000"
+              },
+              "priority": "Medium",
+              "status": "Pending",
+              "reminder_date": "2025-11-14T09:00:00.000Z"
+            },
+            {
+              "id": "task_1763329827704_qm5k87ddh",
+              "name": "Ines Rodrigues",
+              "description": "Follow up with Ines Rodrigues to discuss her interest in selling her apartment in Lisbon. Aim to schedule a call or meeting to evaluate her needs and plan the next steps for a quick sale.",
+              "type": "Whatsapp",
+              "leadId": "06643419-fa66-4585-9f94-9af30238a20b",
+              "followUpMessage": "Olá Inês! 😊\n\nSó para reforçar que estou à disposição para ajudar a vender o seu apartamento em Lisboa o mais rápido possível. Podemos marcar uma avaliação ou uma conversa rápida para definir as melhores estratégias? Assim, garantimos que tudo seja feito com eficiência e ao seu ritmo.\n\nQuando seria conveniente para si? Estou disponível nos próximos dias e quero garantir que aproveitamos ao máximo este período.\n\nFico aguardando o seu contacto para agendarmos. Será um prazer ajudá-la a alcançar o seu objetivo!\n\nUm abraço,  \nFelix AB",
+              "time": "9:00:00",
+              "leadContact": {
+                "phone": "(+351) 918277272",
+                "email": "ines.vigario@gmail.com"
+              },
+              "leadStatus": "New Lead",
+              "leadPriority": "Warm",
+              "propertyRequirements": {
+                "locations": [
+                  "Lisbon"
+                ],
+                "types": [
+                  "Apartment"
+                ],
+                "budget": "€300000"
+              },
+              "priority": "High",
+              "status": "Pending",
+              "reminder_date": "2025-11-16T09:00:00.000Z"
+            },
+            {
+              "id": "task_1763479778474_szaj3oqrm",
+              "name": "Hello Test",
+              "description": "Verificar interesse em vender a casa em Porto e discutir próximos passos para venda rápida, considerando o orçamento e o prazo de imediato.",
+              "type": "WhatsApp",
+              "leadId": "b934086e-9865-4712-bd83-bafbeb94d81e",
+              "followUpMessage": "Olá Hello Test! 😊  \nSou o Felix ABcd, seu consultor imobiliário em Portugal. Gostaria de saber se ainda está interessado em vender sua casa no Porto?  \nTenho algumas opções que podem encaixar-se no seu orçamento e na sua urgência para venda. Vamos agendar uma visita ou uma conversa rápida para discutir os detalhes?  \nFico à disposição para ajudar a tornar o processo rápido e tranquilo.  \nAguardo seu retorno!  \n\nUm abraço,  \nFelix ABcd",
+              "time": "",
+              "leadContact": {
+                "phone": "(+351) 5585666",
+                "email": "hellotest@gmail.com"
+              },
+              "leadStatus": "Qualified",
+              "leadPriority": "Warm",
+              "propertyRequirements": {
+                "locations": [
+                  "Porto"
+                ],
+                "types": [
+                  "House"
+                ],
+                "budget": "€25000"
+              },
+              "priority": "High",
+              "status": "Pending",
+              "reminder_date": "2025-11-24T18:30:00.000Z"
+            }
+          ]
+        }
+      ],
+      "leads": [
+        {
+          "lead_id": "2cae1619-ec9c-40cc-8f92-93f9e5d0651e",
+          "lead_type": "Buyer",
+          "name": "Test 55",
+          "temperature": "Cold",
+          "stage": "Qualified",
+          "lead_stage": "Qualified",
+          "image_url": "",
+          "created_at": "2025-10-19T16:06:02.302Z",
+          "next_follow_up": {
+            "status": "none",
+            "date": null
+          },
+          "contact": {
+            "phone": "(+351) 158561501",
+            "email": "test55@gmial.com"
+          }
+        },
+        {
+          "lead_id": "cae0b687-e731-4034-aa0c-34f80733310e",
+          "lead_type": "Buyer",
+          "name": "Test  77",
+          "temperature": "Warm",
+          "stage": "New Lead",
+          "lead_stage": "New Lead",
+          "image_url": "",
+          "created_at": "2025-10-22T16:47:31.236Z",
+          "next_follow_up": {
+            "status": "none",
+            "date": null
+          },
+          "contact": {
+            "phone": "",
+            "email": "test77@gmail.com"
+          }
+        },
+        {
+          "lead_id": "7dfad902-ba60-4073-9aae-8cf152a48cde",
+          "lead_type": "Buyer",
+          "name": "Test 111",
+          "temperature": "Cold",
+          "stage": "New Lead",
+          "lead_stage": "New Lead",
+          "image_url": "",
+          "created_at": "2025-10-23T08:02:53.002Z",
+          "next_follow_up": {
+            "status": "none",
+            "date": null
+          },
+          "contact": {
+            "phone": "(+351) 515125101",
+            "email": "test111@gmail.com"
+          }
+        },
+        {
+          "lead_id": "a2ed98d4-fe0a-4973-a4e7-ee117e21f5eb",
+          "lead_type": "Buyer",
+          "name": "Ricardo Antunes",
+          "temperature": "Cold",
+          "stage": "New Lead",
+          "lead_stage": "New Lead",
+          "image_url": "https://res.cloudinary.com/dsjqmw9jy/image/upload/v1762185684/imozen/leads/blob_sgho43.jpg",
+          "created_at": "2025-10-28T18:04:50.916Z",
+          "next_follow_up": {
+            "status": "scheduled",
+            "date": "2025-11-24T18:30:00.000Z"
+          },
+          "contact": {
+            "phone": "(+351) 962785565",
+            "email": "ferroantunes@gmail.com"
+          }
+        },
+        {
+          "lead_id": "6ebc3ebb-c3f4-49cc-a548-912cb94274d0",
+          "lead_type": "Buyer",
+          "name": "Vishesh Goyal",
+          "temperature": "Cold",
+          "stage": "New Lead",
+          "lead_stage": "New Lead",
+          "image_url": "",
+          "created_at": "2025-10-28T20:35:37.875Z",
+          "next_follow_up": {
+            "status": "none",
+            "date": null
+          },
+          "contact": {
+            "phone": "(+351) 911572661",
+            "email": "goyal.vishesh@gmail.com"
+          }
+        },
+        {
+          "lead_id": "3df9abf7-ff92-4dc3-894e-bbe2c8167d30",
+          "lead_type": "Buyer",
+          "name": "Vishesh2 Goiyal",
+          "temperature": "Cold",
+          "stage": "New Lead",
+          "lead_stage": "New Lead",
+          "image_url": "",
+          "created_at": "2025-10-28T21:18:26.644Z",
+          "next_follow_up": {
+            "status": "none",
+            "date": null
+          },
+          "contact": {
+            "phone": "(+351) 9115872222",
+            "email": ""
+          }
+        },
+        {
+          "lead_id": "52485e0b-7087-45da-ad4d-cbd14a3bd357",
+          "lead_type": "Buyer",
+          "name": "Test New",
+          "temperature": "Hot",
+          "stage": "New Lead",
+          "lead_stage": "New Lead",
+          "image_url": "",
+          "created_at": "2025-11-03T10:31:21.962Z",
+          "next_follow_up": {
+            "status": "none",
+            "date": null
+          },
+          "contact": {
+            "phone": "(+351) 514561151",
+            "email": "testnew@gmail.com"
+          }
+        },
+        {
+          "lead_id": "4b15459a-f1a5-4140-9e99-9c02ac5bae73",
+          "lead_type": "Seller",
+          "name": "Seller  Test",
+          "temperature": "Cold",
+          "stage": "New Lead",
+          "lead_stage": "New Lead",
+          "image_url": "",
+          "created_at": "2025-11-07T15:19:16.120Z",
+          "next_follow_up": {
+            "status": "scheduled",
+            "date": "2025-11-23T18:30:00.000Z"
+          },
+          "contact": {
+            "phone": "(+351) 9456048",
+            "email": "sellertest@gmail.com"
+          }
+        },
+        {
+          "lead_id": "73770b88-f2ab-4df1-91f5-76ebb07b4b55",
+          "lead_type": "Seller",
+          "name": "seller2 test",
+          "temperature": "Warm",
+          "stage": "New Lead",
+          "lead_stage": "New Lead",
+          "image_url": "",
+          "created_at": "2025-11-07T16:29:07.827Z",
+          "next_follow_up": {
+            "status": "none",
+            "date": null
+          },
+          "contact": {
+            "phone": "(+351) 1521",
+            "email": "seller2test@gmail.com"
+          }
+        },
+        {
+          "lead_id": "e4786b7f-e4dc-4d99-bbe2-e9768d2e0956",
+          "lead_type": "Seller",
+          "name": "test seller",
+          "temperature": "Warm",
+          "stage": "New Lead",
+          "lead_stage": "New Lead",
+          "image_url": "",
+          "created_at": "2025-11-07T16:52:59.503Z",
+          "next_follow_up": {
+            "status": "none",
+            "date": null
+          },
+          "contact": {
+            "phone": "(+351) 1425",
+            "email": "testseller@gmail.com"
+          }
+        },
+        {
+          "lead_id": "4a21063e-e00b-49aa-adaa-9984ba5e95f9",
+          "lead_type": "Seller",
+          "name": "maf test",
+          "temperature": "Warm",
+          "stage": "Property Viewing Scheduled",
+          "lead_stage": "Property Viewing Scheduled",
+          "image_url": "",
+          "created_at": "2025-11-08T12:32:19.437Z",
+          "next_follow_up": {
+            "status": "scheduled",
+            "date": "2025-11-21T18:30:00.000Z"
+          },
+          "contact": {
+            "phone": "(+351) 11251215",
+            "email": "maftest@gmail.com"
+          }
+        },
+        {
+          "lead_id": "e50bed3a-6677-4de8-9f91-606ce1099feb",
+          "lead_type": "Seller",
+          "name": "Mariya Test",
+          "temperature": "Hot",
+          "stage": "New Lead",
+          "lead_stage": "New Lead",
+          "image_url": "",
+          "created_at": "2025-11-08T16:16:02.939Z",
+          "next_follow_up": {
+            "status": "none",
+            "date": null
+          },
+          "contact": {
+            "phone": "(+351) 94604",
+            "email": "mariyatest@gmail.com"
+          }
+        },
+        {
+          "lead_id": "b934086e-9865-4712-bd83-bafbeb94d81e",
+          "lead_type": "Seller",
+          "name": "Hello Test",
+          "temperature": "Warm",
+          "stage": "Qualified",
+          "lead_stage": "Qualified",
+          "image_url": "",
+          "created_at": "2025-11-10T21:42:14.820Z",
+          "next_follow_up": {
+            "status": "scheduled",
+            "date": "2025-11-22T18:30:00.000Z"
+          },
+          "contact": {
+            "phone": "(+351) 5585666",
+            "email": "hellotest@gmail.com"
+          }
+        },
+        {
+          "lead_id": "38ea348c-1b1f-4ca2-8512-dd14ade36c2d",
+          "lead_type": "Seller",
+          "name": "Ricardo Ferro Antunes",
+          "temperature": "Warm",
+          "stage": "New Lead",
+          "lead_stage": "New Lead",
+          "image_url": "",
+          "created_at": "2025-11-12T23:03:18.818Z",
+          "next_follow_up": {
+            "status": "none",
+            "date": null
+          },
+          "contact": {
+            "phone": "(+351) 96572348209",
+            "email": "daodjaosdj@gmail.com"
+          }
+        },
+        {
+          "lead_id": "06643419-fa66-4585-9f94-9af30238a20b",
+          "lead_type": "Seller",
+          "name": "Ines Rodrigues",
+          "temperature": "Warm",
+          "stage": "New Lead",
+          "lead_stage": "New Lead",
+          "image_url": "",
+          "created_at": "2025-11-16T21:50:09.401Z",
+          "next_follow_up": {
+            "status": "scheduled",
+            "date": "2025-11-24T18:30:00.000Z"
+          },
+          "contact": {
+            "phone": "(+351) 918277272",
+            "email": "ines.vigario@gmail.com"
+          }
+        }
+      ],
+      "dashboard": {
+        "success": true,
+        "counts": {
+          "all": 15,
+          "new_this_week": 1,
+          "hot": 2,
+          "warm": 7,
+          "cold": 6,
+          "qualified": 2,
+          "viewing_scheduled": 1,
+          "converted": 0,
+          "leads_for_followup": 4
+        },
+        "conversion_rate": 0,
+        "metrics": {
+          "total_leads": 15,
+          "total_tasks": 6,
+          "total_notes": 29,
+          "unread_notifications": 1,
+          "overdue_tasks": 1
+        }
+      },
+      "leadDetails": {
+        "2cae1619-ec9c-40cc-8f92-93f9e5d0651e": {
+          "lead_id": "2cae1619-ec9c-40cc-8f92-93f9e5d0651e",
+          "lead_type": "Buyer",
+          "name": "Test 55",
+          "contact": {
+            "phone": "(+351) 158561501",
+            "email": "test55@gmial.com"
+          },
+          "image_url": "",
+          "temperature": "Cold",
+          "lead_stage": "Qualified",
+          "Stage": "Qualified",
+          "property": {
+            "locations": [
+              "Funchal",
+              "Sintra"
+            ],
+            "types": [
+              "Apartment"
+            ],
+            "budget": "€15000",
+            "bedrooms": "1",
+            "notes": "Contact next month",
+            "purchase_timeframe": "Immediately (under 3 months)",
+            "financing_type": "Cash",
+            "credit_pre_approved": false,
+            "search_duration": "0-2 months",
+            "has_seen_properties": "A few"
+          },
+          "management": {
+            "agent_notes": "Contact next month",
+            "agent_id": "",
+            "created_at": "2025-10-19T16:06:02.302Z",
+            "last_contacted_at": null,
+            "last_updated_at": "2025-10-21T16:35:33.823Z",
+            "source": "",
+            "language": "English",
+            "initial_message": "",
+            "lead_score": 17,
+            "ai_generated_message": "Hello test 55! This is Felix, your real estate agent. I hope you're doing well. I noticed you're interested in apartments in Funchal or Sintra with a budget of €15,000 and looking to move within the next three months. I’d love to help you find the perfect place quickly. \n\nWould you like to schedule a viewing this week or have a chat about what you’re looking for? Feel free to ask me any questions! 🏡\n\nLooking forward to hearing from you soon.\n\nBest regards,  \nFelix"
+          },
+          "communication_history": [
+            {
+              "id": "auto_created_2cae1619-ec9c-40cc-8f92-93f9e5d0651e",
+              "event_type": "lead_created",
+              "timestamp": "2025-10-19T16:06:02.302Z",
+              "title": "Lead Created",
+              "description": "New lead Test 55 was added to the system",
+              "icon": "UserPlus",
+              "icon_color": "text-green-500",
+              "bg_color": "bg-green-50",
+              "performed_by": {
+                "agent_id": "",
+                "agent_name": "System"
+              },
+              "metadata": {
+                "lead_name": "Test 55",
+                "source": "direct",
+                "initial_temperature": "Cold",
+                "initial_stage": "Qualified"
+              },
+              "related_entities": {
+                "lead_id": "2cae1619-ec9c-40cc-8f92-93f9e5d0651e",
+                "task_id": null,
+                "note_id": null,
+                "property_id": null
+              },
+              "source": "automated",
+              "version": "1.0"
+            }
+          ],
+          "notes": [
+            {
+              "id": "2c22757f-3d21-4139-ac88-f7600f6617c4",
+              "note_id": "2c22757f-3d21-4139-ac88-f7600f6617c4",
+              "lead_id": "2cae1619-ec9c-40cc-8f92-93f9e5d0651e",
+              "content": "Contact next month",
+              "current_note": "Contact next month",
+              "created_at": "2025-11-03T20:48:19.754Z",
+              "created_by": "",
+              "note_type": "text",
+              "transcription": ""
+            },
+            {
+              "id": "152076ae-3de0-4683-bd96-e38ddcaf808f",
+              "note_id": "152076ae-3de0-4683-bd96-e38ddcaf808f",
+              "lead_id": "2cae1619-ec9c-40cc-8f92-93f9e5d0651e",
+              "content": "Contact next month",
+              "current_note": "Contact next month",
+              "created_at": "2025-11-03T20:48:16.157Z",
+              "created_by": "",
+              "note_type": "text",
+              "transcription": ""
+            },
+            {
+              "id": "004456ff-edc5-4e39-9f0d-bfd3d0232827",
+              "note_id": "004456ff-edc5-4e39-9f0d-bfd3d0232827",
+              "lead_id": "2cae1619-ec9c-40cc-8f92-93f9e5d0651e",
+              "content": "new",
+              "current_note": "new",
+              "created_at": "2025-10-19T17:57:56.552Z",
+              "created_by": "",
+              "note_type": "text",
+              "transcription": ""
+            }
+          ]
+        },
+        "cae0b687-e731-4034-aa0c-34f80733310e": {
+          "lead_id": "cae0b687-e731-4034-aa0c-34f80733310e",
+          "lead_type": "Buyer",
+          "name": "Test  77",
+          "contact": {
+            "phone": "",
+            "email": "test77@gmail.com"
+          },
+          "image_url": "",
+          "temperature": "Warm",
+          "lead_stage": "New Lead",
+          "Stage": "New Lead",
+          "property": {
+            "locations": [
+              "Aveiro"
+            ],
+            "types": [
+              "Apartment"
+            ],
+            "budget": "€25100",
+            "bedrooms": "2",
+            "notes": "",
+            "purchase_timeframe": "Immediately (under 3 months)",
+            "financing_type": "Cash",
+            "credit_pre_approved": false,
+            "search_duration": "Starting now",
+            "has_seen_properties": "No"
+          },
+          "management": {
+            "agent_notes": "",
+            "agent_id": "",
+            "created_at": "2025-10-22T16:47:31.236Z",
+            "last_contacted_at": null,
+            "last_updated_at": null,
+            "source": "casayes",
+            "language": "English",
+            "initial_message": "TESTING",
+            "lead_score": 13,
+            "ai_generated_message": "Hello Test 77! 😊  \nI hope you're doing well. Just wanted to follow up on your interest in apartments in Aveiro. With your timeframe of under 3 months, I’d love to help you find the perfect place quickly.  \n\nWould you like to schedule a viewing or have any questions about available properties? Feel free to reach out anytime — I’m here to assist you every step of the way!  \n\nLooking forward to hearing from you soon.  \n\nBest regards,  \nFelix AB"
+          },
+          "communication_history": [
+            {
+              "id": "auto_created_cae0b687-e731-4034-aa0c-34f80733310e",
+              "event_type": "lead_created",
+              "timestamp": "2025-10-22T16:47:31.236Z",
+              "title": "Lead Created",
+              "description": "New lead Test  77 was added to the system",
+              "icon": "UserPlus",
+              "icon_color": "text-green-500",
+              "bg_color": "bg-green-50",
+              "performed_by": {
+                "agent_id": "",
+                "agent_name": "System"
+              },
+              "metadata": {
+                "lead_name": "Test  77",
+                "source": "casayes",
+                "initial_temperature": "Warm",
+                "initial_stage": "New Lead"
+              },
+              "related_entities": {
+                "lead_id": "cae0b687-e731-4034-aa0c-34f80733310e",
+                "task_id": null,
+                "note_id": null,
+                "property_id": null
+              },
+              "source": "automated",
+              "version": "1.0"
+            }
+          ],
+          "notes": [
+            {
+              "id": "f6e457d8-5b22-4f99-9845-a25f41ebe7d4",
+              "note_id": "f6e457d8-5b22-4f99-9845-a25f41ebe7d4",
+              "lead_id": "cae0b687-e731-4034-aa0c-34f80733310e",
+              "content": "testing cancel",
+              "current_note": "testing cancel",
+              "created_at": "2025-10-28T21:46:13.231Z",
+              "created_by": "Felix AB",
+              "note_type": "text",
+              "transcription": ""
+            },
+            {
+              "id": "e6c0d58a-dc11-4505-9c10-178376920cd8",
+              "note_id": "e6c0d58a-dc11-4505-9c10-178376920cd8",
+              "lead_id": "cae0b687-e731-4034-aa0c-34f80733310e",
+              "content": "schedule a follow-up next monday",
+              "current_note": "schedule a follow-up next monday",
+              "created_at": "2025-10-22T18:07:15.333Z",
+              "created_by": "",
+              "note_type": "text",
+              "transcription": ""
+            }
+          ]
+        },
+        "7dfad902-ba60-4073-9aae-8cf152a48cde": {
+          "lead_id": "7dfad902-ba60-4073-9aae-8cf152a48cde",
+          "lead_type": "Buyer",
+          "name": "Test 111",
+          "contact": {
+            "phone": "(+351) 515125101",
+            "email": "test111@gmail.com"
+          },
+          "image_url": "",
+          "temperature": "Cold",
+          "lead_stage": "New Lead",
+          "Stage": "New Lead",
+          "property": {
+            "locations": [
+              "Faro"
+            ],
+            "types": [
+              "Apartment"
+            ],
+            "budget": "€21500",
+            "bedrooms": "2",
+            "notes": "",
+            "purchase_timeframe": "3-6 months",
+            "financing_type": "Credit",
+            "credit_pre_approved": true,
+            "search_duration": "0-2 months",
+            "has_seen_properties": "No"
+          },
+          "management": {
+            "agent_notes": "",
+            "agent_id": "",
+            "created_at": "2025-10-23T08:02:53.002Z",
+            "last_contacted_at": null,
+            "last_updated_at": "2025-10-23T08:46:03.634Z",
+            "source": "",
+            "language": "English",
+            "initial_message": "",
+            "lead_score": 7,
+            "ai_generated_message": "Hello Test 111! 😊  \nI hope you're doing well. Just wanted to follow up on your interest in finding an apartment in Faro within your €21,500 budget. With a timeframe of 3-6 months, there's plenty of options we can explore together.  \n\nWould you like to schedule a viewing or have any questions about the current listings? I’m here to help make your search smooth and enjoyable!  \n\nLooking forward to hearing from you soon.  \n\nBest regards,  \nFelix AB"
+          },
+          "communication_history": [
+            {
+              "id": "auto_created_7dfad902-ba60-4073-9aae-8cf152a48cde",
+              "event_type": "lead_created",
+              "timestamp": "2025-10-23T08:02:53.002Z",
+              "title": "Lead Created",
+              "description": "New lead Test 111 was added to the system",
+              "icon": "UserPlus",
+              "icon_color": "text-green-500",
+              "bg_color": "bg-green-50",
+              "performed_by": {
+                "agent_id": "",
+                "agent_name": "System"
+              },
+              "metadata": {
+                "lead_name": "Test 111",
+                "source": "direct",
+                "initial_temperature": "Cold",
+                "initial_stage": "New Lead"
+              },
+              "related_entities": {
+                "lead_id": "7dfad902-ba60-4073-9aae-8cf152a48cde",
+                "task_id": null,
+                "note_id": null,
+                "property_id": null
+              },
+              "source": "automated",
+              "version": "1.0"
+            }
+          ],
+          "notes": [
+            {
+              "id": "095ac4e9-c875-4f6b-8b4f-156af965fa61",
+              "note_id": "095ac4e9-c875-4f6b-8b4f-156af965fa61",
+              "lead_id": "7dfad902-ba60-4073-9aae-8cf152a48cde",
+              "content": "schedule property viewing at sunday",
+              "current_note": "schedule property viewing at sunday",
+              "created_at": "2025-10-23T08:10:45.584Z",
+              "created_by": "",
+              "note_type": "text",
+              "transcription": ""
+            }
+          ]
+        },
+        "a2ed98d4-fe0a-4973-a4e7-ee117e21f5eb": {
+          "lead_id": "a2ed98d4-fe0a-4973-a4e7-ee117e21f5eb",
+          "lead_type": "Buyer",
+          "name": "Ricardo Antunes",
+          "contact": {
+            "phone": "(+351) 962785565",
+            "email": "ferroantunes@gmail.com"
+          },
+          "image_url": "https://res.cloudinary.com/dsjqmw9jy/image/upload/v1762185684/imozen/leads/blob_sgho43.jpg",
+          "temperature": "Cold",
+          "lead_stage": "New Lead",
+          "Stage": "New Lead",
+          "property": {
+            "locations": [
+              "Braga"
+            ],
+            "types": [
+              "Apartment"
+            ],
+            "budget": "€10000",
+            "bedrooms": "1",
+            "notes": "",
+            "purchase_timeframe": "Immediately (under 3 months)",
+            "financing_type": "Cash",
+            "credit_pre_approved": false,
+            "search_duration": "Starting now",
+            "has_seen_properties": "No"
+          },
+          "management": {
+            "agent_notes": "",
+            "agent_id": "",
+            "created_at": "2025-10-28T18:04:50.916Z",
+            "last_contacted_at": null,
+            "last_updated_at": "2025-10-28T18:04:50.921Z",
+            "source": "idealista",
+            "language": "English",
+            "initial_message": "",
+            "lead_score": 13,
+            "ai_generated_message": "Hello Ricardo! 😊  \nI hope you're well. I just wanted to check in and see if you're still interested in finding an apartment in Braga within your budget of €10,000. Given your timeframe to purchase immediately, I’d be happy to send you some options and arrange viewings at your earliest convenience.  \n\nPlease let me know if you have any questions or if you'd like to schedule a viewing soon. I’m here to help make your search smooth and successful!  \n\nLooking forward to hearing from you.  \n\nBest regards,  \nFelix AB"
+          },
+          "communication_history": [
+            {
+              "id": "Event_1763701477596",
+              "event_type": "Follow-up Rescheduled",
+              "timestamp": "2025-11-21T05:04:37.597Z",
+              "title": "Follow-up Rescheduled",
+              "description": "Follow-up Rescheduled by Felix ABcd",
+              "icon": "Info",
+              "icon_color": "text-gray-500",
+              "bg_color": "bg-gray-50",
+              "performed_by": {
+                "agent_id": "",
+                "agent_name": "MAFF"
+              },
+              "metadata": {},
+              "related_entities": {
+                "lead_id": "a2ed98d4-fe0a-4973-a4e7-ee117e21f5eb",
+                "task_id": "task_1762535325794_ruia2ihtk",
+                "note_id": null,
+                "property_id": null
+              },
+              "source": "manual",
+              "version": "1.0"
+            },
+            {
+              "id": "auto_created_a2ed98d4-fe0a-4973-a4e7-ee117e21f5eb",
+              "event_type": "lead_created",
+              "timestamp": "2025-10-28T18:04:50.916Z",
+              "title": "Lead Created",
+              "description": "New lead Ricardo Antunes was added to the system",
+              "icon": "UserPlus",
+              "icon_color": "text-green-500",
+              "bg_color": "bg-green-50",
+              "performed_by": {
+                "agent_id": "",
+                "agent_name": "System"
+              },
+              "metadata": {
+                "lead_name": "Ricardo Antunes",
+                "source": "idealista",
+                "initial_temperature": "Cold",
+                "initial_stage": "New Lead"
+              },
+              "related_entities": {
+                "lead_id": "a2ed98d4-fe0a-4973-a4e7-ee117e21f5eb",
+                "task_id": null,
+                "note_id": null,
+                "property_id": null
+              },
+              "source": "automated",
+              "version": "1.0"
+            },
+            {
+              "id": "Event_1763666660812",
+              "event_type": "Follow-up Rescheduled",
+              "timestamp": null,
+              "title": "Follow-up Rescheduled",
+              "description": "Follow-up Rescheduled by Felix ABcd",
+              "icon": "Info",
+              "icon_color": "text-gray-500",
+              "bg_color": "bg-gray-50",
+              "performed_by": {
+                "agent_id": "",
+                "agent_name": "MAFF"
+              },
+              "metadata": {},
+              "related_entities": {
+                "lead_id": "a2ed98d4-fe0a-4973-a4e7-ee117e21f5eb",
+                "task_id": "task_1762535325794_ruia2ihtk",
+                "note_id": null,
+                "property_id": null
+              },
+              "source": "manual",
+              "version": "1.0"
+            }
+          ],
+          "notes": [
+            {
+              "id": "671455cb-0b35-42f9-af9d-821b312ed612",
+              "note_id": "671455cb-0b35-42f9-af9d-821b312ed612",
+              "lead_id": "a2ed98d4-fe0a-4973-a4e7-ee117e21f5eb",
+              "content": "follow-up on next month",
+              "current_note": "follow-up on next month",
+              "created_at": "2025-11-07T05:59:10.450Z",
+              "created_by": "",
+              "note_type": "text",
+              "transcription": ""
+            },
+            {
+              "id": "0318e740-6aa5-4bb9-831d-20232dbb40d8",
+              "note_id": "0318e740-6aa5-4bb9-831d-20232dbb40d8",
+              "lead_id": "a2ed98d4-fe0a-4973-a4e7-ee117e21f5eb",
+              "content": "follow-up on next month",
+              "current_note": "follow-up on next month",
+              "created_at": "2025-11-07T05:59:06.495Z",
+              "created_by": "",
+              "note_type": "text",
+              "transcription": ""
+            },
+            {
+              "id": "4a830406-d43d-4581-b914-72f45da10c51",
+              "note_id": "4a830406-d43d-4581-b914-72f45da10c51",
+              "lead_id": "a2ed98d4-fe0a-4973-a4e7-ee117e21f5eb",
+              "content": "tes",
+              "current_note": "tes",
+              "created_at": "2025-11-04T03:57:06.600Z",
+              "created_by": "",
+              "note_type": "text",
+              "transcription": ""
+            }
+          ]
+        },
+        "6ebc3ebb-c3f4-49cc-a548-912cb94274d0": {
+          "lead_id": "6ebc3ebb-c3f4-49cc-a548-912cb94274d0",
+          "lead_type": "Buyer",
+          "name": "Vishesh Goyal",
+          "contact": {
+            "phone": "(+351) 911572661",
+            "email": "goyal.vishesh@gmail.com"
+          },
+          "image_url": "",
+          "temperature": "Cold",
+          "lead_stage": "New Lead",
+          "Stage": "New Lead",
+          "property": {
+            "locations": [
+              "Lisbon"
+            ],
+            "types": [
+              "Apartment"
+            ],
+            "budget": "€250000",
+            "bedrooms": "2",
+            "notes": "prefers a place with parking",
+            "purchase_timeframe": "3-6 months",
+            "financing_type": "Credit",
+            "credit_pre_approved": false,
+            "search_duration": "Starting now",
+            "has_seen_properties": "No"
+          },
+          "management": {
+            "agent_notes": "prefers a place with parking",
+            "agent_id": "",
+            "created_at": "2025-10-28T20:35:37.875Z",
+            "last_contacted_at": null,
+            "last_updated_at": "2025-10-28T20:35:37.879Z",
+            "source": "referral",
+            "language": "English",
+            "initial_message": "NA",
+            "lead_score": 4,
+            "ai_generated_message": "Hello Vishesh! 😊  \nI hope you're doing well. Just wanted to follow up and see if you’re still interested in finding an apartment in Lisbon within your €250,000 budget. I can help you find options that include parking, which seems important to you.  \n\nWould you like to schedule a viewing or have any questions about the current listings? I’m here to assist you every step of the way and can show you some great options within the next few months.  \n\nLooking forward to hearing from you! 🚗  \nBest regards,  \nFelix AB"
+          },
+          "communication_history": [
+            {
+              "id": "auto_created_6ebc3ebb-c3f4-49cc-a548-912cb94274d0",
+              "event_type": "lead_created",
+              "timestamp": "2025-10-28T20:35:37.875Z",
+              "title": "Lead Created",
+              "description": "New lead Vishesh Goyal was added to the system",
+              "icon": "UserPlus",
+              "icon_color": "text-green-500",
+              "bg_color": "bg-green-50",
+              "performed_by": {
+                "agent_id": "",
+                "agent_name": "System"
+              },
+              "metadata": {
+                "lead_name": "Vishesh Goyal",
+                "source": "referral",
+                "initial_temperature": "Cold",
+                "initial_stage": "New Lead"
+              },
+              "related_entities": {
+                "lead_id": "6ebc3ebb-c3f4-49cc-a548-912cb94274d0",
+                "task_id": null,
+                "note_id": null,
+                "property_id": null
+              },
+              "source": "automated",
+              "version": "1.0"
+            }
+          ],
+          "notes": [
+            {
+              "id": "418e313e-7a48-4177-9fb0-0adbd102eb86",
+              "note_id": "418e313e-7a48-4177-9fb0-0adbd102eb86",
+              "lead_id": "6ebc3ebb-c3f4-49cc-a548-912cb94274d0",
+              "content": "prefers a place with parking",
+              "current_note": "prefers a place with parking",
+              "created_at": "2025-10-28T20:35:45.198Z",
+              "created_by": "",
+              "note_type": "text",
+              "transcription": ""
+            }
+          ]
+        },
+        "3df9abf7-ff92-4dc3-894e-bbe2c8167d30": {
+          "lead_id": "3df9abf7-ff92-4dc3-894e-bbe2c8167d30",
+          "lead_type": "Buyer",
+          "name": "Vishesh2 Goiyal",
+          "contact": {
+            "phone": "(+351) 9115872222",
+            "email": ""
+          },
+          "image_url": "",
+          "temperature": "Cold",
+          "lead_stage": "New Lead",
+          "Stage": "New Lead",
+          "property": {
+            "locations": [
+              "Funchal"
+            ],
+            "types": [
+              "Apartment"
+            ],
+            "budget": "€44444",
+            "bedrooms": "2",
+            "notes": "contact in 2 months",
+            "purchase_timeframe": "After 6 months",
+            "financing_type": "Credit",
+            "credit_pre_approved": true,
+            "search_duration": "0-2 months",
+            "has_seen_properties": "A few"
+          },
+          "management": {
+            "agent_notes": "contact in 2 months",
+            "agent_id": "",
+            "created_at": "2025-10-28T21:18:26.644Z",
+            "last_contacted_at": null,
+            "last_updated_at": "2025-10-28T21:18:26.647Z",
+            "source": "referral",
+            "language": "English",
+            "initial_message": "",
+            "lead_score": 5,
+            "ai_generated_message": "Hello Vishesh2! 😊  \nI hope you're doing well. Just wanted to follow up and see if you're still interested in finding an apartment in Funchal. With your timeframe of after 6 months, now is a great time to start exploring options so we can find the perfect place for you.  \n\nWould you like to schedule a viewing or have any questions about the current listings? Feel free to reach out anytime — I’m here to help!  \n\nLooking forward to hearing from you soon.  \n\nBest regards,  \nFelix AB"
+          },
+          "communication_history": [
+            {
+              "id": "auto_created_3df9abf7-ff92-4dc3-894e-bbe2c8167d30",
+              "event_type": "lead_created",
+              "timestamp": "2025-10-28T21:18:26.644Z",
+              "title": "Lead Created",
+              "description": "New lead Vishesh2 Goiyal was added to the system",
+              "icon": "UserPlus",
+              "icon_color": "text-green-500",
+              "bg_color": "bg-green-50",
+              "performed_by": {
+                "agent_id": "",
+                "agent_name": "System"
+              },
+              "metadata": {
+                "lead_name": "Vishesh2 Goiyal",
+                "source": "referral",
+                "initial_temperature": "Cold",
+                "initial_stage": "New Lead"
+              },
+              "related_entities": {
+                "lead_id": "3df9abf7-ff92-4dc3-894e-bbe2c8167d30",
+                "task_id": null,
+                "note_id": null,
+                "property_id": null
+              },
+              "source": "automated",
+              "version": "1.0"
+            },
+            {
+              "id": "id001",
+              "event_type": "priority_changed",
+              "timestamp": "2025-01-15T14:30:00.000Z",
+              "title": "priority_changed",
+              "description": "Changed from Cold to Hot",
+              "icon": "Zap",
+              "icon_color": "text-orange-500",
+              "bg_color": "bg-orange-50",
+              "performed_by": {
+                "agent_id": "",
+                "agent_name": ""
+              },
+              "metadata": {
+                "old_value": "Cold",
+                "new_value": "Hot",
+                "note": "Client is ready to make an offer"
+              },
+              "related_entities": {
+                "lead_id": "3df9abf7-ff92-4dc3-894e-bbe2c8167d30",
+                "task_id": null,
+                "note_id": null,
+                "property_id": null
+              },
+              "source": "manual",
+              "version": "1.0"
+            }
+          ],
+          "notes": [
+            {
+              "id": "66ee094f-db82-4057-98e9-cd36b800897b",
+              "note_id": "66ee094f-db82-4057-98e9-cd36b800897b",
+              "lead_id": "3df9abf7-ff92-4dc3-894e-bbe2c8167d30",
+              "content": "contact in 2 months",
+              "current_note": "contact in 2 months",
+              "created_at": "2025-10-28T21:18:34.355Z",
+              "created_by": "",
+              "note_type": "text",
+              "transcription": ""
+            }
+          ]
+        },
+        "52485e0b-7087-45da-ad4d-cbd14a3bd357": {
+          "lead_id": "52485e0b-7087-45da-ad4d-cbd14a3bd357",
+          "lead_type": "Buyer",
+          "name": "Test New",
+          "contact": {
+            "phone": "(+351) 514561151",
+            "email": "testnew@gmail.com"
+          },
+          "image_url": "",
+          "temperature": "Hot",
+          "lead_stage": "New Lead",
+          "Stage": "New Lead",
+          "property": {
+            "locations": [
+              "[\"lisbon\"]"
+            ],
+            "types": [
+              "Apartment"
+            ],
+            "budget": "€20000",
+            "bedrooms": "1",
+            "notes": "follow-up on next week tuesday",
+            "purchase_timeframe": "Immediately (under 3 months)",
+            "financing_type": "Cash",
+            "credit_pre_approved": false,
+            "search_duration": "0-2 months",
+            "has_seen_properties": "Many"
+          },
+          "management": {
+            "agent_notes": "follow-up on next week tuesday",
+            "agent_id": "",
+            "created_at": "2025-11-03T10:31:21.962Z",
+            "last_contacted_at": null,
+            "last_updated_at": "2025-11-03T10:31:23.661Z",
+            "source": "casayes",
+            "language": "Portuguese",
+            "initial_message": "",
+            "lead_score": 20,
+            "ai_generated_message": "Olá Test New! 😊\n\nSou o Felix ABCd, seu agente de confiança em Portugal. Queria saber se ainda está interessado em encontrar um apartamento em Lisboa, dentro do seu orçamento de €20.000, e que possa adquirir rapidamente, em até 3 meses. Tenho algumas opções que podem encaixar perfeitamente no seu perfil.\n\nVamos marcar uma visita ou conversar mais detalhes? Estou disponível na próxima terça-feira para ajudar a avançar com o seu projeto. \n\nFico ao seu dispor para qualquer dúvida ou para agendar uma visita. \n\nUm abraço,  \nFelix ABCd"
+          },
+          "communication_history": [
+            {
+              "id": "Event_1763534081188",
+              "event_type": "Follow-up Scheduled",
+              "timestamp": "2025-11-19T06:34:41.189Z",
+              "title": "Follow-up Scheduled",
+              "description": "New follow-up Scheduled by Felix ABcd in the Imozen App",
+              "icon": "Info",
+              "icon_color": "text-gray-500",
+              "bg_color": "bg-gray-50",
+              "performed_by": {
+                "agent_id": "",
+                "agent_name": "9bf183e3-6a17-4931-a6ba-4145799b4541"
+              },
+              "metadata": {},
+              "related_entities": {
+                "lead_id": "52485e0b-7087-45da-ad4d-cbd14a3bd357",
+                "task_id": "task_1763534066589_d3zs4x706",
+                "note_id": null,
+                "property_id": null
+              },
+              "source": "manual",
+              "version": "1.0"
+            },
+            {
+              "id": "auto_created_52485e0b-7087-45da-ad4d-cbd14a3bd357",
+              "event_type": "lead_created",
+              "timestamp": "2025-11-03T10:31:21.962Z",
+              "title": "Lead Created",
+              "description": "New lead Test New was added to the system",
+              "icon": "UserPlus",
+              "icon_color": "text-green-500",
+              "bg_color": "bg-green-50",
+              "performed_by": {
+                "agent_id": "",
+                "agent_name": "System"
+              },
+              "metadata": {
+                "lead_name": "Test New",
+                "source": "casayes",
+                "initial_temperature": "Hot",
+                "initial_stage": "New Lead"
+              },
+              "related_entities": {
+                "lead_id": "52485e0b-7087-45da-ad4d-cbd14a3bd357",
+                "task_id": null,
+                "note_id": null,
+                "property_id": null
+              },
+              "source": "automated",
+              "version": "1.0"
+            }
+          ],
+          "notes": []
+        },
+        "4b15459a-f1a5-4140-9e99-9c02ac5bae73": {
+          "lead_id": "4b15459a-f1a5-4140-9e99-9c02ac5bae73",
+          "lead_type": "Seller",
+          "name": "Seller  Test",
+          "contact": {
+            "phone": "(+351) 9456048",
+            "email": "sellertest@gmail.com"
+          },
+          "image_url": "",
+          "temperature": "Cold",
+          "lead_stage": "New Lead",
+          "Stage": "New Lead",
+          "property": {
+            "locations": [
+              "[\"funchal\"]"
+            ],
+            "types": [
+              "Apartment"
+            ],
+            "budget": "€10000",
+            "bedrooms": "2",
+            "notes": "hello test",
+            "purchase_timeframe": "3-6 months",
+            "financing_type": "",
+            "credit_pre_approved": false,
+            "search_duration": "0-2 months",
+            "has_seen_properties": ""
+          },
+          "management": {
+            "agent_notes": "hello test",
+            "agent_id": "",
+            "created_at": "2025-11-07T15:19:16.120Z",
+            "last_contacted_at": null,
+            "last_updated_at": "2025-11-07T15:19:17.640Z",
+            "source": "referral",
+            "language": "Portuguese",
+            "initial_message": "",
+            "lead_score": 4,
+            "ai_generated_message": "Olá Seller Test! 😊 Sou o Felix ABCd, seu consultor imobiliário em Portugal. Gostaria de agradecer pelo seu interesse em vender seu apartamento em Funchal. Com um prazo de 3 a 6 meses, podemos começar a preparar tudo para uma venda bem-sucedida. \n\nSe desejar, podemos agendar uma visita para avaliar o imóvel ou esclarecer quaisquer dúvidas que tenha. Estou à disposição para ajudar a alcançar o melhor negócio possível dentro do seu prazo. \n\nFico no aguardo do seu contacto para avançarmos! 📞\n\nUm abraço,  \nFelix ABCd"
+          },
+          "communication_history": [
+            {
+              "id": "Event_1763705579791",
+              "event_type": "Follow-up Rescheduled",
+              "timestamp": "2025-11-21T06:12:59.792Z",
+              "title": "Follow-up Rescheduled",
+              "description": "Follow-up Rescheduled by Felix ABcd",
+              "icon": "Info",
+              "icon_color": "text-gray-500",
+              "bg_color": "bg-gray-50",
+              "performed_by": {
+                "agent_id": "",
+                "agent_name": "MAFF"
+              },
+              "metadata": {},
+              "related_entities": {
+                "lead_id": "4b15459a-f1a5-4140-9e99-9c02ac5bae73",
+                "task_id": "task_1763705502069_pw1fbimaw",
+                "note_id": null,
+                "property_id": null
+              },
+              "source": "manual",
+              "version": "1.0"
+            },
+            {
+              "id": "Event_1763705505092",
+              "event_type": "Follow-up Scheduled",
+              "timestamp": "2025-11-21T06:11:45.093Z",
+              "title": "Follow-up Scheduled",
+              "description": "New follow-up Scheduled by Felix ABcd in the Imozen App",
+              "icon": "Info",
+              "icon_color": "text-gray-500",
+              "bg_color": "bg-gray-50",
+              "performed_by": {
+                "agent_id": "",
+                "agent_name": "9bf183e3-6a17-4931-a6ba-4145799b4541"
+              },
+              "metadata": {},
+              "related_entities": {
+                "lead_id": "4b15459a-f1a5-4140-9e99-9c02ac5bae73",
+                "task_id": "task_1763705502069_pw1fbimaw",
+                "note_id": null,
+                "property_id": null
+              },
+              "source": "manual",
+              "version": "1.0"
+            },
+            {
+              "id": "auto_created_4b15459a-f1a5-4140-9e99-9c02ac5bae73",
+              "event_type": "lead_created",
+              "timestamp": "2025-11-07T15:19:16.120Z",
+              "title": "Lead Created",
+              "description": "New lead Seller  Test was added to the system",
+              "icon": "UserPlus",
+              "icon_color": "text-green-500",
+              "bg_color": "bg-green-50",
+              "performed_by": {
+                "agent_id": "",
+                "agent_name": "System"
+              },
+              "metadata": {
+                "lead_name": "Seller  Test",
+                "source": "referral",
+                "initial_temperature": "Cold",
+                "initial_stage": "New Lead"
+              },
+              "related_entities": {
+                "lead_id": "4b15459a-f1a5-4140-9e99-9c02ac5bae73",
+                "task_id": null,
+                "note_id": null,
+                "property_id": null
+              },
+              "source": "automated",
+              "version": "1.0"
+            }
+          ],
+          "notes": [
+            {
+              "id": "27241a95-9d43-4c9b-b4bf-d1da11117f75",
+              "note_id": "27241a95-9d43-4c9b-b4bf-d1da11117f75",
+              "lead_id": "4b15459a-f1a5-4140-9e99-9c02ac5bae73",
+              "content": "hello test",
+              "current_note": "hello test",
+              "created_at": "2025-11-21T06:13:02.336Z",
+              "created_by": "",
+              "note_type": "text",
+              "transcription": ""
+            }
+          ]
+        },
+        "73770b88-f2ab-4df1-91f5-76ebb07b4b55": {
+          "lead_id": "73770b88-f2ab-4df1-91f5-76ebb07b4b55",
+          "lead_type": "Seller",
+          "name": "seller2 test",
+          "contact": {
+            "phone": "(+351) 1521",
+            "email": "seller2test@gmail.com"
+          },
+          "image_url": "",
+          "temperature": "Warm",
+          "lead_stage": "New Lead",
+          "Stage": "New Lead",
+          "property": {
+            "locations": [
+              "[\"porto\"]"
+            ],
+            "types": [
+              "House"
+            ],
+            "budget": "€15000",
+            "bedrooms": "1",
+            "notes": "want to follow-up on this month-end",
+            "purchase_timeframe": "Immediately (under 3 months)",
+            "financing_type": "",
+            "credit_pre_approved": false,
+            "search_duration": "Starting now",
+            "has_seen_properties": ""
+          },
+          "management": {
+            "agent_notes": "want to follow-up on this month-end",
+            "agent_id": "",
+            "created_at": "2025-11-07T16:29:07.827Z",
+            "last_contacted_at": null,
+            "last_updated_at": "2025-11-07T16:29:09.114Z",
+            "source": "website",
+            "language": "Portuguese",
+            "initial_message": "",
+            "lead_score": 10,
+            "ai_generated_message": "Olá seller2 test! 😊 Sou o Felix AB, seu agente de confiança aqui em Portugal. Gostaria de saber se já teve tempo para pensar na venda da sua casa no Porto? Com o seu prazo de até 3 meses, estou preparado para ajudar a encontrar compradores rapidamente e garantir uma venda tranquila. \n\nSe desejar, podemos agendar uma visita ou conversar sobre estratégias de venda. Estou à disposição para responder às suas dúvidas e avançar com o processo. \n\nVamos marcar um contacto até ao final do mês? Assim, podemos alinhar os próximos passos. \n\nFico a aguardar a sua resposta!  \nUm abraço, Felix AB"
+          },
+          "communication_history": [
+            {
+              "id": "Event_1763646471557",
+              "event_type": "Follow-up Cancelled",
+              "timestamp": "2025-11-20T13:47:51.558Z",
+              "title": "Follow-up Cancelled",
+              "description": "Scheduled follow-up was cancelled by Felix ABcd",
+              "icon": "Info",
+              "icon_color": "text-gray-500",
+              "bg_color": "bg-gray-50",
+              "performed_by": {
+                "agent_id": "",
+                "agent_name": "MAFF"
+              },
+              "metadata": {},
+              "related_entities": {
+                "lead_id": "73770b88-f2ab-4df1-91f5-76ebb07b4b55",
+                "task_id": "task_1763532562404_hrp9r1z6t",
+                "note_id": null,
+                "property_id": null
+              },
+              "source": "manual",
+              "version": "1.0"
+            },
+            {
+              "id": "Event_1763533902980",
+              "event_type": "Follow-up Scheduled",
+              "timestamp": "2025-11-19T06:31:42.980Z",
+              "title": "Follow-up Scheduled",
+              "description": "New follow-up Scheduled by Felix ABcd in the Imozen App",
+              "icon": "Info",
+              "icon_color": "text-gray-500",
+              "bg_color": "bg-gray-50",
+              "performed_by": {
+                "agent_id": "",
+                "agent_name": "9bf183e3-6a17-4931-a6ba-4145799b4541"
+              },
+              "metadata": {},
+              "related_entities": {
+                "lead_id": "73770b88-f2ab-4df1-91f5-76ebb07b4b55",
+                "task_id": "task_1763532562404_hrp9r1z6t",
+                "note_id": null,
+                "property_id": null
+              },
+              "source": "manual",
+              "version": "1.0"
+            },
+            {
+              "id": "auto_created_73770b88-f2ab-4df1-91f5-76ebb07b4b55",
+              "event_type": "lead_created",
+              "timestamp": "2025-11-07T16:29:07.827Z",
+              "title": "Lead Created",
+              "description": "New lead seller2 test was added to the system",
+              "icon": "UserPlus",
+              "icon_color": "text-green-500",
+              "bg_color": "bg-green-50",
+              "performed_by": {
+                "agent_id": "",
+                "agent_name": "System"
+              },
+              "metadata": {
+                "lead_name": "seller2 test",
+                "source": "website",
+                "initial_temperature": "Warm",
+                "initial_stage": "New Lead"
+              },
+              "related_entities": {
+                "lead_id": "73770b88-f2ab-4df1-91f5-76ebb07b4b55",
+                "task_id": null,
+                "note_id": null,
+                "property_id": null
+              },
+              "source": "automated",
+              "version": "1.0"
+            }
+          ],
+          "notes": []
+        },
+        "e4786b7f-e4dc-4d99-bbe2-e9768d2e0956": {
+          "lead_id": "e4786b7f-e4dc-4d99-bbe2-e9768d2e0956",
+          "lead_type": "Seller",
+          "name": "test seller",
+          "contact": {
+            "phone": "(+351) 1425",
+            "email": "testseller@gmail.com"
+          },
+          "image_url": "",
+          "temperature": "Warm",
+          "lead_stage": "New Lead",
+          "Stage": "New Lead",
+          "property": {
+            "locations": [
+              "Cascais"
+            ],
+            "types": [
+              "Apartment"
+            ],
+            "budget": "€10001",
+            "bedrooms": "2",
+            "notes": "want to follow-up on next friday",
+            "purchase_timeframe": "Immediately (under 3 months)",
+            "financing_type": "",
+            "credit_pre_approved": false,
+            "search_duration": "0-2 months",
+            "has_seen_properties": ""
+          },
+          "management": {
+            "agent_notes": "want to follow-up on next friday",
+            "agent_id": "",
+            "created_at": "2025-11-07T16:52:59.503Z",
+            "last_contacted_at": null,
+            "last_updated_at": "2025-11-07T16:53:01.074Z",
+            "source": "century-21-pt",
+            "language": "Portuguese",
+            "initial_message": "",
+            "lead_score": 10,
+            "ai_generated_message": "Olá, Test Seller! 😊\n\nSou Felix AB, seu agente imobiliário em Portugal. Gostaria de saber se ainda tem interesse em vender seu apartamento em Cascais. Com seu objetivo de vender rapidamente, posso ajudar a encontrar compradores qualificados em até 3 meses. \n\nVamos agendar uma visita ou uma conversa para discutir os detalhes? Estou disponível na próxima sexta-feira, como preferiu. \n\nFico à disposição para esclarecer qualquer dúvida ou marcar uma visita. É um ótimo momento para vender com o mercado em alta! \n\nAguardo seu retorno para confirmarmos. \n\nUm abraço,  \nFelix AB"
+          },
+          "communication_history": [
+            {
+              "id": "Event_1763639661143",
+              "event_type": "Follow-up Cancelled",
+              "timestamp": "2025-11-20T11:54:21.144Z",
+              "title": "Follow-up Cancelled",
+              "description": "Scheduled follow-up was cancelled by Felix ABcd",
+              "icon": "Info",
+              "icon_color": "text-gray-500",
+              "bg_color": "bg-gray-50",
+              "performed_by": {
+                "agent_id": "",
+                "agent_name": "MAFF"
+              },
+              "metadata": {},
+              "related_entities": {
+                "lead_id": "e4786b7f-e4dc-4d99-bbe2-e9768d2e0956",
+                "task_id": "task_1762735325794_ruih2ihtk",
+                "note_id": null,
+                "property_id": null
+              },
+              "source": "manual",
+              "version": "1.0"
+            },
+            {
+              "id": "auto_created_e4786b7f-e4dc-4d99-bbe2-e9768d2e0956",
+              "event_type": "lead_created",
+              "timestamp": "2025-11-07T16:52:59.503Z",
+              "title": "Lead Created",
+              "description": "New lead test seller was added to the system",
+              "icon": "UserPlus",
+              "icon_color": "text-green-500",
+              "bg_color": "bg-green-50",
+              "performed_by": {
+                "agent_id": "",
+                "agent_name": "System"
+              },
+              "metadata": {
+                "lead_name": "test seller",
+                "source": "century-21-pt",
+                "initial_temperature": "Warm",
+                "initial_stage": "New Lead"
+              },
+              "related_entities": {
+                "lead_id": "e4786b7f-e4dc-4d99-bbe2-e9768d2e0956",
+                "task_id": null,
+                "note_id": null,
+                "property_id": null
+              },
+              "source": "automated",
+              "version": "1.0"
+            }
+          ],
+          "notes": [
+            {
+              "id": "290fb7cd-dde3-44e7-8604-a207b71a54a6",
+              "note_id": "290fb7cd-dde3-44e7-8604-a207b71a54a6",
+              "lead_id": "e4786b7f-e4dc-4d99-bbe2-e9768d2e0956",
+              "content": "want to follow-up on next friday",
+              "current_note": "want to follow-up on next friday",
+              "created_at": "2025-11-07T17:02:43.872Z",
+              "created_by": "",
+              "note_type": "text",
+              "transcription": ""
+            }
+          ]
+        },
+        "4a21063e-e00b-49aa-adaa-9984ba5e95f9": {
+          "lead_id": "4a21063e-e00b-49aa-adaa-9984ba5e95f9",
+          "lead_type": "Seller",
+          "name": "maf test",
+          "contact": {
+            "phone": "(+351) 11251215",
+            "email": "maftest@gmail.com"
+          },
+          "image_url": "",
+          "temperature": "Warm",
+          "lead_stage": "Property Viewing Scheduled",
+          "Stage": "Property Viewing Scheduled",
+          "property": {
+            "locations": [
+              "Lisbon"
+            ],
+            "types": [
+              "Apartment"
+            ],
+            "budget": "€20000",
+            "bedrooms": "2",
+            "notes": "",
+            "purchase_timeframe": "Immediately (under 3 months)",
+            "financing_type": "",
+            "credit_pre_approved": false,
+            "search_duration": "0-2 months",
+            "has_seen_properties": ""
+          },
+          "management": {
+            "agent_notes": "",
+            "agent_id": "",
+            "created_at": "2025-11-08T12:32:19.437Z",
+            "last_contacted_at": null,
+            "last_updated_at": "2025-11-10T21:44:18.044Z",
+            "source": "",
+            "language": "Portuguese",
+            "initial_message": "",
+            "lead_score": 10,
+            "ai_generated_message": "Olá Maf Test! 😊  \nSó queria saber se há alguma novidade ou alguma dúvida que possa esclarecer antes da nossa visita ao apartamento em Lisboa.  \nEstamos prontos para ajudar a encontrar o melhor negócio para si e garantir que tudo corra bem dentro do seu prazo de 3 meses.  \nSe precisar de alguma informação adicional ou desejar reagendar, estou à disposição.  \nVamos marcar uma hora que seja conveniente para si?  \n\nFico a aguardar o seu retorno.  \n\nUm abraço,  \nFelix ABcd"
+          },
+          "communication_history": [
+            {
+              "id": "Event_1763702212370",
+              "event_type": "Follow-up Rescheduled",
+              "timestamp": "2025-11-21T05:16:52.370Z",
+              "title": "Follow-up Rescheduled",
+              "description": "Follow-up Rescheduled by Felix ABcd",
+              "icon": "Info",
+              "icon_color": "text-gray-500",
+              "bg_color": "bg-gray-50",
+              "performed_by": {
+                "agent_id": "",
+                "agent_name": "MAFF"
+              },
+              "metadata": {},
+              "related_entities": {
+                "lead_id": "4a21063e-e00b-49aa-adaa-9984ba5e95f9",
+                "task_id": "task_1763663369519_qpl6jhnbo",
+                "note_id": null,
+                "property_id": null
+              },
+              "source": "manual",
+              "version": "1.0"
+            },
+            {
+              "id": "Event_1763663386566",
+              "event_type": "Follow-up Scheduled",
+              "timestamp": "2025-11-20T18:29:46.566Z",
+              "title": "Follow-up Scheduled",
+              "description": "New follow-up Scheduled by Felix ABcd in the Imozen App",
+              "icon": "Info",
+              "icon_color": "text-gray-500",
+              "bg_color": "bg-gray-50",
+              "performed_by": {
+                "agent_id": "",
+                "agent_name": "9bf183e3-6a17-4931-a6ba-4145799b4541"
+              },
+              "metadata": {},
+              "related_entities": {
+                "lead_id": "4a21063e-e00b-49aa-adaa-9984ba5e95f9",
+                "task_id": "task_1763663369519_qpl6jhnbo",
+                "note_id": "4f2ea2c4-3444-401e-aa00-d60f23d03774",
+                "property_id": null
+              },
+              "source": "manual",
+              "version": "1.0"
+            },
+            {
+              "id": "Event_1763649011312",
+              "event_type": "Follow-up Cancelled",
+              "timestamp": "2025-11-20T14:30:11.313Z",
+              "title": "Follow-up Cancelled",
+              "description": "Scheduled follow-up was cancelled by Felix ABcd",
+              "icon": "Info",
+              "icon_color": "text-gray-500",
+              "bg_color": "bg-gray-50",
+              "performed_by": {
+                "agent_id": "",
+                "agent_name": "MAFF"
+              },
+              "metadata": {},
+              "related_entities": {
+                "lead_id": "4a21063e-e00b-49aa-adaa-9984ba5e95f9",
+                "task_id": "task_1763496075324_ze7vntvjb",
+                "note_id": null,
+                "property_id": null
+              },
+              "source": "manual",
+              "version": "1.0"
+            },
+            {
+              "id": "Event_1763496090592",
+              "event_type": "Follow-up Scheduled",
+              "timestamp": "2025-11-18T20:01:30.592Z",
+              "title": "Follow-up Scheduled",
+              "description": "New follow-up Scheduled by Felix ABcd in the Imozen App",
+              "icon": "Info",
+              "icon_color": "text-gray-500",
+              "bg_color": "bg-gray-50",
+              "performed_by": {
+                "agent_id": "",
+                "agent_name": "9bf183e3-6a17-4931-a6ba-4145799b4541"
+              },
+              "metadata": {},
+              "related_entities": {
+                "lead_id": "4a21063e-e00b-49aa-adaa-9984ba5e95f9",
+                "task_id": "task_1763496075324_ze7vntvjb",
+                "note_id": "0fe9643d-c58e-4493-8bad-468617030e74",
+                "property_id": null
+              },
+              "source": "manual",
+              "version": "1.0"
+            },
+            {
+              "id": "auto_created_4a21063e-e00b-49aa-adaa-9984ba5e95f9",
+              "event_type": "lead_created",
+              "timestamp": "2025-11-08T12:32:19.437Z",
+              "title": "Lead Created",
+              "description": "New lead maf test was added to the system",
+              "icon": "UserPlus",
+              "icon_color": "text-green-500",
+              "bg_color": "bg-green-50",
+              "performed_by": {
+                "agent_id": "",
+                "agent_name": "System"
+              },
+              "metadata": {
+                "lead_name": "maf test",
+                "source": "direct",
+                "initial_temperature": "Warm",
+                "initial_stage": "Property Viewing Scheduled"
+              },
+              "related_entities": {
+                "lead_id": "4a21063e-e00b-49aa-adaa-9984ba5e95f9",
+                "task_id": null,
+                "note_id": null,
+                "property_id": null
+              },
+              "source": "automated",
+              "version": "1.0"
+            },
+            {
+              "id": "Event_1763665388395",
+              "event_type": "Follow-up Cancelled",
+              "timestamp": null,
+              "title": "Follow-up Cancelled",
+              "description": "Scheduled follow-up was cancelled by Felix ABcd",
+              "icon": "Info",
+              "icon_color": "text-gray-500",
+              "bg_color": "bg-gray-50",
+              "performed_by": {
+                "agent_id": "",
+                "agent_name": "MAFF"
+              },
+              "metadata": {},
+              "related_entities": {
+                "lead_id": "4a21063e-e00b-49aa-adaa-9984ba5e95f9",
+                "task_id": "task_1763663369519_qpl6jhnbo",
+                "note_id": null,
+                "property_id": null
+              },
+              "source": "manual",
+              "version": "1.0"
+            }
+          ],
+          "notes": [
+            {
+              "id": "4f2ea2c4-3444-401e-aa00-d60f23d03774",
+              "note_id": "4f2ea2c4-3444-401e-aa00-d60f23d03774",
+              "lead_id": "4a21063e-e00b-49aa-adaa-9984ba5e95f9",
+              "content": "Ligar a perguntar se tem novidades",
+              "current_note": "Ligar a perguntar se tem novidades",
+              "created_at": "2025-11-20T18:29:32.469Z",
+              "created_by": "",
+              "note_type": "text",
+              "transcription": ""
+            },
+            {
+              "id": "0fe9643d-c58e-4493-8bad-468617030e74",
+              "note_id": "0fe9643d-c58e-4493-8bad-468617030e74",
+              "lead_id": "4a21063e-e00b-49aa-adaa-9984ba5e95f9",
+              "content": "follow-up on next sunday",
+              "current_note": "follow-up on next sunday",
+              "created_at": "2025-11-08T12:32:28.579Z",
+              "created_by": "",
+              "note_type": "text",
+              "transcription": ""
+            }
+          ]
+        },
+        "e50bed3a-6677-4de8-9f91-606ce1099feb": {
+          "lead_id": "e50bed3a-6677-4de8-9f91-606ce1099feb",
+          "lead_type": "Seller",
+          "name": "Mariya Test",
+          "contact": {
+            "phone": "(+351) 94604",
+            "email": "mariyatest@gmail.com"
+          },
+          "image_url": "",
+          "temperature": "Hot",
+          "lead_stage": "New Lead",
+          "Stage": "New Lead",
+          "property": {
+            "locations": [
+              "Porto"
+            ],
+            "types": [
+              "House"
+            ],
+            "budget": "€250000",
+            "bedrooms": "2",
+            "notes": "testing",
+            "purchase_timeframe": "3-6 months",
+            "financing_type": "",
+            "credit_pre_approved": false,
+            "search_duration": "0-2 months",
+            "has_seen_properties": ""
+          },
+          "management": {
+            "agent_notes": "testing",
+            "agent_id": "",
+            "created_at": "2025-11-08T16:16:02.939Z",
+            "last_contacted_at": null,
+            "last_updated_at": "2025-11-08T16:16:04.398Z",
+            "source": "casayes",
+            "language": "Portuguese",
+            "initial_message": "",
+            "lead_score": 4,
+            "ai_generated_message": "Olá Mariya! 😊 Aqui é o Felix ABCd, do setor imobiliário em Portugal. Gostaria de agradecer pelo seu interesse na venda da sua casa em Porto. Com o seu prazo de 3-6 meses, podemos começar a preparar tudo para garantir uma venda rápida e com o melhor valor possível. \n\nSe tiver alguma dúvida ou desejar agendar uma avaliação inicial, estou à disposição. Que tal marcarmos uma conversa esta semana? Assim, podemos alinhar estratégias e dar o próximo passo com confiança. \n\nFico no aguardo do seu retorno! 📞\n\nUm abraço,  \nFelix ABCd"
+          },
+          "communication_history": [
+            {
+              "id": "Event_1763660326120",
+              "event_type": "Follow-up Cancelled",
+              "timestamp": "2025-11-20T17:38:46.121Z",
+              "title": "Follow-up Cancelled",
+              "description": "Scheduled follow-up was cancelled by Felix ABcd",
+              "icon": "Info",
+              "icon_color": "text-gray-500",
+              "bg_color": "bg-gray-50",
+              "performed_by": {
+                "agent_id": "",
+                "agent_name": "MAFF"
+              },
+              "metadata": {},
+              "related_entities": {
+                "lead_id": "e50bed3a-6677-4de8-9f91-606ce1099feb",
+                "task_id": "task_1762618697531_3o9xbp3yc",
+                "note_id": null,
+                "property_id": null
+              },
+              "source": "manual",
+              "version": "1.0"
+            },
+            {
+              "id": "auto_created_e50bed3a-6677-4de8-9f91-606ce1099feb",
+              "event_type": "lead_created",
+              "timestamp": "2025-11-08T16:16:02.939Z",
+              "title": "Lead Created",
+              "description": "New lead Mariya Test was added to the system",
+              "icon": "UserPlus",
+              "icon_color": "text-green-500",
+              "bg_color": "bg-green-50",
+              "performed_by": {
+                "agent_id": "",
+                "agent_name": "System"
+              },
+              "metadata": {
+                "lead_name": "Mariya Test",
+                "source": "casayes",
+                "initial_temperature": "Hot",
+                "initial_stage": "New Lead"
+              },
+              "related_entities": {
+                "lead_id": "e50bed3a-6677-4de8-9f91-606ce1099feb",
+                "task_id": null,
+                "note_id": null,
+                "property_id": null
+              },
+              "source": "automated",
+              "version": "1.0"
+            }
+          ],
+          "notes": [
+            {
+              "id": "2ec6a4b6-7e48-4033-9732-b902704821fe",
+              "note_id": "2ec6a4b6-7e48-4033-9732-b902704821fe",
+              "lead_id": "e50bed3a-6677-4de8-9f91-606ce1099feb",
+              "content": "testing",
+              "current_note": "testing",
+              "created_at": "2025-11-20T17:38:48.223Z",
+              "created_by": "",
+              "note_type": "text",
+              "transcription": ""
+            },
+            {
+              "id": "b8ef061e-613b-46cc-ae29-e992a1846dfa",
+              "note_id": "b8ef061e-613b-46cc-ae29-e992a1846dfa",
+              "lead_id": "e50bed3a-6677-4de8-9f91-606ce1099feb",
+              "content": "Testing",
+              "current_note": "Testing",
+              "created_at": "2025-11-10T21:40:21.577Z",
+              "created_by": "",
+              "note_type": "text",
+              "transcription": ""
+            },
+            {
+              "id": "f3d1ef49-42f2-4f71-a7e8-8e7eb1cb94e9",
+              "note_id": "f3d1ef49-42f2-4f71-a7e8-8e7eb1cb94e9",
+              "lead_id": "e50bed3a-6677-4de8-9f91-606ce1099feb",
+              "content": "Testing",
+              "current_note": "Testing",
+              "created_at": "2025-11-10T21:40:17.799Z",
+              "created_by": "",
+              "note_type": "text",
+              "transcription": ""
+            },
+            {
+              "id": "fb0576da-87ec-4e4d-8233-86275d70dc24",
+              "note_id": "fb0576da-87ec-4e4d-8233-86275d70dc24",
+              "lead_id": "e50bed3a-6677-4de8-9f91-606ce1099feb",
+              "content": "Olá Mariya! 😊 Aqui é o Felix AB, seu agente de confiança em Portugal. Gostaria de saber se ainda está interessada em vender sua casa no Porto dentro do prazo de 3 a 6 meses. Tenho algumas opções de compradores que podem se encaixar no seu orçamento de €250.000 e estou à disposição para ajudar a tornar esse processo o mais tranquilo possível.  \n\nVamos agendar uma visita ou conversar melhor sobre os detalhes? Posso te ligar na última semana deste mês, como combinamos.  \n\nFico no aguardo do seu retorno. Um abraço!  \nFelix AB",
+              "current_note": "Olá Mariya! 😊 Aqui é o Felix AB, seu agente de confiança em Portugal. Gostaria de saber se ainda está interessada em vender sua casa no Porto dentro do prazo de 3 a 6 meses. Tenho algumas opções de compradores que podem se encaixar no seu orçamento de €250.000 e estou à disposição para ajudar a tornar esse processo o mais tranquilo possível.  \n\nVamos agendar uma visita ou conversar melhor sobre os detalhes? Posso te ligar na última semana deste mês, como combinamos.  \n\nFico no aguardo do seu retorno. Um abraço!  \nFelix AB",
+              "created_at": "2025-11-08T16:16:11.316Z",
+              "created_by": "",
+              "note_type": "text",
+              "transcription": ""
+            }
+          ]
+        },
+        "b934086e-9865-4712-bd83-bafbeb94d81e": {
+          "lead_id": "b934086e-9865-4712-bd83-bafbeb94d81e",
+          "lead_type": "Seller",
+          "name": "Hello Test",
+          "contact": {
+            "phone": "(+351) 5585666",
+            "email": "hellotest@gmail.com"
+          },
+          "image_url": "",
+          "temperature": "Warm",
+          "lead_stage": "Qualified",
+          "Stage": "Qualified",
+          "property": {
+            "locations": [
+              "Porto"
+            ],
+            "types": [
+              "House"
+            ],
+            "budget": "€25000",
+            "bedrooms": "2",
+            "notes": "",
+            "purchase_timeframe": "Immediately (under 3 months)",
+            "financing_type": "",
+            "credit_pre_approved": false,
+            "search_duration": "0-2 months",
+            "has_seen_properties": ""
+          },
+          "management": {
+            "agent_notes": "",
+            "agent_id": "",
+            "created_at": "2025-11-10T21:42:14.820Z",
+            "last_contacted_at": null,
+            "last_updated_at": "2025-11-11T06:31:42.743Z",
+            "source": "website",
+            "language": "Portuguese",
+            "initial_message": "",
+            "lead_score": 10,
+            "ai_generated_message": "Olá Hello Test! 😊\n\nSou o Felix ABcd, seu agente de confiança em Portugal. Gostaria de saber se já tem alguma preferência específica para a casa em Porto, ou se podemos ajudar a encontrar opções dentro do seu orçamento de €25.000. Como pretende vender ou adquirir uma propriedade de forma rápida, estou à disposição para agendar visitas e fornecer todas as informações necessárias para acelerar o processo.\n\nPor favor, diga-me se há alguma dúvida ou se prefere marcar uma visita para já. Também gostaria de saber como está a sua filha – espero que esteja bem! \n\nVamos avançar para encontrar a melhor solução para si? \n\nFico a aguardar o seu contacto! 📞\n\nUm abraço,  \nFelix ABcd"
+          },
+          "communication_history": [
+            {
+              "id": "Event_1763700630132",
+              "event_type": "Follow-up Rescheduled",
+              "timestamp": "2025-11-21T04:50:30.133Z",
+              "title": "Follow-up Rescheduled",
+              "description": "Follow-up Rescheduled by Felix ABcd",
+              "icon": "Info",
+              "icon_color": "text-gray-500",
+              "bg_color": "bg-gray-50",
+              "performed_by": {
+                "agent_id": "",
+                "agent_name": "MAFF"
+              },
+              "metadata": {},
+              "related_entities": {
+                "lead_id": "b934086e-9865-4712-bd83-bafbeb94d81e",
+                "task_id": "task_1763663262218_e4cdare38",
+                "note_id": null,
+                "property_id": null
+              },
+              "source": "manual",
+              "version": "1.0"
+            },
+            {
+              "id": "Event_1763699539177",
+              "event_type": "Follow-up Rescheduled",
+              "timestamp": "2025-11-21T04:32:19.179Z",
+              "title": "Follow-up Rescheduled",
+              "description": "Follow-up Rescheduled by Felix ABcd",
+              "icon": "Info",
+              "icon_color": "text-gray-500",
+              "bg_color": "bg-gray-50",
+              "performed_by": {
+                "agent_id": "",
+                "agent_name": "MAFF"
+              },
+              "metadata": {},
+              "related_entities": {
+                "lead_id": "b934086e-9865-4712-bd83-bafbeb94d81e",
+                "task_id": "task_1763663262218_e4cdare38",
+                "note_id": null,
+                "property_id": null
+              },
+              "source": "manual",
+              "version": "1.0"
+            },
+            {
+              "id": "Event_1763664869720",
+              "event_type": "Follow-up Cancelled",
+              "timestamp": "2025-11-20T18:54:29.721Z",
+              "title": "Follow-up Cancelled",
+              "description": "Scheduled follow-up was cancelled by Felix ABcd",
+              "icon": "Info",
+              "icon_color": "text-gray-500",
+              "bg_color": "bg-gray-50",
+              "performed_by": {
+                "agent_id": "",
+                "agent_name": "MAFF"
+              },
+              "metadata": {},
+              "related_entities": {
+                "lead_id": "b934086e-9865-4712-bd83-bafbeb94d81e",
+                "task_id": "task_1763663310918_2xj7m5a0b",
+                "note_id": null,
+                "property_id": null
+              },
+              "source": "manual",
+              "version": "1.0"
+            },
+            {
+              "id": "Event_1763663329952",
+              "event_type": "Follow-up Scheduled",
+              "timestamp": "2025-11-20T18:28:49.952Z",
+              "title": "Follow-up Scheduled",
+              "description": "New follow-up Scheduled by Felix ABcd in the Imozen App",
+              "icon": "Info",
+              "icon_color": "text-gray-500",
+              "bg_color": "bg-gray-50",
+              "performed_by": {
+                "agent_id": "",
+                "agent_name": "9bf183e3-6a17-4931-a6ba-4145799b4541"
+              },
+              "metadata": {},
+              "related_entities": {
+                "lead_id": "b934086e-9865-4712-bd83-bafbeb94d81e",
+                "task_id": "task_1763663310918_2xj7m5a0b",
+                "note_id": "94e76461-62e8-48c1-a20c-c80a6e1758b0",
+                "property_id": null
+              },
+              "source": "manual",
+              "version": "1.0"
+            },
+            {
+              "id": "Event_1763663281654",
+              "event_type": "Follow-up Scheduled",
+              "timestamp": "2025-11-20T18:28:01.654Z",
+              "title": "Follow-up Scheduled",
+              "description": "New follow-up Scheduled by Felix ABcd in the Imozen App",
+              "icon": "Info",
+              "icon_color": "text-gray-500",
+              "bg_color": "bg-gray-50",
+              "performed_by": {
+                "agent_id": "",
+                "agent_name": "9bf183e3-6a17-4931-a6ba-4145799b4541"
+              },
+              "metadata": {},
+              "related_entities": {
+                "lead_id": "b934086e-9865-4712-bd83-bafbeb94d81e",
+                "task_id": "task_1763663262218_e4cdare38",
+                "note_id": "f622bc4c-9441-4de4-9573-2178777ee3ae",
+                "property_id": null
+              },
+              "source": "manual",
+              "version": "1.0"
+            },
+            {
+              "id": "Event_1763662791473",
+              "event_type": "Follow-up Cancelled",
+              "timestamp": "2025-11-20T18:19:51.474Z",
+              "title": "Follow-up Cancelled",
+              "description": "Scheduled follow-up was cancelled by Felix ABcd",
+              "icon": "Info",
+              "icon_color": "text-gray-500",
+              "bg_color": "bg-gray-50",
+              "performed_by": {
+                "agent_id": "",
+                "agent_name": "MAFF"
+              },
+              "metadata": {},
+              "related_entities": {
+                "lead_id": "b934086e-9865-4712-bd83-bafbeb94d81e",
+                "task_id": "task_1763479778474_szaj3oqrm",
+                "note_id": null,
+                "property_id": null
+              },
+              "source": "manual",
+              "version": "1.0"
+            },
+            {
+              "id": "Event_1763659236128",
+              "event_type": "Follow-up Cancelled",
+              "timestamp": "2025-11-20T17:20:36.130Z",
+              "title": "Follow-up Cancelled",
+              "description": "Scheduled follow-up was cancelled by Felix ABcd",
+              "icon": "Info",
+              "icon_color": "text-gray-500",
+              "bg_color": "bg-gray-50",
+              "performed_by": {
+                "agent_id": "",
+                "agent_name": "MAFF"
+              },
+              "metadata": {},
+              "related_entities": {
+                "lead_id": "b934086e-9865-4712-bd83-bafbeb94d81e",
+                "task_id": "task_1763479778474_szaj3oqrm",
+                "note_id": null,
+                "property_id": null
+              },
+              "source": "manual",
+              "version": "1.0"
+            },
+            {
+              "id": "Event_1763642232994",
+              "event_type": "Follow-up Cancelled",
+              "timestamp": "2025-11-20T12:37:12.995Z",
+              "title": "Follow-up Cancelled",
+              "description": "Scheduled follow-up was cancelled by Felix ABcd",
+              "icon": "Info",
+              "icon_color": "text-gray-500",
+              "bg_color": "bg-gray-50",
+              "performed_by": {
+                "agent_id": "",
+                "agent_name": "MAFF"
+              },
+              "metadata": {},
+              "related_entities": {
+                "lead_id": "b934086e-9865-4712-bd83-bafbeb94d81e",
+                "task_id": "task_1762810958396_d9ics2b37",
+                "note_id": null,
+                "property_id": null
+              },
+              "source": "manual",
+              "version": "1.0"
+            },
+            {
+              "id": "Event_1763641830356",
+              "event_type": "Follow-up Cancelled",
+              "timestamp": "2025-11-20T12:30:30.357Z",
+              "title": "Follow-up Cancelled",
+              "description": "Scheduled follow-up was cancelled by Felix ABcd",
+              "icon": "Info",
+              "icon_color": "text-gray-500",
+              "bg_color": "bg-gray-50",
+              "performed_by": {
+                "agent_id": "",
+                "agent_name": "MAFF"
+              },
+              "metadata": {},
+              "related_entities": {
+                "lead_id": "b934086e-9865-4712-bd83-bafbeb94d81e",
+                "task_id": "task_1763494582987_q888f3jaw",
+                "note_id": null,
+                "property_id": null
+              },
+              "source": "manual",
+              "version": "1.0"
+            },
+            {
+              "id": "Event_1763494600033",
+              "event_type": "Follow-up Scheduled",
+              "timestamp": "2025-11-18T19:36:40.033Z",
+              "title": "Follow-up Scheduled",
+              "description": "New follow-up Scheduled by Felix ABcd in the Imozen App",
+              "icon": "Info",
+              "icon_color": "text-gray-500",
+              "bg_color": "bg-gray-50",
+              "performed_by": {
+                "agent_id": "",
+                "agent_name": "9bf183e3-6a17-4931-a6ba-4145799b4541"
+              },
+              "metadata": {},
+              "related_entities": {
+                "lead_id": "b934086e-9865-4712-bd83-bafbeb94d81e",
+                "task_id": "task_1763494582987_q888f3jaw",
+                "note_id": "6024c096-a5e8-44c4-8cdc-b4985cee109b",
+                "property_id": null
+              },
+              "source": "manual",
+              "version": "1.0"
+            },
+            {
+              "id": "Event_1763491612729",
+              "event_type": "Follow-up Scheduled",
+              "timestamp": "2025-11-18T18:46:52.729Z",
+              "title": "Follow-up Scheduled",
+              "description": "New follow-up Scheduled by Felix ABcd in the Imozen App",
+              "icon": "Info",
+              "icon_color": "text-gray-500",
+              "bg_color": "bg-gray-50",
+              "performed_by": {
+                "agent_id": "",
+                "agent_name": "9bf183e3-6a17-4931-a6ba-4145799b4541"
+              },
+              "metadata": {},
+              "related_entities": {
+                "lead_id": "b934086e-9865-4712-bd83-bafbeb94d81e",
+                "task_id": "task_1763479778474_szaj3oqrm",
+                "note_id": "6024c096-a5e8-44c4-8cdc-b4985cee109b",
+                "property_id": null
+              },
+              "source": "manual",
+              "version": "1.0"
+            },
+            {
+              "id": "auto_created_b934086e-9865-4712-bd83-bafbeb94d81e",
+              "event_type": "lead_created",
+              "timestamp": "2025-11-10T21:42:14.820Z",
+              "title": "Lead Created",
+              "description": "New lead Hello Test was added to the system",
+              "icon": "UserPlus",
+              "icon_color": "text-green-500",
+              "bg_color": "bg-green-50",
+              "performed_by": {
+                "agent_id": "",
+                "agent_name": "System"
+              },
+              "metadata": {
+                "lead_name": "Hello Test",
+                "source": "website",
+                "initial_temperature": "Warm",
+                "initial_stage": "Qualified"
+              },
+              "related_entities": {
+                "lead_id": "b934086e-9865-4712-bd83-bafbeb94d81e",
+                "task_id": null,
+                "note_id": null,
+                "property_id": null
+              },
+              "source": "automated",
+              "version": "1.0"
+            }
+          ],
+          "notes": [
+            {
+              "id": "94e76461-62e8-48c1-a20c-c80a6e1758b0",
+              "note_id": "94e76461-62e8-48c1-a20c-c80a6e1758b0",
+              "lead_id": "b934086e-9865-4712-bd83-bafbeb94d81e",
+              "content": "Perguntar pela filha",
+              "current_note": "Perguntar pela filha",
+              "created_at": "2025-11-20T18:28:34.758Z",
+              "created_by": "",
+              "note_type": "text",
+              "transcription": ""
+            },
+            {
+              "id": "f622bc4c-9441-4de4-9573-2178777ee3ae",
+              "note_id": "f622bc4c-9441-4de4-9573-2178777ee3ae",
+              "lead_id": "b934086e-9865-4712-bd83-bafbeb94d81e",
+              "content": "Perguntar por visita",
+              "current_note": "Perguntar por visita",
+              "created_at": "2025-11-20T18:27:46.035Z",
+              "created_by": "",
+              "note_type": "text",
+              "transcription": ""
+            },
+            {
+              "id": "7ee45835-6262-40be-ac62-3c15a4c31bad",
+              "note_id": "7ee45835-6262-40be-ac62-3c15a4c31bad",
+              "lead_id": "b934086e-9865-4712-bd83-bafbeb94d81e",
+              "content": "new new test",
+              "current_note": "new new test",
+              "created_at": "2025-11-20T18:19:54.147Z",
+              "created_by": "",
+              "note_type": "text",
+              "transcription": ""
+            },
+            {
+              "id": "6024c096-a5e8-44c4-8cdc-b4985cee109b",
+              "note_id": "6024c096-a5e8-44c4-8cdc-b4985cee109b",
+              "lead_id": "b934086e-9865-4712-bd83-bafbeb94d81e",
+              "content": "test test",
+              "current_note": "test test",
+              "created_at": "2025-11-18T17:02:05.096Z",
+              "created_by": "",
+              "note_type": "text",
+              "transcription": ""
+            },
+            {
+              "id": "6f7b93ff-61cc-476a-ab6e-e1b1eea34762",
+              "note_id": "6f7b93ff-61cc-476a-ab6e-e1b1eea34762",
+              "lead_id": "b934086e-9865-4712-bd83-bafbeb94d81e",
+              "content": "adasda",
+              "current_note": "adasda",
+              "created_at": "2025-11-12T23:01:36.754Z",
+              "created_by": "",
+              "note_type": "text",
+              "transcription": ""
+            },
+            {
+              "id": "e4349571-b17e-4878-8710-db62d75923d0",
+              "note_id": "e4349571-b17e-4878-8710-db62d75923d0",
+              "lead_id": "b934086e-9865-4712-bd83-bafbeb94d81e",
+              "content": "Ligar depois de amanhã",
+              "current_note": "Ligar depois de amanhã",
+              "created_at": "2025-11-12T23:01:02.640Z",
+              "created_by": "",
+              "note_type": "text",
+              "transcription": ""
+            },
+            {
+              "id": "ec048972-8648-42e5-b8eb-2b6eb891b776",
+              "note_id": "ec048972-8648-42e5-b8eb-2b6eb891b776",
+              "lead_id": "b934086e-9865-4712-bd83-bafbeb94d81e",
+              "content": "Contactar amanhã",
+              "current_note": "Contactar amanhã",
+              "created_at": "2025-11-12T17:43:41.058Z",
+              "created_by": "",
+              "note_type": "text",
+              "transcription": ""
+            },
+            {
+              "id": "0aadcdec-4584-4f89-b859-0850ab3df11f",
+              "note_id": "0aadcdec-4584-4f89-b859-0850ab3df11f",
+              "lead_id": "b934086e-9865-4712-bd83-bafbeb94d81e",
+              "content": "Contactar amanhã",
+              "current_note": "Contactar amanhã",
+              "created_at": "2025-11-12T00:00:00.000Z",
+              "created_by": "",
+              "note_type": "text",
+              "transcription": ""
+            }
+          ]
+        },
+        "38ea348c-1b1f-4ca2-8512-dd14ade36c2d": {
+          "lead_id": "38ea348c-1b1f-4ca2-8512-dd14ade36c2d",
+          "lead_type": "Seller",
+          "name": "Ricardo Ferro Antunes",
+          "contact": {
+            "phone": "(+351) 96572348209",
+            "email": "daodjaosdj@gmail.com"
+          },
+          "image_url": "",
+          "temperature": "Warm",
+          "lead_stage": "New Lead",
+          "Stage": "New Lead",
+          "property": {
+            "locations": [
+              "Lisbon"
+            ],
+            "types": [
+              "Apartment"
+            ],
+            "budget": "€49998",
+            "bedrooms": "2",
+            "notes": "Olá Ricardo! 😊 Aqui é o Felix ABcd, seu agente imobiliário em Lisboa. Gostaria de agradecer pelo seu interesse em vender o seu apartamento. Estou à disposição para ajudar a encontrar o melhor comprador o quanto antes, considerando o seu objetivo de vender em até 3 meses. \n\nSe desejar, podemos agendar uma visita ou uma conversa para discutir estratégias de venda e tirar todas as suas dúvidas. É um ótimo momento para aproveitar as oportunidades do mercado!\n\nPosso ligar amanhã para conversarmos melhor? Fico no aguardo da sua confirmação. \n\nAté breve!  \nFelix ABcd",
+            "purchase_timeframe": "Immediately (under 3 months)",
+            "financing_type": "",
+            "credit_pre_approved": false,
+            "search_duration": "Starting now",
+            "has_seen_properties": ""
+          },
+          "management": {
+            "agent_notes": "Olá Ricardo! 😊 Aqui é o Felix ABcd, seu agente imobiliário em Lisboa. Gostaria de agradecer pelo seu interesse em vender o seu apartamento. Estou à disposição para ajudar a encontrar o melhor comprador o quanto antes, considerando o seu objetivo de vender em até 3 meses. \n\nSe desejar, podemos agendar uma visita ou uma conversa para discutir estratégias de venda e tirar todas as suas dúvidas. É um ótimo momento para aproveitar as oportunidades do mercado!\n\nPosso ligar amanhã para conversarmos melhor? Fico no aguardo da sua confirmação. \n\nAté breve!  \nFelix ABcd",
+            "agent_id": "",
+            "created_at": "2025-11-12T23:03:18.818Z",
+            "last_contacted_at": null,
+            "last_updated_at": "2025-11-12T23:03:19.648Z",
+            "source": "",
+            "language": "Portuguese",
+            "initial_message": "",
+            "lead_score": 10,
+            "ai_generated_message": "Olá Ricardo! 😊 Aqui é o Felix ABcd, seu agente imobiliário em Lisboa. Gostaria de reforçar que estou totalmente disponível para ajudar na venda do seu apartamento, especialmente com o seu objetivo de vender em até 3 meses. \n\nVamos agendar uma visita ou uma conversa para definir as melhores estratégias e tirar todas as suas dúvidas? Assim, podemos acelerar o processo e aproveitar as oportunidades atuais do mercado! \n\nPosso ligar amanhã para conversarmos melhor? Aguardo sua confirmação. \n\nAté breve!  \nFelix ABcd"
+          },
+          "communication_history": [
+            {
+              "id": "auto_created_38ea348c-1b1f-4ca2-8512-dd14ade36c2d",
+              "event_type": "lead_created",
+              "timestamp": "2025-11-12T23:03:18.818Z",
+              "title": "Lead Created",
+              "description": "New lead Ricardo Ferro Antunes was added to the system",
+              "icon": "UserPlus",
+              "icon_color": "text-green-500",
+              "bg_color": "bg-green-50",
+              "performed_by": {
+                "agent_id": "",
+                "agent_name": "System"
+              },
+              "metadata": {
+                "lead_name": "Ricardo Ferro Antunes",
+                "source": "direct",
+                "initial_temperature": "Warm",
+                "initial_stage": "New Lead"
+              },
+              "related_entities": {
+                "lead_id": "38ea348c-1b1f-4ca2-8512-dd14ade36c2d",
+                "task_id": null,
+                "note_id": null,
+                "property_id": null
+              },
+              "source": "automated",
+              "version": "1.0"
+            },
+            {
+              "id": "Event_1763575760699",
+              "event_type": "Follow-up Cancelled",
+              "timestamp": null,
+              "title": "Follow-up Cancelled",
+              "description": "Scheduled follow-up was cancelled by Felix ABcd",
+              "icon": "Info",
+              "icon_color": "text-gray-500",
+              "bg_color": "bg-gray-50",
+              "performed_by": {
+                "agent_id": "",
+                "agent_name": "MAFF"
+              },
+              "metadata": {},
+              "related_entities": {
+                "lead_id": "38ea348c-1b1f-4ca2-8512-dd14ade36c2d",
+                "task_id": "task_1762988622026_pm7g8o2j4",
+                "note_id": null,
+                "property_id": null
+              },
+              "source": "manual",
+              "version": "1.0"
+            }
+          ],
+          "notes": [
+            {
+              "id": "81ebfc22-0474-4db5-982f-32ddfbb5f07d",
+              "note_id": "81ebfc22-0474-4db5-982f-32ddfbb5f07d",
+              "lead_id": "38ea348c-1b1f-4ca2-8512-dd14ade36c2d",
+              "content": "Olá Ricardo! 😊 Aqui é o Felix ABcd, seu agente imobiliário em Lisboa. Gostaria de agradecer pelo seu interesse em vender o seu apartamento. Estou à disposição para ajudar a encontrar o melhor comprador o quanto antes, considerando o seu objetivo de vender em até 3 meses. \n\nSe desejar, podemos agendar uma visita ou uma conversa para discutir estratégias de venda e tirar todas as suas dúvidas. É um ótimo momento para aproveitar as oportunidades do mercado!\n\nPosso ligar amanhã para conversarmos melhor? Fico no aguardo da sua confirmação. \n\nAté breve!  \nFelix ABcd",
+              "current_note": "Olá Ricardo! 😊 Aqui é o Felix ABcd, seu agente imobiliário em Lisboa. Gostaria de agradecer pelo seu interesse em vender o seu apartamento. Estou à disposição para ajudar a encontrar o melhor comprador o quanto antes, considerando o seu objetivo de vender em até 3 meses. \n\nSe desejar, podemos agendar uma visita ou uma conversa para discutir estratégias de venda e tirar todas as suas dúvidas. É um ótimo momento para aproveitar as oportunidades do mercado!\n\nPosso ligar amanhã para conversarmos melhor? Fico no aguardo da sua confirmação. \n\nAté breve!  \nFelix ABcd",
+              "created_at": "2025-11-12T23:03:27.574Z",
+              "created_by": "",
+              "note_type": "text",
+              "transcription": ""
+            }
+          ]
+        },
+        "06643419-fa66-4585-9f94-9af30238a20b": {
+          "lead_id": "06643419-fa66-4585-9f94-9af30238a20b",
+          "lead_type": "Seller",
+          "name": "Ines Rodrigues",
+          "contact": {
+            "phone": "(+351) 918277272",
+            "email": "ines.vigario@gmail.com"
+          },
+          "image_url": "",
+          "temperature": "Warm",
+          "lead_stage": "New Lead",
+          "Stage": "New Lead",
+          "property": {
+            "locations": [
+              "Lisbon"
+            ],
+            "types": [
+              "Apartment"
+            ],
+            "budget": "€300000",
+            "bedrooms": "1",
+            "notes": "",
+            "purchase_timeframe": "Immediately (under 3 months)",
+            "financing_type": "",
+            "credit_pre_approved": false,
+            "search_duration": "Starting now",
+            "has_seen_properties": ""
+          },
+          "management": {
+            "agent_notes": "",
+            "agent_id": "",
+            "created_at": "2025-11-16T21:50:09.401Z",
+            "last_contacted_at": null,
+            "last_updated_at": "2025-11-16T21:50:11.042Z",
+            "source": "idealista",
+            "language": "Portuguese",
+            "initial_message": "",
+            "lead_score": 10,
+            "ai_generated_message": "Olá Inês! 😊\n\nSó para reforçar que estou à disposição para ajudar a vender o seu apartamento em Lisboa o mais rápido possível. Podemos marcar uma avaliação ou uma conversa rápida para definir as melhores estratégias? Assim, garantimos que tudo seja feito com eficiência e ao seu ritmo.\n\nQuando seria conveniente para si? Estou disponível nos próximos dias e quero garantir que aproveitamos ao máximo este período.\n\nFico aguardando o seu contacto para agendarmos. Será um prazer ajudá-la a alcançar o seu objetivo!\n\nUm abraço,  \nFelix AB"
+          },
+          "communication_history": [
+            {
+              "id": "Event_1763702340118",
+              "event_type": "Follow-up Rescheduled",
+              "timestamp": "2025-11-21T05:19:00.119Z",
+              "title": "Follow-up Rescheduled",
+              "description": "Follow-up Rescheduled by Felix ABcd",
+              "icon": "Info",
+              "icon_color": "text-gray-500",
+              "bg_color": "bg-gray-50",
+              "performed_by": {
+                "agent_id": "",
+                "agent_name": "MAFF"
+              },
+              "metadata": {},
+              "related_entities": {
+                "lead_id": "06643419-fa66-4585-9f94-9af30238a20b",
+                "task_id": "task_1763329827704_qm5k87ddh",
+                "note_id": null,
+                "property_id": null
+              },
+              "source": "manual",
+              "version": "1.0"
+            },
+            {
+              "id": "Event_1763697611347",
+              "event_type": "Follow-up Rescheduled",
+              "timestamp": "2025-11-21T04:00:11.348Z",
+              "title": "Follow-up Rescheduled",
+              "description": "Follow-up Rescheduled by Felix ABcd",
+              "icon": "Info",
+              "icon_color": "text-gray-500",
+              "bg_color": "bg-gray-50",
+              "performed_by": {
+                "agent_id": "",
+                "agent_name": "MAFF"
+              },
+              "metadata": {},
+              "related_entities": {
+                "lead_id": "06643419-fa66-4585-9f94-9af30238a20b",
+                "task_id": "task_1763329827704_qm5k87ddh",
+                "note_id": null,
+                "property_id": null
+              },
+              "source": "manual",
+              "version": "1.0"
+            },
+            {
+              "id": "auto_created_06643419-fa66-4585-9f94-9af30238a20b",
+              "event_type": "lead_created",
+              "timestamp": "2025-11-16T21:50:09.401Z",
+              "title": "Lead Created",
+              "description": "New lead Ines Rodrigues was added to the system",
+              "icon": "UserPlus",
+              "icon_color": "text-green-500",
+              "bg_color": "bg-green-50",
+              "performed_by": {
+                "agent_id": "",
+                "agent_name": "System"
+              },
+              "metadata": {
+                "lead_name": "Ines Rodrigues",
+                "source": "idealista",
+                "initial_temperature": "Warm",
+                "initial_stage": "New Lead"
+              },
+              "related_entities": {
+                "lead_id": "06643419-fa66-4585-9f94-9af30238a20b",
+                "task_id": null,
+                "note_id": null,
+                "property_id": null
+              },
+              "source": "automated",
+              "version": "1.0"
+            },
+            {
+              "id": "Event_1763695026629",
+              "event_type": "Follow-up Rescheduled",
+              "timestamp": null,
+              "title": "Follow-up Rescheduled",
+              "description": "Follow-up Rescheduled by Felix ABcd",
+              "icon": "Info",
+              "icon_color": "text-gray-500",
+              "bg_color": "bg-gray-50",
+              "performed_by": {
+                "agent_id": "",
+                "agent_name": "MAFF"
+              },
+              "metadata": {},
+              "related_entities": {
+                "lead_id": "06643419-fa66-4585-9f94-9af30238a20b",
+                "task_id": "task_1763329827704_qm5k87ddh",
+                "note_id": null,
+                "property_id": null
+              },
+              "source": "manual",
+              "version": "1.0"
+            }
+          ],
+          "notes": [
+            {
+              "id": "dc6d297e-8eed-4715-a594-fc559cb36b79",
+              "note_id": "dc6d297e-8eed-4715-a594-fc559cb36b79",
+              "lead_id": "06643419-fa66-4585-9f94-9af30238a20b",
+              "content": "Olá Inês! 😊\n\nSou o Felix AB, seu consultor imobiliário em Lisboa. Vi que tem interesse em vender um apartamento na cidade e que pretende fazer isso rapidamente, dentro de 3 meses. Gostaria de ajudar a acelerar este processo e garantir que obtenha o melhor valor pelo seu imóvel.\n\nPodemos agendar uma visita para avaliação ou conversar sobre estratégias de venda? Estou disponível para esclarecer qualquer dúvida e ajudá-la a alcançar seus objetivos de forma rápida e eficiente.\n\nFico a aguardar seu contacto para marcarmos um horário conveniente. Será um prazer ajudar!\n\nUm abraço,  \nFelix AB",
+              "current_note": "Olá Inês! 😊\n\nSou o Felix AB, seu consultor imobiliário em Lisboa. Vi que tem interesse em vender um apartamento na cidade e que pretende fazer isso rapidamente, dentro de 3 meses. Gostaria de ajudar a acelerar este processo e garantir que obtenha o melhor valor pelo seu imóvel.\n\nPodemos agendar uma visita para avaliação ou conversar sobre estratégias de venda? Estou disponível para esclarecer qualquer dúvida e ajudá-la a alcançar seus objetivos de forma rápida e eficiente.\n\nFico a aguardar seu contacto para marcarmos um horário conveniente. Será um prazer ajudar!\n\nUm abraço,  \nFelix AB",
+              "created_at": "2025-11-16T21:50:17.883Z",
+              "created_by": "",
+              "note_type": "text",
+              "transcription": ""
+            }
+          ]
+        }
+      },
+      "notifications": [
+        {
+          "id": "noti-1",
+          "type": "follow_up_due_today",
+          "title": "",
+          "message": "",
+          "description": "",
+          "timestamp": null,
+          "priority": "medium",
+          "read": false,
+          "isRead": false,
+          "expiresAt": null,
+          "autoDelete": false,
+          "lead_id": null,
+          "leadId": null,
+          "task_id": null,
+          "taskId": null,
+          "property_id": null,
+          "propertyId": null,
+          "action_type": "",
+          "action_target": "",
+          "action_data": {},
+          "action": null,
+          "icon": "CalendarClock",
+          "metadata": {}
+        }
+      ]
+    },
+    "meta": {
+      "data_counts": {
+        "leads": 15,
+        "tasks": 6,
+        "notifications": 1
+      },
+      "performance": {
+        "processing_time_ms": 5,
+        "timestamp": "2025-11-21T06:36:33.577Z"
+      }
+    }
+  }
+]

@@ -312,13 +312,22 @@ export async function fetchAgentDatabase(token: string) {
     }
 
     try {
-        const parsed = JSON.parse(text);
-        // Handle array response (webhook returns array with single object)
-        const response = Array.isArray(parsed) ? parsed[0] : parsed;
-        console.log('✅ fetchAgentDatabase - Database received:', response);
-        return response;
+      const parsed = JSON.parse(text);
+      console.log('🔍 DEBUG: fetchAgentDatabase - Raw response text:', text);
+      console.log('🔍 DEBUG: fetchAgentDatabase - Parsed JSON:', parsed);
+      
+      // Handle array response (webhook returns array with single object)
+      const response = Array.isArray(parsed) ? parsed[0] : parsed;
+      console.log('✅ fetchAgentDatabase - Database received:', response);
+      console.log('🔍 DEBUG: fetchAgentDatabase - Response structure check:', {
+        isArray: Array.isArray(parsed),
+        firstElementKeys: Array.isArray(parsed) && parsed[0] ? Object.keys(parsed[0]) : 'none',
+        responseType: typeof response
+      });
+      
+      return response;
     } catch (e) {
-        console.log('✅ fetchAgentDatabase - Success (non-JSON response):', text);
-        return text || { success: true };
+      console.log('✅ fetchAgentDatabase - Success (non-JSON response):', text);
+      return text || { success: true };
     }
 }
