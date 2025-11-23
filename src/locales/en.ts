@@ -84,7 +84,7 @@ export const en: Translations = {
   dashboard: {
     welcomeBack: "Welcome back, {{name}}!",
     stats: {
-      leadsForFollowUp: "Leads for Follow-up",
+      leadsForFollowUp: "Follow-ups",
       newLeadsThisWeek: "New Leads This Week",
       hotLeads: "Hot Leads",
       conversionRate: "Conversion Rate",
@@ -405,6 +405,19 @@ export const en: Translations = {
     },
     confirmSaveDialogTitle: "Confirm Changes",
     confirmAndSave: "Confirm & Save",
+    fieldLabels: {
+      name: "Name",
+      email: "Email",
+      phone: "Phone",
+      language: "Language",
+      contactPhone: "Contact Phone",
+      contactEmail: "Contact Email",
+      contactLanguage: "Contact Language",
+      propertyType: "Property Type",
+      propertyBudget: "Property Budget",
+      propertyBedrooms: "Property Bedrooms",
+      propertyLocations: "Property Locations",
+    },
     stages: {
       newLead: "New Lead",
       contacted: "Contacted",
@@ -690,5 +703,10 @@ export const en: Translations = {
     tapToView: "Tap to view",
     noNotificationsTitle: "No Notifications Yet",
     noNotificationsDescription: "We'll let you know when something important happens.",
+    followUpCompleted: "Follow-up Completed",
+    followUpCompletedDescription: "Follow-up for {{name}} has been marked as complete.",
+    followUpCompletionFailed: "Follow-up Completion Failed",
+    followUpCompletionFailedDescription: "Failed to mark follow-up for {{name}} as complete. {{error}}",
+    retryFollowUpCompletion: "Retry Follow-up Completion",
   },
 };

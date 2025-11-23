@@ -140,46 +140,67 @@ function TasksPageComponent() {
       return null;
     }
 
-    // Calculate total number of individual tasks (not task groups)
-    const totalTasks = tasks.reduce((sum, group) => sum + (group.items?.length || 0), 0);
+    // Filter out tasks that are being cancelled BEFORE counting
+    const filteredTasks = tasks.map((group: any) => {
+      if (!group || !group.date) {
+        console.warn('Skipping invalid task group:', group);
+        return null;
+      }
+
+      const filteredItems = (group.items || []).filter((task: any) => {
+        // Skip invalid tasks
+        if (!task || !task.id) {
+          console.warn('Skipping invalid task:', task);
+          return false;
+        }
+
+        // Skip tasks that are being cancelled (optimistic UI)
+        if (cancellingTaskIds.has(task.id)) {
+          console.log(`⏳ Task ${task.id} is being cancelled - hiding from UI`);
+          return false;
+        }
+
+        return true;
+      });
+
+      // Return null if no tasks left in this group after filtering
+      if (filteredItems.length === 0) {
+        return null;
+      }
+
+      return {
+        ...group,
+        items: filteredItems
+      };
+    }).filter(Boolean); // Remove null groups
+
+    // Calculate total number of visible tasks (excluding cancelled ones)
+    const totalVisibleTasks = filteredTasks.reduce((sum, group) => sum + (group.items?.length || 0), 0);
+
+    // Don't render the section if no visible tasks
+    if (totalVisibleTasks === 0 && !isLoading) {
+      return null;
+    }
 
     return (
       <section className="mb-8">
         <h3 className={`text-xl font-semibold mb-4 ${isOverdue ? 'text-red-600' : ''}`}>
           {title}
-          {totalTasks > 0 && (
+          {totalVisibleTasks > 0 && (
             <span className={`ml-2 text-sm font-normal ${isOverdue ? 'text-red-500' : 'text-gray-500'}`}>
-              ({totalTasks})
+              ({totalVisibleTasks})
             </span>
           )}
         </h3>
         <div className="space-y-6">
-          {tasks.map((group: any) => {
-            // Skip invalid groups
-            if (!group || !group.date) {
-              console.warn('Skipping invalid task group:', group);
-              return null;
-            }
-
+          {filteredTasks.map((group: any) => {
             return (
               <div key={group.date}>
                 <h4 className={`font-semibold mb-2 ${isOverdue ? 'text-red-600' : 'text-gray-600'}`}>
                   {group.formattedDate || formatTaskDate(group.date)}
                 </h4>
                 <div className="space-y-3">
-                  {(group.items || []).map((task: any) => {
-                    // Skip invalid tasks
-                    if (!task || !task.id) {
-                      console.warn('Skipping invalid task:', task);
-                      return null;
-                    }
-
-                    // Skip tasks that are being cancelled (optimistic UI)
-                    if (cancellingTaskIds.has(task.id)) {
-                      console.log(`⏳ Task ${task.id} is being cancelled - hiding from UI`);
-                      return null;
-                    }
-
+                  {group.items.map((task: any) => {
                     return (
                       <div key={task.id} id={`task-${task.id}`}>
                         <TaskCard
@@ -203,7 +224,7 @@ function TasksPageComponent() {
               </div>
             );
           })}
-          {!isLoading && tasks.length === 0 && (
+          {!isLoading && filteredTasks.length === 0 && (
             <div className="text-center text-gray-500 py-8">
               {emptyMessage}
             </div>
@@ -224,7 +245,7 @@ if (isLoading) {
 
 return (
   <div className="p-4 pb-20">
-    {overdueTasks.length > 0 && renderTaskSection(
+    {renderTaskSection(
       overdueTasks,
       t.tasks.overdueTasks,
       t.tasks.noOverdueTasks,

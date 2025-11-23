@@ -36,6 +36,7 @@ interface CompleteTaskDialogProps {
   leadStage?: string;
   onConfirm: (note: string, nextFollowUpDate?: Date) => void;
   isLoading?: boolean;
+  isOptimistic?: boolean; // New prop for optimistic state
 }
 
 export function CompleteTaskDialog({
@@ -48,6 +49,7 @@ export function CompleteTaskDialog({
   leadStage,
   onConfirm,
   isLoading = false,
+  isOptimistic = false,
 }: CompleteTaskDialogProps) {
   const [note, setNote] = React.useState<string>("");
   const [selectedShortcut, setSelectedShortcut] = React.useState<string>('none');
@@ -236,7 +238,19 @@ export function CompleteTaskDialog({
             disabled={isLoading || (selectedShortcut === 'custom' && !customDate)}
             className="h-11 px-6 bg-green-600 hover:bg-green-700 text-white"
           >
-            {isLoading ? t.taskDialogs.completing : t.taskDialogs.yesComplete}
+            {isOptimistic ? (
+              <>
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                Processing...
+              </>
+            ) : isLoading ? (
+              <>
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                {t.taskDialogs.completing}
+              </>
+            ) : (
+              t.taskDialogs.yesComplete
+            )}
           </Button>
         </div>
       </DialogContent>

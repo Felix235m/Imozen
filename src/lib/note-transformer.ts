@@ -25,9 +25,12 @@ export interface WebhookNoteResponse {
     created_at_formatted: string;
     created_at_relative: string;
     created_by: string;
+    row_number?: number; // Add support for row_number field
   }>;
   total_notes?: number;
   previous_notes_count?: number;
+  success?: boolean; // Add success flag
+  lead_id?: string; // Add lead_id field
 }
 
 /**
@@ -104,13 +107,13 @@ export function transformWebhookNoteToStorageFormat(
 
     const createdAt = webhookNote.created_at || new Date().toISOString();
     const timestamp = createdAt ? new Date(createdAt).getTime() : Date.now();
-    const createdAtFormatted = createdAt ? formatDate(createdAt) : '';
+    const createdAtFormatted = webhookNote.created_at_formatted || formatDate(createdAt);
 
     return {
       id: webhookNote.note_id,
       note_id: webhookNote.note_id,
       lead_id: leadId,
-      content: webhookNote.note,
+      content: String(webhookNote.note || ''),
       current_note: webhookNote.note_type === 'current' ? webhookNote.note : undefined,
       timestamp,
       created_at: createdAt,
@@ -120,6 +123,7 @@ export function transformWebhookNoteToStorageFormat(
       // Additional fields for potential future use
       note_type: webhookNote.note_type,
       created_at_relative: webhookNote.created_at_relative,
+      row_number: webhookNote.row_number, // Preserve row_number if present
     };
   } catch (error) {
     console.error('❌ Error transforming webhook note:', error, webhookNote);

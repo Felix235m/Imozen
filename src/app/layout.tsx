@@ -1,5 +1,5 @@
 import type { Metadata } from 'next';
-import { Toaster } from '@/components/ui/toaster';
+import { MobileToasterWrapper } from '@/components/mobile-toaster-wrapper';
 import { LanguageProvider } from '@/contexts/LanguageContext';
 import { TranslationProvider } from '@/components/providers/TranslationProvider';
 import { OfflineBanner } from '@/components/ui/offline-banner';
@@ -28,13 +28,14 @@ export default function RootLayout({
           href="https://fonts.googleapis.com/css2?family=PT+Sans:wght@400;700&display=swap"
           rel="stylesheet"
         />
+        <meta name="viewport" content="width=device-width, initial-scale=1" />
       </head>
       <body className="font-body antialiased" suppressHydrationWarning>
         <LanguageProvider>
           <TranslationProvider>
             <OfflineBanner />
             {children}
-            <Toaster />
+            <MobileToasterWrapper />
           </TranslationProvider>
         </LanguageProvider>
       </body>

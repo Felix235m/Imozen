@@ -23,6 +23,7 @@ import {
   AlertCircle,
   XCircle,
   RefreshCw,
+  Loader2,
 } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
 
@@ -76,6 +77,11 @@ export const NOTIFICATION_CONFIG: Record<string, NotificationConfig> = {
     color: 'text-indigo-600',
     bgColor: 'bg-indigo-50'
   },
+  'lead_created': {
+    icon: UserPlus,
+    color: 'text-green-600',
+    bgColor: 'bg-green-50'
+  },
   'lead_deleted': {
     icon: Trash2,
     color: 'text-red-600',
@@ -90,11 +96,6 @@ export const NOTIFICATION_CONFIG: Record<string, NotificationConfig> = {
     icon: Zap,
     color: 'text-orange-600',
     bgColor: 'bg-orange-50'
-  },
-  'stage_change': {
-    icon: TrendingUp,
-    color: 'text-teal-600',
-    bgColor: 'bg-teal-50'
   },
   'stage_changed': {
     icon: TrendingUp,
@@ -113,11 +114,6 @@ export const NOTIFICATION_CONFIG: Record<string, NotificationConfig> = {
     color: 'text-blue-600',
     bgColor: 'bg-blue-50'
   },
-  'note_added': {
-    icon: FileText,
-    color: 'text-gray-600',
-    bgColor: 'bg-gray-50'
-  },
 
   // System notifications
   'system_info': {
@@ -132,6 +128,87 @@ export const NOTIFICATION_CONFIG: Record<string, NotificationConfig> = {
   },
   'system_error': {
     icon: XCircle,
+    color: 'text-red-600',
+    bgColor: 'bg-red-50'
+  },
+
+  // Follow-up operations
+  'follow_up_scheduled': {
+    icon: Calendar,
+    color: 'text-blue-600',
+    bgColor: 'bg-blue-50'
+  },
+  'follow_up_rescheduled': {
+    icon: RefreshCw,
+    color: 'text-purple-600',
+    bgColor: 'bg-purple-50'
+  },
+  'follow_up_cancelled': {
+    icon: XCircle,
+    color: 'text-gray-600',
+    bgColor: 'bg-gray-50'
+  },
+  'follow_up_completed': {
+    icon: CheckCircle,
+    color: 'text-green-600',
+    bgColor: 'bg-green-50'
+  },
+  'follow_up_in_progress': {
+    icon: Loader2,
+    color: 'text-blue-600',
+    bgColor: 'bg-blue-50'
+  },
+  'follow_up_cancellation_failed': {
+    icon: AlertCircle,
+    color: 'text-red-600',
+    bgColor: 'bg-red-50'
+  },
+  'follow_up_completion_failed': {
+    icon: AlertCircle,
+    color: 'text-red-600',
+    bgColor: 'bg-red-50'
+  },
+
+  // Notes operations
+  'note_added': {
+    icon: FileText,
+    color: 'text-green-600',
+    bgColor: 'bg-green-50'
+  },
+  'note_updated': {
+    icon: Edit,
+    color: 'text-blue-600',
+    bgColor: 'bg-blue-50'
+  },
+  'note_add_failed': {
+    icon: AlertCircle,
+    color: 'text-red-600',
+    bgColor: 'bg-red-50'
+  },
+  'note_update_failed': {
+    icon: AlertCircle,
+    color: 'text-red-600',
+    bgColor: 'bg-red-50'
+  },
+
+  // Profile operations
+  'profile_updated': {
+    icon: Edit,
+    color: 'text-blue-600',
+    bgColor: 'bg-blue-50'
+  },
+  'avatar_uploaded': {
+    icon: CheckCircle,
+    color: 'text-green-600',
+    bgColor: 'bg-green-50'
+  },
+  'profile_update_failed': {
+    icon: AlertCircle,
+    color: 'text-red-600',
+    bgColor: 'bg-red-50'
+  },
+  'avatar_upload_failed': {
+    icon: AlertCircle,
     color: 'text-red-600',
     bgColor: 'bg-red-50'
   },

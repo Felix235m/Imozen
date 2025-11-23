@@ -753,19 +753,30 @@ export class LocalStorageManager {
         if (updatedItems.length === 0) {
           // Remove the entire group if it's empty
           data.tasks.splice(groupIndex, 1);
+          console.log(`🗑️ Removed empty task group for date ${date}`);
         } else {
           // Update the group with remaining items
           data.tasks[groupIndex] = {
             ...group,
             items: updatedItems
           };
+          console.log(`📝 Updated task group for date ${date}, removed task ${taskId}`);
         }
 
-        this.setAppData({ tasks: data.tasks });
+        // Update cache immediately and dispatch storage event for real-time UI sync
+        this.cache = { ...data, tasks: data.tasks };
+        this.cacheTimestamp = Date.now();
+        this.notifySubscribers({ ...data, tasks: data.tasks });
+        
+        // Also persist to localStorage
+        localStorage.setItem(APP_DATA_KEY, JSON.stringify({ ...data, tasks: data.tasks }));
+        
+        console.log(`✅ Task ${taskId} removed from group ${date}, updated tasks count: ${data.tasks.length}`);
         return true;
       }
     }
 
+    console.warn(`⚠️ Task ${taskId} not found in group ${date}`);
     return false;
   }
 

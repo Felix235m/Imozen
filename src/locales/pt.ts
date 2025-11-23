@@ -82,7 +82,7 @@ export const pt = {
   dashboard: {
     welcomeBack: "Bem-vindo, {{name}}!",
     stats: {
-      leadsForFollowUp: "Leads para Acompanhamento",
+      leadsForFollowUp: "Acompanhamentos",
       newLeadsThisWeek: "Novos Leads Esta Semana",
       hotLeads: "Leads Quentes",
       conversionRate: "Taxa de Conversão",
@@ -403,6 +403,19 @@ export const pt = {
     },
     confirmSaveDialogTitle: "Confirmar Alterações",
     confirmAndSave: "Confirmar e Salvar",
+    fieldLabels: {
+      name: "Nome",
+      email: "Email",
+      phone: "Telefone",
+      language: "Idioma",
+      contactPhone: "Telefone de Contato",
+      contactEmail: "Email de Contato",
+      contactLanguage: "Idioma de Contato",
+      propertyType: "Tipo de Propriedade",
+      propertyBudget: "Orçamento da Propriedade",
+      propertyBedrooms: "Quartos da Propriedade",
+      propertyLocations: "Localizações da Propriedade",
+    },
     stages: {
       newLead: "Novo Lead",
       contacted: "Contatado",
@@ -744,6 +757,11 @@ export const pt = {
     notesAdded: "Nota Adicionada",
     notesUpdated: "Anotações Atualizadas",
     tapToViewNotes: "Toque para Visualizar Anotações",
+    followUpCompleted: "Acompanhamento Concluído",
+    followUpCompletedDescription: "Acompanhamento para {{name}} foi marcado como concluído.",
+    followUpCompletionFailed: "Falha na Conclusão do Acompanhamento",
+    followUpCompletionFailedDescription: "Falha ao marcar acompanhamento para {{name}} como concluído. {{error}}",
+    retryFollowUpCompletion: "Tentar Conclusão do Acompanhamento Novamente",
   },
 };
 

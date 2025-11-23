@@ -1,7 +1,7 @@
 import type { LucideIcon } from 'lucide-react';
 import type { CommunicationEvent } from '@/types/app-data';
 import { format } from 'date-fns';
-import { ptBR, enUS } from 'date-fns/locale';
+import { ptBR } from 'date-fns/locale';
 import {
   UserPlus,
   Edit,
@@ -499,7 +499,7 @@ export function getLocalizedEventTitle(eventType: string, language: 'en' | 'pt' 
     // Get translations from localStorage or use global translations
     const translationsKey = language === 'pt' ? 'pt' : 'en';
 
-    // Try to get translations from the global scope (will be injected by components)
+    // Try to get translations from global scope (will be injected by components)
     const translations = (globalThis as any).translations?.[translationsKey]?.leads?.eventTypes;
 
     if (translations && translations[eventType]) {
@@ -584,7 +584,7 @@ export function getLocalizedEventTitle(eventType: string, language: 'en' | 'pt' 
 }
 
 /**
- * Get the current agent language from localStorage
+ * Get current agent language from localStorage
  */
 export function getCurrentAgentLanguage(): 'en' | 'pt' {
   try {
@@ -611,7 +611,7 @@ export function getCurrentAgentLanguage(): 'en' | 'pt' {
 }
 
 /**
- * Get the current agent name from localStorage
+ * Get current agent name from localStorage
  */
 export function getCurrentAgentName(): string | null {
   try {
@@ -627,7 +627,7 @@ export function getCurrentAgentName(): string | null {
 }
 
 /**
- * Format date consistently across the application
+ * Format date consistently across application
  */
 export function formatDateConsistently(date: Date | string | number, agentName?: string): string {
   const dateObj = normalizeTimestamp(date);
@@ -640,7 +640,7 @@ export function formatDateConsistently(date: Date | string | number, agentName?:
 }
 
 /**
- * Format short date consistently across the application
+ * Format short date consistently across application
  */
 export function formatShortDate(date: Date | string | number, agentName?: string): string {
   const dateObj = normalizeTimestamp(date);
@@ -653,7 +653,7 @@ export function formatShortDate(date: Date | string | number, agentName?: string
 }
 
 /**
- * Create a cancellation event for the communication history
+ * Create a cancellation event for communication history
  */
 export function createCancellationEvent(
   taskId: string,
@@ -697,7 +697,7 @@ export function createCancellationEvent(
 }
 
 /**
- * Create a reschedule event for the communication history
+ * Create a reschedule event for communication history
  */
 export function createRescheduleEvent(
   rescheduledTask: any,
@@ -740,7 +740,7 @@ export function createRescheduleEvent(
 }
 
 /**
- * Create a priority change event for the communication history
+ * Create a priority change event for communication history
  */
 export function createPriorityChangeEvent(
   leadId: string,
@@ -790,7 +790,7 @@ export function createPriorityChangeEvent(
 }
 
 /**
- * Create a stage change event for the communication history
+ * Create a stage change event for communication history
  */
 export function createStageChangeEvent(
   leadId: string,
@@ -835,6 +835,50 @@ export function createStageChangeEvent(
       from_stage: fromStage,
       to_stage: toStage,
       change_note: note,
+    }
+  };
+}
+
+/**
+ * Create a follow-up completed event for communication history
+ */
+export function createFollowUpCompletedEvent(
+  taskId: string,
+  agentName: string,
+  note?: string
+): CommunicationEvent {
+  const now = new Date();
+  const language = getCurrentAgentLanguage();
+
+  // Use localized title
+  const title = getLocalizedEventTitle('follow_up_completed', language);
+
+  // Build localized description with parameters
+  const descriptionParams: Record<string, string> = {
+    agent: agentName,
+  };
+
+  // Add reason if provided
+  if (note) {
+    descriptionParams.reason = note;
+  }
+
+  const description = getLocalizedEventDescription('follow_up_completed', language, descriptionParams);
+
+  return {
+    id: `Event_${now.getTime()}`,
+    event_type: 'follow_up_completed',
+    title,
+    timestamp: now.getTime(), // Use current time for event creation timestamp
+    description,
+    performed_by: agentName,
+    related_entities: {
+      task_id: taskId,
+    },
+    metadata: {
+      completed_at: now.toISOString(),
+      agent_name: agentName,
+      completion_note: note,
     }
   };
 }

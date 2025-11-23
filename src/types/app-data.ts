@@ -124,6 +124,7 @@ export interface Note {
   // Additional fields for webhook integration
   note_type?: string;
   created_at_relative?: string;
+  row_number?: number; // Support for row_number field from webhook
 }
 
 // Communication history types

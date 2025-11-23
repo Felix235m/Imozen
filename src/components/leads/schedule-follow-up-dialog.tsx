@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { format, addDays, addMonths } from 'date-fns';
-import { ptBR } from 'date-fns/locale';
+import { pt } from 'date-fns/locale/pt';
 import { Calendar as CalendarIcon, Loader2 } from 'lucide-react';
 import {
   Dialog,
@@ -25,6 +25,7 @@ import {
 import { DatePicker } from '@/components/ui/date-picker';
 import { useLanguage } from '@/hooks/useLanguage';
 import { useToast } from '@/hooks/use-toast';
+import { useMobileToast } from '@/hooks/use-mobile-toast';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { LeadBadgeGroup } from './lead-badges';
 import { localStorageManager } from '@/lib/local-storage-manager';
@@ -65,6 +66,7 @@ export function ScheduleFollowUpDialog({
 }: ScheduleFollowUpDialogProps) {
   const { t, language } = useLanguage();
   const { toast } = useToast();
+  const mobileToast = useMobileToast();
   const [selectedShortcut, setSelectedShortcut] = useState<string>('next_week');
   const [customDate, setCustomDate] = useState<Date | undefined>(undefined);
   const [note, setNote] = useState<string>('');
@@ -157,9 +159,10 @@ export function ScheduleFollowUpDialog({
       localStorage.setItem('pending_follow_up', JSON.stringify(followUpRequestData));
       console.log('🔍 [DEBUG] Stored pending follow-up data');
 
-      // Show immediate progress notification
-      createProgressNotification(lead.name, selectedDate);
-      console.log('🔍 [DEBUG] Created progress notification');
+      // Show immediate progress notification using mobile toast system
+      const operationId = `follow_up_${lead.lead_id}_${Date.now()}`;
+      mobileToast.showFollowUpProgress(operationId, 'schedule', `Scheduling follow-up for ${lead.name}`);
+      console.log('🔍 [DEBUG] Created mobile progress notification');
 
       // Close dialog immediately after showing progress notification
       onOpenChange(false);
@@ -197,9 +200,9 @@ export function ScheduleFollowUpDialog({
       console.log('🔍 [DEBUG] Webhook response data:', data);
       
       if (data.success) {
-        // Update progress notification to success
-        updateProgressNotificationToSuccess(lead.name, lead.lead_id, selectedDate);
-        console.log('🔍 [DEBUG] Updated progress notification to success');
+        // Update progress notification to success using mobile toast system
+        mobileToast.showFollowUpSuccess(operationId, 'schedule', `Follow-up scheduled for ${lead.name} on ${format(selectedDate, 'MMM d, yyyy')}`);
+        console.log('🔍 [DEBUG] Updated mobile progress notification to success');
         
         await processFollowUpResponse(data, lead.lead_id, lead.name);
         console.log('🔍 [DEBUG] Processed follow-up response');
@@ -213,9 +216,9 @@ export function ScheduleFollowUpDialog({
     } catch (error: any) {
       console.error('🔍 [DEBUG] Error in handleSchedule:', error);
       
-      // Update progress notification to error with retry
-      updateProgressNotificationToError(lead.name, error.message);
-      console.log('🔍 [DEBUG] Updated progress notification to error');
+      // Update progress notification to error using mobile toast system
+      mobileToast.showFollowUpError(operationId, 'schedule', error.message);
+      console.log('🔍 [DEBUG] Updated mobile progress notification to error');
       
       toast({
         variant: 'destructive',
@@ -292,10 +295,26 @@ export function ScheduleFollowUpDialog({
         }
       }
 
-      // Add new note to notes section
-      if (leadData.notes && leadData.notes.length > 0) {
-        const newNote = leadData.notes[0];
-        localStorageManager.addNote(leadId, newNote);
+      // Process notes from webhook response using centralized processor
+      if (data.current_note || (data.notes && data.notes.length > 0)) {
+        try {
+          const { handleWebhookNoteProcessing } = await import('@/lib/webhook-note-processor');
+          const noteProcessingResult = await handleWebhookNoteProcessing({
+            leadId: leadId,
+            operationType: 'reschedule_task',
+            responseData: data,
+            operationContext: {
+              taskId: data.task_id,
+              note: note,
+              agentName: 'Agent', // Could be enhanced to get actual agent name
+              nextFollowUpDate: selectedDate
+            }
+          });
+          
+          console.log(`📝 [SCHEDULE] Webhook note processing completed:`, noteProcessingResult);
+        } catch (error) {
+          console.error('❌ [SCHEDULE] Error processing webhook notes:', error);
+        }
       }
 
       // SUCCESS NOTIFICATION REMOVED: updateProgressNotificationToSuccess() already handles creating the success notification
@@ -308,7 +327,7 @@ export function ScheduleFollowUpDialog({
   // Create progress notification
   const createProgressNotification = (leadName: string, followUpDate: Date) => {
     console.log('🔍 [DEBUG] Creating progress notification for:', leadName);
-    const dateLocale = language === 'pt' ? ptBR : undefined;
+    const dateLocale = language === 'pt' ? pt : undefined;
     const formattedDate = format(followUpDate, 'MMM d, yyyy', { locale: dateLocale });
     
     const notification: Notification = {
@@ -342,7 +361,7 @@ export function ScheduleFollowUpDialog({
     const notificationId = sessionStorage.getItem('current_follow_up_notification_id');
     if (!notificationId) return;
     
-    const dateLocale = language === 'pt' ? ptBR : undefined;
+    const dateLocale = language === 'pt' ? pt : undefined;
     const formattedDate = format(followUpDate, 'MMM d, yyyy', { locale: dateLocale });
     
     // Check if follow-up is within 7 days
@@ -459,7 +478,7 @@ export function ScheduleFollowUpDialog({
     }
 
     const date = getDateFromShortcut(shortcut);
-    const dateLocale = language === 'pt' ? ptBR : undefined;
+    const dateLocale = language === 'pt' ? pt : undefined;
     const formattedDate = format(date, 'EEEE, MMM d, yyyy', { locale: dateLocale });
 
     switch (shortcut) {

@@ -29,7 +29,7 @@ import { useToast } from "@/hooks/use-toast";
 import { cachedCallFollowUpApi, cachedCallTaskApi } from "@/lib/cached-api";
 import { openWhatsApp, storeWhatsAppNotification, getWhatsAppNotifications, removeWhatsAppNotification } from "@/lib/whatsapp-utils";
 import { localStorageManager } from "@/lib/local-storage-manager";
-import { createCancellationEvent, createRescheduleEvent, getCurrentAgentName, formatDateConsistently } from "@/lib/communication-history-utils";
+import { createCancellationEvent, createRescheduleEvent, createFollowUpCompletedEvent, getCurrentAgentName, formatDateConsistently } from "@/lib/communication-history-utils";
 import { dispatchThrottledStorageEvent, dispatchImmediateStorageEvent, clearPendingStorageEvents } from "@/lib/storage-event-throttle";
 import { openEmail, generateEmailSubject } from "@/lib/email-utils";
 import { copyToClipboard } from "@/lib/task-utils";
@@ -93,7 +93,8 @@ export function TaskCard({
   onCancellationRestore,
   onCancellationComplete
 }: TaskCardProps) {
-  const { t } = useLanguage();
+  const { t, language } = useLanguage();
+  const isPortugueseUser = language === 'pt';
   const [currentMessage, setCurrentMessage] = useState(task.followUpMessage);
   const [isEditing, setIsEditing] = useState(false);
   const [editedMessage, setEditedMessage] = useState("");
@@ -810,46 +811,25 @@ export function TaskCard({
           }
         }
 
-        // Process notes from webhook response if available
+        // Process notes from webhook response using centralized processor
         if (response.data?.current_note || (response.data?.notes && response.data.notes.length > 0)) {
           try {
             console.log('📝 [RESCHEDULE] Processing notes from webhook response...');
-            const { processNotesFromWebResponse, mergeNotes } = await import('@/lib/note-transformer');
-            const existingNotes = localStorageManager.getNotes(task.leadId) || [];
-            const { notes: processedNotes, processedCount, errors } = processNotesFromWebResponse(
-              response.data,
-              task.leadId
-            );
-
-            if (processedNotes.length > 0) {
-              const mergedNotes = mergeNotes(processedNotes, existingNotes);
-              localStorageManager.updateNotes(task.leadId, mergedNotes);
-              console.log(`📝 [RESCHEDULE] Successfully processed ${processedCount} new notes for lead ${task.leadId}`);
-
-              // Update reschedule event to include note information
-              if (communicationEvents.length > 0) {
-                const rescheduleEvent = communicationEvents.find(event => event.event_type === 'follow_up_rescheduled');
-                if (rescheduleEvent && response.data.current_note) {
-                  rescheduleEvent.metadata.reschedule_note = response.data.current_note.note;
-                  rescheduleEvent.metadata.note_type = response.data.current_note.note_type || 'reschedule_note';
-                  rescheduleEvent.metadata.note_id = response.data.current_note.note_id;
-
-                  // Update description to mention note
-                  if (rescheduleEvent.description && response.data.current_note.note) {
-                    const noteDescription = ` (${response.data.current_note.note})`;
-                    rescheduleEvent.description += noteDescription;
-                  }
-
-                  // Re-save the updated reschedule event to localStorage with note metadata
-                  localStorageManager.addCommunicationEvent(task.leadId, rescheduleEvent);
-                  console.log('📝 [RESCHEDULE] Updated reschedule event with note metadata');
-                }
+            const { handleWebhookNoteProcessing } = await import('@/lib/webhook-note-processor');
+            const noteProcessingResult = await handleWebhookNoteProcessing({
+              leadId: task.leadId,
+              operationType: 'reschedule_task',
+              responseData: response.data,
+              operationContext: {
+                taskId: task.id,
+                note: note,
+                agentName: agentName,
+                newDate: newDate.toISOString(),
+                newTime: newTime
               }
-            }
-
-            if (errors.length > 0) {
-              console.warn('⚠️ [RESCHEDULE] Notes processing completed with warnings:', errors);
-            }
+            });
+            
+            console.log(`📝 [RESCHEDULE] Webhook note processing completed:`, noteProcessingResult);
           } catch (error) {
             console.error('❌ [RESCHEDULE] Error processing webhook notes:', error);
           }
@@ -1014,24 +994,26 @@ export function TaskCard({
       });
     }
 
-    // 2. Prepare notes updates
+    // 2. Prepare notes updates using centralized processor
     let updatedNotes: any[] = null;
     if (responseData.current_note || (responseData.notes && responseData.notes.length > 0)) {
       try {
-        const { processNotesFromWebResponse, mergeNotes } = await import('@/lib/note-transformer');
-        const existingNotes = localStorageManager.getNotes(cancellationData.lead_id) || [];
-        const { notes: processedNotes, processedCount, errors } = processNotesFromWebResponse(
-          responseData,
-          cancellationData.lead_id
-        );
-
-        if (processedNotes.length > 0) {
-          updatedNotes = mergeNotes(processedNotes, existingNotes);
-          console.log(`📝 Successfully processed ${processedCount} new notes for lead ${cancellationData.lead_id}`);
-
-          if (errors.length > 0) {
-            console.warn('⚠️ Notes processing completed with warnings:', errors);
+        const { handleWebhookNoteProcessing } = await import('@/lib/webhook-note-processor');
+        const noteProcessingResult = await handleWebhookNoteProcessing({
+          leadId: cancellationData.lead_id,
+          operationType: 'cancel_task',
+          responseData: responseData,
+          operationContext: {
+            taskId: cancellationData.task_id,
+            note: cancellationData.note,
+            agentName: cancellationData.agent_name
           }
+        });
+        
+        if (noteProcessingResult.success && noteProcessingResult.processedCount > 0) {
+          // Get the updated notes from localStorage for atomic update
+          updatedNotes = localStorageManager.getNotes(cancellationData.lead_id);
+          console.log(`📝 Successfully processed ${noteProcessingResult.processedCount} new notes for lead ${cancellationData.lead_id}`);
         }
       } catch (error) {
         console.error('❌ Error processing webhook notes:', error);
@@ -1320,23 +1302,24 @@ export function TaskCard({
       }
 
       if (responseData.success) {
-        // Process notes from webhook response
+        // Process notes from webhook response using centralized processor
         if (responseData.current_note || (responseData.notes && responseData.notes.length > 0)) {
           try {
-            const { processNotesFromWebResponse, mergeNotes } = await import('@/lib/note-transformer');
-            const existingNotes = localStorageManager.getNotes(task.leadId) || [];
-            const { notes: processedNotes, processedCount, errors } = processNotesFromWebResponse(
-              responseData,
-              task.leadId
-            );
-
-            if (processedNotes.length > 0) {
-              const mergedNotes = mergeNotes(processedNotes, existingNotes);
-              localStorageManager.updateNotes(task.leadId, mergedNotes);
-              console.log(`📝 Successfully processed ${processedCount} new notes for lead ${task.leadId}`);
-            }
+            const { handleWebhookNoteProcessing } = await import('@/lib/webhook-note-processor');
+            const noteProcessingResult = await handleWebhookNoteProcessing({
+              leadId: task.leadId,
+              operationType: 'cancel_task',
+              responseData: responseData,
+              operationContext: {
+                taskId: task.id,
+                note: note,
+                agentName: agentName
+              }
+            });
+            
+            console.log(`📝 [CANCEL] Webhook note processing completed:`, noteProcessingResult);
           } catch (error) {
-            console.error('❌ Error processing webhook notes:', error);
+            console.error('❌ [CANCEL] Error processing webhook notes:', error);
           }
         }
 
@@ -1393,9 +1376,99 @@ export function TaskCard({
     }
   };
 
+  // Helper functions for mark_done notifications
+  const createMarkDoneSuccessNotification = (leadName: string) => {
+    const currentNotifications = localStorageManager.getNotifications();
+    const newNotification = {
+      id: `mark_done_success_${task.id}_${Date.now()}`,
+      type: 'follow_up_completed',
+      title: t.notifications.followUpCompleted,
+      message: t.notifications.followUpCompletedDescription.replace('{{name}}', leadName),
+      priority: 'medium',
+      read: false,
+      lead_id: task.leadId,
+      action_type: undefined, // No action button for success notifications
+      action_target: undefined,
+      action_data: undefined,
+      metadata: {
+        taskId: task.id,
+        leadId: task.leadId,
+        operation: 'mark_done',
+        agent_name: getCurrentAgentName() || 'Agent',
+        completedAt: new Date().toISOString()
+      }
+    };
+
+    localStorageManager.updateNotifications([newNotification, ...currentNotifications]);
+    dispatchThrottledStorageEvent('app_data', JSON.stringify(localStorageManager.getAppData()));
+  };
+
+  const createMarkDoneFailedNotification = (leadName: string, errorMessage: string, originalPayload: any) => {
+    const currentNotifications = localStorageManager.getNotifications();
+    const newNotification = {
+      id: `mark_done_failed_${task.id}_${Date.now()}`,
+      type: 'follow_up_completion_failed',
+      title: t.notifications.followUpCompletionFailed,
+      message: t.notifications.followUpCompletionFailedDescription
+        .replace('{{name}}', leadName)
+        .replace('{{error}}', errorMessage),
+      priority: 'high',
+      read: false,
+      lead_id: task.leadId,
+      action_type: 'retry_mark_done_completion',
+      action_target: `/tasks?expand=task_${task.leadId}_${new Date(date).getTime()}`,
+      action_data: {
+        taskId: task.id,
+        leadId: task.leadId,
+        operation: 'mark_done',
+        originalPayload: originalPayload,
+        error: errorMessage,
+        agent_name: getCurrentAgentName() || 'Agent',
+        timestamp: Date.now()
+      }
+    };
+
+    localStorageManager.updateNotifications([newNotification, ...currentNotifications]);
+    dispatchThrottledStorageEvent('app_data', JSON.stringify(localStorageManager.getAppData()));
+  };
+
   const handleMarkDone = async (note: string, nextFollowUpDate?: Date) => {
+    // Prevent duplicate operations
+    if (isMarkingDone) return;
+    
     setIsMarkingDone(true);
+    
+    // Store rollback data before making any changes
+    const rollbackData = {
+      task: { ...task },
+      date: date,
+      timestamp: Date.now()
+    };
+    
     try {
+      // OPTIMISTIC PHASE: Update immediately
+      console.log('⚡ [MARK_DONE] Starting optimistic updates...');
+      
+      // 1. Close dialog immediately
+      setShowComplete(false);
+      
+      // 2. Hide task immediately for optimistic UI
+      console.log(`🔄 Hiding task ${task.id} immediately for optimistic UI`);
+      onCancellationStart?.(task.id);
+      
+      // 3. Show processing toast
+      toast({
+        title: "Processing...",
+        description: `Marking follow-up for ${task.name} as complete. Please wait.`,
+        duration: 10000, // Longer duration for background operations
+      });
+      
+      // Store rollback data
+      localStorage.setItem('mark_done_rollback_data', JSON.stringify(rollbackData));
+      
+      // API PHASE: Process in background
+      console.log('🌐 [MARK_DONE] Starting background API call');
+      
       const payload: any = {
         task_id: task.id,
         lead_id: task.leadId,
@@ -1407,20 +1480,216 @@ export function TaskCard({
         payload.next_follow_up_date = nextFollowUpDate.toISOString();
       }
 
-      await cachedCallTaskApi("mark_done", payload);
+      const response = await cachedCallTaskApi("mark_done" as any, payload);
+      
+      // SUCCESS HANDLING
+      console.log('✅ [MARK_DONE] API call successful:', response);
+      
+      // 1. ADD COMMUNICATION EVENT FOR SUCCESSFUL COMPLETION
+      console.log('📞 [MARK_DONE] Creating communication event');
+      const agentName = getCurrentAgentName() || 'Agent';
 
-      toast({
-        title: t.taskCard.taskCompleted,
-        description: t.taskCard.taskCompletedDescription,
+      // Create a mock completed task object for the utility function
+      const completedTask = {
+        id: task.id,
+        lead_id: task.leadId,
+        follow_up_date: new Date().toISOString()
+      };
+
+      // Create localized completion event
+      const completionEvent = createFollowUpCompletedEvent(completedTask, agentName, note || '');
+
+      // Add note to metadata if provided
+      if (note) {
+        completionEvent.metadata.completion_note = note;
+        if (completionEvent.description) {
+          completionEvent.description += ` with note: ${note}`;
+        }
+      }
+
+      console.log('✅ [MARK_DONE] Communication event created with language:', {
+        isPortugueseUser,
+        eventId: completionEvent.id,
+        eventType: completionEvent.event_type,
+        eventTitle: completionEvent.title
       });
 
-      setShowComplete(false);
+      // Validate and store communication event
+      if (completionEvent && completionEvent.id && task.leadId) {
+        try {
+          localStorageManager.addCommunicationEvent(task.leadId, completionEvent);
+          console.log('✅ [MARK_DONE] Communication event added successfully:', {
+            eventId: completionEvent.id,
+            leadId: task.leadId,
+            eventType: completionEvent.event_type,
+            timestamp: completionEvent.timestamp,
+            title: completionEvent.title
+          });
+        } catch (storageError) {
+          console.error('❌ [MARK_DONE] Failed to store communication event:', storageError);
+        }
+      } else {
+        console.error('❌ [MARK_DONE] Invalid communication event created:', {
+          hasEvent: !!completionEvent,
+          hasId: !!(completionEvent && completionEvent.id),
+          hasLeadId: !!task.leadId,
+          eventDetails: completionEvent
+        });
+      }
+      
+      // 2. Process notes from webhook response using centralized processor
+      if (response.data?.current_note || (response.data?.notes && response.data.notes.length > 0)) {
+        try {
+          console.log('📝 [MARK_DONE] Processing notes from webhook response...');
+          const { handleWebhookNoteProcessing } = await import('@/lib/webhook-note-processor');
+          const noteProcessingResult = await handleWebhookNoteProcessing({
+            leadId: task.leadId,
+            operationType: 'mark_done',
+            responseData: response.data,
+            operationContext: {
+              taskId: task.id,
+              note: note,
+              agentName: agentName,
+              nextFollowUpDate: nextFollowUpDate?.toISOString()
+            }
+          });
+          
+          console.log(`📝 [MARK_DONE] Webhook note processing completed:`, noteProcessingResult);
+        } catch (error) {
+          console.error('❌ [MARK_DONE] Error processing webhook notes:', error);
+        }
+      }
+      
+      // 3. Create success notification
+      createMarkDoneSuccessNotification(task.name);
+      
+      // 4. Remove task from localStorage permanently
+      const taskRemoved = localStorageManager.removeTaskFromSpecificGroup(task.id, date);
+      if (!taskRemoved) {
+        console.warn('Task was not found in localStorage for removal, trying general removal');
+        localStorageManager.removeTaskFromGroup(task.id);
+      }
+      
+      // 5. Update lead's next follow-up date
+      if (nextFollowUpDate) {
+        console.log('🔄 [MARK_DONE] Updating lead follow-up date');
+        const daysUntil = Math.ceil((nextFollowUpDate.getTime() - Date.now()) / (1000 * 60 * 60 * 24));
+        localStorageManager.updateSingleLead(task.leadId, {
+          next_follow_up: {
+            date: nextFollowUpDate.toISOString(),
+            status: 'Scheduled',
+            color: 'blue',
+            days_until: daysUntil
+          }
+        });
+      } else {
+        console.log('🔄 [MARK_DONE] Clearing lead follow-up date');
+        localStorageManager.updateSingleLead(task.leadId, {
+          next_follow_up: {
+            date: null,
+            status: 'No follow-up scheduled',
+            color: '',
+            days_until: null
+          }
+        });
+      }
+      
+      // 6. Update dashboard count (only if task was within 7-day window)
+      const taskDate = new Date(date);
+      const sevenDaysFromNow = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000);
+      if (taskDate <= sevenDaysFromNow) {
+        localStorageManager.updateDashboardFollowUpCount(-1);
+      }
+      
+      // 7. Show success toast
+      toast({
+        title: t.taskCard.taskCompleted,
+        description: nextFollowUpDate
+          ? `Follow-up for ${task.name} completed and next follow-up scheduled.`
+          : t.taskCard.taskCompletedDescription,
+      });
+      
+      // 8. Complete UI update
       onTaskComplete(); // Refresh dashboard
+      onCancellationComplete?.(task.id); // Mark operation as complete
+      
+      // 9. Dispatch immediate storage event for cross-tab sync
+      const { dispatchImmediateStorageEvent } = require('@/lib/storage-event-throttle');
+      dispatchImmediateStorageEvent('app_data', JSON.stringify(localStorageManager.getAppData()));
+      
+      // Clean up rollback data on success
+      localStorage.removeItem('mark_done_rollback_data');
+      
     } catch (error: any) {
+      console.error('❌ [MARK_DONE] API call failed:', error);
+      console.error('❌ [MARK_DONE] Error details:', {
+        message: error.message,
+        status: error.response?.status,
+        statusText: error.response?.statusText,
+        data: error.response?.data,
+        config: error.config ? {
+          url: error.config.url,
+          method: error.config.method,
+          headers: error.config.headers
+        } : 'No config available'
+      });
+      
+      // Create failed notification
+      const originalPayload = {
+        task_id: task.id,
+        lead_id: task.leadId,
+        note: note,
+        next_follow_up_date: nextFollowUpDate ? nextFollowUpDate.toISOString() : undefined
+      };
+      createMarkDoneFailedNotification(task.name, error.message || t.taskCard.completeError, originalPayload);
+      
+      // ROLLBACK: Restore task immediately on failure
+      console.log(`↩️ Restoring task ${task.id} to UI immediately due to mark_done failure`);
+      onCancellationRestore?.(task.id);
+      
+      // Restore task to localStorage if it was hidden
+      const storedRollbackData = localStorage.getItem('mark_done_rollback_data');
+      if (storedRollbackData) {
+        try {
+          const parsedData = JSON.parse(storedRollbackData);
+          if (parsedData.task) {
+            // Restore the task to localStorage
+            localStorageManager.addTaskToGroup(parsedData.task);
+            console.log('Task restored to localStorage due to mark_done failure');
+            
+            // Force a UI refresh to show the restored task
+            const currentData = localStorageManager.getAppData();
+            const { dispatchThrottledStorageEvent } = require('@/lib/storage-event-throttle');
+            dispatchThrottledStorageEvent('app_data', JSON.stringify(currentData));
+          }
+        } catch (rollbackError) {
+          console.error('Failed to restore task:', rollbackError);
+        }
+        localStorage.removeItem('mark_done_rollback_data');
+      }
+      
+      // User-friendly error messages based on error type
+      let userErrorMessage = error.message || t.taskCard.completeError;
+      
+      if (error.response?.status === 400) {
+        userErrorMessage = 'Invalid request data. Please check your input and try again.';
+      } else if (error.response?.status === 401) {
+        userErrorMessage = 'Authentication failed. Please refresh the page and try again.';
+      } else if (error.response?.status === 403) {
+        userErrorMessage = 'You do not have permission to complete this follow-up.';
+      } else if (error.response?.status === 404) {
+        userErrorMessage = 'Follow-up not found. It may have been already completed.';
+      } else if (error.response?.status >= 500) {
+        userErrorMessage = 'Server error. Please try again in a few moments.';
+      } else if (error.code === 'NETWORK_ERROR' || error.message.includes('Network Error')) {
+        userErrorMessage = 'Network connection error. Please check your internet connection and try again.';
+      }
+      
+      // Show error toast
       toast({
         variant: "destructive",
         title: t.newLead.messages.errorTitle,
-        description: error.message || t.taskCard.completeError,
+        description: userErrorMessage,
       });
     } finally {
       setIsMarkingDone(false);
@@ -1708,6 +1977,7 @@ export function TaskCard({
         leadName={task.name}
         onConfirm={handleMarkDone}
         isLoading={isMarkingDone}
+        isOptimistic={isMarkingDone}
       />
     </>
   );

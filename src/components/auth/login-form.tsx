@@ -130,61 +130,69 @@ export function LoginForm({
               <FormField
                 control={form.control}
                 name="username"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>{t.login.username}</FormLabel>
-                    <FormControl>
-                      <div className="relative">
-                        <User className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-                        <Input
-                          placeholder={t.login.usernamePlaceholder}
-                          {...field}
-                          className="pl-10"
-                          disabled={isLoading}
-                          autoComplete="username"
-                          suppressHydrationWarning
-                        />
-                      </div>
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
+                render={({ field }) => {
+                  const id = React.useId();
+                  return (
+                    <FormItem>
+                      <FormLabel htmlFor={id}>{t.login.username}</FormLabel>
+                      <FormControl>
+                        <div className="relative">
+                          <User className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+                          <Input
+                            id={id}
+                            placeholder={t.login.usernamePlaceholder}
+                            {...field}
+                            className="pl-10"
+                            disabled={isLoading}
+                            autoComplete="username"
+                            suppressHydrationWarning
+                          />
+                        </div>
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  );
+                }}
               />
               <FormField
                 control={form.control}
                 name="password"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>{t.login.password}</FormLabel>
-                    <FormControl>
-                      <div className="relative">
-                        <Lock className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-                        <Input
-                          type={showPassword ? 'text' : 'password'}
-                          placeholder={t.login.passwordPlaceholder}
-                          {...field}
-                          className="pl-10 pr-10"
-                          disabled={isLoading}
-                          autoComplete="current-password"
-                          suppressHydrationWarning
-                        />
-                        <Button
-                          type="button"
-                          variant="ghost"
-                          size="icon"
-                          className="absolute right-1 top-1/2 h-7 w-7 -translate-y-1/2 text-muted-foreground hover:bg-transparent"
-                          onClick={() => setShowPassword(prev => !prev)}
-                          disabled={isLoading}
-                          suppressHydrationWarning
-                        >
-                          {showPassword ? <EyeOff /> : <Eye />}
-                          <span className="sr-only">{showPassword ? t.login.hidePassword : t.login.showPassword}</span>
-                        </Button>
-                      </div>
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
+                render={({ field }) => {
+                  const id = React.useId();
+                  return (
+                    <FormItem>
+                      <FormLabel htmlFor={id}>{t.login.password}</FormLabel>
+                      <FormControl>
+                        <div className="relative">
+                          <Lock className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+                          <Input
+                            id={id}
+                            type={showPassword ? 'text' : 'password'}
+                            placeholder={t.login.passwordPlaceholder}
+                            {...field}
+                            className="pl-10 pr-10"
+                            disabled={isLoading}
+                            autoComplete="current-password"
+                            suppressHydrationWarning
+                          />
+                          <Button
+                            type="button"
+                            variant="ghost"
+                            size="icon"
+                            className="absolute right-1 top-1/2 h-7 w-7 -translate-y-1/2 text-muted-foreground hover:bg-transparent"
+                            onClick={() => setShowPassword(prev => !prev)}
+                            disabled={isLoading}
+                            suppressHydrationWarning
+                          >
+                            {showPassword ? <EyeOff /> : <Eye />}
+                            <span className="sr-only">{showPassword ? t.login.hidePassword : t.login.showPassword}</span>
+                          </Button>
+                        </div>
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  );
+                }}
               />
             </div>
             <Button

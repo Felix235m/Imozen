@@ -82,3 +82,223 @@
     @apply bg-background text-foreground;
   }
 }
+
+/* Mobile Toast Styles */
+@layer components {
+  .mobile-toast {
+    /* Enhanced mobile touch targets */
+    min-height: 60px;
+    padding: 16px;
+    margin: 8px;
+    border-radius: 12px;
+    
+    /* Better mobile typography */
+    font-size: 14px;
+    line-height: 1.4;
+    
+    /* Mobile-specific shadows and borders */
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+    border: 1px solid rgba(0, 0, 0, 0.1);
+    
+    /* Smooth mobile animations */
+    animation: mobileToastSlideIn 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+    
+    /* Touch manipulation for better mobile experience */
+    -webkit-tap-highlight-color: transparent;
+    
+    /* Prevent text selection on mobile */
+    user-select: none;
+    -webkit-user-select: none;
+    
+    /* Better mobile positioning */
+    max-width: calc(100vw - 32px);
+    width: 100%;
+  }
+  
+  .mobile-toast-success {
+    background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+    color: white;
+    border-color: #059669;
+  }
+  
+  .mobile-toast-error {
+    background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
+    color: white;
+    border-color: #dc2626;
+  }
+  
+  .mobile-toast-warning {
+    background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
+    color: white;
+    border-color: #d97706;
+  }
+  
+  .mobile-toast-info {
+    background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
+    color: white;
+    border-color: #2563eb;
+  }
+  
+  .mobile-toast-progress {
+    background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
+    color: white;
+    border-color: #2563eb;
+    position: relative;
+    overflow: hidden;
+  }
+  
+  /* Mobile toast animations */
+  @keyframes mobileToastSlideIn {
+    0% {
+      transform: translateY(-100%) scale(0.9);
+      opacity: 0;
+    }
+    100% {
+      transform: translateY(0) scale(1);
+      opacity: 1;
+    }
+  }
+  
+  @keyframes mobileToastSlideOut {
+    0% {
+      transform: translateY(0) scale(1);
+      opacity: 1;
+    }
+    100% {
+      transform: translateY(-100%) scale(0.9);
+      opacity: 0;
+    }
+  }
+  
+  @keyframes mobileToastProgress {
+    0% {
+      width: 0%;
+    }
+    100% {
+      width: 100%;
+    }
+  }
+  
+  /* Mobile toast progress bar */
+  .mobile-toast-progress::after {
+    content: '';
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    height: 3px;
+    background: rgba(255, 255, 255, 0.3);
+    animation: mobileToastProgress 3s linear infinite;
+    border-radius: 0 0 12px 12px;
+  }
+  
+  /* Enhanced mobile viewport positioning */
+  [data-radix-toast-viewport] {
+    /* Better mobile positioning */
+    top: 16px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 100%;
+    max-width: calc(100vw - 32px);
+    padding: 0;
+    
+    /* Ensure mobile toasts appear above everything */
+    z-index: 9999;
+    
+    /* Better mobile spacing */
+    gap: 8px;
+  }
+  
+  /* Mobile-specific hover states */
+  .mobile-toast:hover {
+    transform: scale(1.02);
+    transition: transform 0.2s ease;
+  }
+  
+  /* Mobile focus states for accessibility */
+  .mobile-toast:focus-within {
+    outline: 2px solid rgba(59, 130, 246, 0.5);
+    outline-offset: 2px;
+  }
+  
+  /* Mobile swipe indicators */
+  .mobile-toast[data-swipe="move"] {
+    transform: translateX(var(--radix-toast-swipe-move-x));
+    transition: none;
+  }
+  
+  .mobile-toast[data-swipe="cancel"] {
+    transform: translateX(0);
+    transition: transform 0.2s ease;
+  }
+  
+  .mobile-toast[data-swipe="end"] {
+    animation: mobileToastSlideOut 0.2s ease forwards;
+  }
+  
+  /* Mobile dark mode adjustments */
+  .dark .mobile-toast {
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+    border-color: rgba(255, 255, 255, 0.1);
+  }
+  
+  .dark .mobile-toast-success {
+    background: linear-gradient(135deg, #059669 0%, #047857 100%);
+  }
+  
+  .dark .mobile-toast-error {
+    background: linear-gradient(135deg, #dc2626 0%, #b91c1c 100%);
+  }
+  
+  .dark .mobile-toast-warning {
+    background: linear-gradient(135deg, #d97706 0%, #b45309 100%);
+  }
+  
+  .dark .mobile-toast-info {
+    background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%);
+  }
+  
+  .dark .mobile-toast-progress {
+    background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%);
+  }
+  
+  /* Responsive adjustments for different mobile sizes */
+  @media (max-width: 640px) {
+    .mobile-toast {
+      font-size: 13px;
+      padding: 14px;
+      min-height: 56px;
+    }
+    
+    [data-radix-toast-viewport] {
+      top: 12px;
+      max-width: calc(100vw - 24px);
+    }
+  }
+  
+  @media (max-width: 480px) {
+    .mobile-toast {
+      font-size: 12px;
+      padding: 12px;
+      min-height: 52px;
+      margin: 6px;
+    }
+    
+    [data-radix-toast-viewport] {
+      top: 8px;
+      max-width: calc(100vw - 16px);
+      gap: 6px;
+    }
+  }
+  
+  /* Landscape mobile adjustments */
+  @media (max-height: 600px) and (orientation: landscape) {
+    .mobile-toast {
+      min-height: 48px;
+      padding: 10px;
+    }
+    
+    [data-radix-toast-viewport] {
+      top: 8px;
+    }
+  }
+}

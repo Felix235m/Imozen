@@ -2,7 +2,7 @@
 
 import * as React from 'react';
 import { format } from 'date-fns';
-import { ptBR } from 'date-fns/locale';
+import { pt } from 'date-fns/locale';
 import { getEventConfig, getCurrentAgentLanguage } from '@/lib/communication-history-utils';
 import { cn } from '@/lib/utils';
 
@@ -61,7 +61,7 @@ export function CommunicationHistoryTimeline({
 
           if (!isNaN(timestamp)) {
             const date = new Date(timestamp);
-            const locale = agentLanguage === 'pt' ? ptBR : undefined;
+            const locale = agentLanguage === 'pt' ? pt : undefined;
             const formatStr = agentLanguage === 'pt' ? 'd MMM yyyy - HH:mm' : 'MMM d, yyyy - h:mm a';
             formattedDate = format(date, formatStr, { locale });
           }
@@ -94,18 +94,6 @@ export function CommunicationHistoryTimeline({
               <p className="text-xs text-muted-foreground mt-0.5">
                 {formattedDate}
               </p>
-              {event.description && event.event_type !== 'lead_created' && (
-                <p className="text-sm text-foreground/80 mt-1.5 leading-relaxed">
-                  {event.description}
-                </p>
-              )}
-              {event.performed_by && event.event_type !== 'lead_created' && (
-                <p className="text-xs text-muted-foreground mt-0.5">
-                  by {typeof event.performed_by === 'string'
-                    ? event.performed_by
-                    : event.performed_by.agent_name || 'Agent'}
-                </p>
-              )}
             </div>
           </div>
         );

@@ -1,0 +1,139 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Test Contact Changes Fix</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        .container {
+            background: white;
+            padding: 30px;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        .test-case {
+            margin-bottom: 30px;
+            padding: 20px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+        }
+        .success {
+            border-color: #28a745;
+            background-color: #d4edda;
+        }
+        .failure {
+            border-color: #dc3545;
+            background-color: #f8d7da;
+        }
+        h1 {
+            color: #333;
+            text-align: center;
+        }
+        h2 {
+            color: #555;
+            border-bottom: 2px solid #eee;
+            padding-bottom: 10px;
+        }
+        .steps {
+            background: #f8f9fa;
+            padding: 15px;
+            border-radius: 5px;
+            margin: 15px 0;
+        }
+        .expected {
+            color: #28a745;
+            font-weight: bold;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Contact Changes Fix Verification</h1>
+        
+        <div class="test-case">
+            <h2>Test Case 1: Phone Number Change</h2>
+            <div class="steps">
+                <h3>Steps to Test:</h3>
+                <ol>
+                    <li>Navigate to any lead detail page (e.g., <code>/leads/[lead-id]</code>)</li>
+                    <li>Click the "Edit" button (three dots menu → Edit)</li>
+                    <li>Change the phone number (country code or number field)</li>
+                    <li>Click "Save" button</li>
+                </ol>
+                </div>
+            </div>
+
+        <div class="test-case">
+            <h2>Test Case 2: Email Change</h2>
+            <div class="steps">
+                <h3>Steps to Test:</h3>
+                <ol>
+                    <li>Navigate to any lead detail page</li>
+                    <li>Click the "Edit" button</li>
+                    <li>Change the email address</li>
+                    <li>Click "Save" button</li>
+                </ol>
+            </div>
+        </div>
+
+        <div class="test-case">
+            <h2>Test Case 3: Language Change</h2>
+            <div class="steps">
+                <h3>Steps to Test:</h3>
+                <ol>
+                    <li>Navigate to any lead detail page</li>
+                    <li>Click the "Edit" button</li>
+                    <li>Change the language dropdown (English/Portuguese)</li>
+                    <li>Click "Save" button</li>
+                </ol>
+            </div>
+        </div>
+
+        <div class="test-case">
+            <h2>Expected Behavior</h2>
+            <div class="expected">
+                <p>✅ For ALL test cases above, you should see:</p>
+                <ul>
+                    <li>A confirmation popup dialog appears showing the specific change</li>
+                    <li>The change summary shows the old and new values</li>
+                    <li>Clicking "Confirm and Save" triggers the workflow to update the lead</li>
+                    <li>The lead data is successfully updated</li>
+                </ul>
+            </div>
+        </div>
+
+        <div class="test-case">
+            <h2>Previous Behavior (Before Fix)</h2>
+            <div class="failure">
+                <p>❌ Before the fix, you would see:</p>
+                <ul>
+                    <li>No confirmation popup appears</li>
+                    <li>A toast message saying "No Changes" appears</li>
+                    <li>The edit mode closes without saving</li>
+                </ul>
+            </div>
+        </div>
+
+        <div class="test-case">
+            <h2>Debug Information</h2>
+            <div class="steps">
+                <h3>Check Console Logs:</h3>
+                <p>Open browser developer tools and look for these debug messages:</p>
+                <ul>
+                    <li><code>🔍 DEBUG: prepareSaveChanges called with:</code> - Shows current field values</li>
+                    <li><code>🔍 DEBUG: currentLeadData contact:</code> - Shows constructed contact object</li>
+                    <li><code>🔍 DEBUG: Contact [field] change detected:</code> - Shows detected changes</li>
+                    <li><code>🔍 DEBUG: Changes detected:</code> - Shows final change summary</li>
+                </ul>
+            </div>
+        </div>
+    </div>
+</body>
+</html>
