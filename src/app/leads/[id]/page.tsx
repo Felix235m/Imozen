@@ -1131,10 +1131,6 @@ export default function LeadDetailPage() {
                   <TrendingUp className="mr-2 h-4 w-4" />
                   <span>{t.leads.changeStage}</span>
                 </DropdownMenuItem>
-                <DropdownMenuItem onSelect={() => setIsScheduleFollowUpDialogOpen(true)}>
-                  <Calendar className="mr-2 h-4 w-4" />
-                  <span>{t.leads.scheduleFollowUp}</span>
-                </DropdownMenuItem>
                 <DropdownMenuSeparator />
                 <DropdownMenuItem onSelect={() => setIsDeleteDialogOpen(true)} className="text-red-600">
                   <Trash2 className="mr-2 h-4 w-4" />
@@ -1367,7 +1363,7 @@ export default function LeadDetailPage() {
       {!isEditing && (
         <div className="fixed bottom-20 right-4 z-20 flex flex-col items-end gap-4">
           <ActionButton icon={FileText} label={t.leads.notes} onClick={handleOpenNotes} isLoading={isFetchingNotes} />
-          <ActionButton icon={Send} label={t.leads.followUp} onClick={() => setIsFollowUpOpen(true)} />
+          <ActionButton icon={Send} label={t.leads.followUp} onClick={() => setIsScheduleFollowUpDialogOpen(true)} />
           <ActionButton icon={History} label={t.leads.history} onClick={() => setIsHistoryOpen(true)} />
         </div>
       )}

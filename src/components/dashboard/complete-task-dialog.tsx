@@ -2,8 +2,9 @@
 "use client";
 
 import * as React from "react";
-import { CheckCircle, CalendarIcon } from "lucide-react";
+import { CheckCircle, CalendarIcon, Loader2 } from "lucide-react";
 import { format, addDays, addMonths } from 'date-fns';
+// @ts-ignore - TypeScript declaration issue with date-fns locales
 import { ptBR } from 'date-fns/locale';
 import {
   Dialog,
