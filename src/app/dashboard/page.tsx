@@ -139,7 +139,7 @@ export default function AgentDashboardPage() {
     // Navigate immediately - don't wait for preload
     switch (cardTitle) {
       case t.dashboard.stats.leadsForFollowUp:
-        router.push('/leads?filter=upcoming');
+        router.push('/tasks');
         break;
       case t.dashboard.stats.newLeadsThisWeek:
         router.push('/leads?filter=new_this_week');
