@@ -190,19 +190,11 @@ export function RescheduleModal({
               <DatePicker
                 value={customDate}
                 onChange={setCustomDate}
-                placeholder="Select a date"
+                placeholder={t.common.selectDate}
                 disablePastDates={true}
               />
             </div>
           )}
-
-          {/* Fixed Time Display */}
-          <div className="bg-blue-50 border border-blue-200 rounded-lg p-3">
-            <div className="flex items-center gap-2">
-              <Clock className="h-4 w-4 text-blue-600" />
-              <span className="text-sm font-medium text-blue-900">8:00 AM Schedule Time</span>
-            </div>
-          </div>
 
           {/* Note */}
           <div className="space-y-2">

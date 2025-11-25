@@ -614,6 +614,8 @@ export const pt = {
       selectTimeframe: "Selecione o prazo",
       enterBudget: "Digite o orçamento",
       noteExample: "ex., Cliente está muito interessado em propriedades com quintal para seu cachorro. Prefere arquitetura moderna...",
+      propertyLocation: "Digite a localização da propriedade (ex., Porto)",
+      desiredLocation: "Digite a localização desejada (ex., Lisboa)",
     },
     validation: {
       firstNameRequired: "Primeiro nome é obrigatório",

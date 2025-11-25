@@ -595,6 +595,8 @@ export const en: Translations = {
       selectSource: "Select a source",
       enterBudget: "Enter budget",
       noteExample: "e.g., Client is very interested in properties with a backyard for their dog. Prefers modern architecture...",
+      propertyLocation: "Enter property location (e.g., Porto)",
+      desiredLocation: "Enter desired location (e.g., Lisbon)",
     },
     languages: {
       english: "English",

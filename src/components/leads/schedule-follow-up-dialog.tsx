@@ -569,6 +569,7 @@ export function ScheduleFollowUpDialog({
               <DatePicker
                 value={customDate}
                 onChange={setCustomDate}
+                placeholder={t.common.selectDate}
                 disablePastDates={true}
               />
             </div>

@@ -117,10 +117,10 @@ const LEAD_STAGES: { value: LeadStage; label: string; color: string; description
 
 
 const propertyTypes = [
-  { name: "Apartment", icon: Building },
-  { name: "House", icon: Home },
-  { name: "Commercial", icon: Warehouse },
-  { name: "Land", icon: Mountain },
+  { name: "Apartment", nameKey: "apartment", icon: Building },
+  { name: "House", nameKey: "house", icon: Home },
+  { name: "Commercial", nameKey: "commercial", icon: Warehouse },
+  { name: "Land", nameKey: "land", icon: Mountain },
 ];
 
 
@@ -1272,7 +1272,7 @@ export default function LeadDetailPage() {
                                         className={cn("h-auto py-3 flex flex-col gap-2 transition-all", lead.property.type === type.name ? "bg-primary text-primary-foreground" : "bg-card hover:bg-accent hover:text-accent-foreground")}
                                     >
                                         <type.icon className="h-6 w-6" />
-                                        <span>{type.name}</span>
+                                        <span>{t.newLead.propertyTypes[type.nameKey as keyof typeof t.newLead.propertyTypes]}</span>
                                     </Button>
                                 ))}
                             </div>
@@ -1326,18 +1326,13 @@ export default function LeadDetailPage() {
                             <p className="text-gray-500 text-sm mb-2">
                               {lead.lead_type === 'Seller' ? t.leads.propertyLocation : t.leads.desiredLocations}
                             </p>
-                            <Textarea
-                                value={lead.property.locations.join(', ')}
+                            <Input
+                                value={lead.property.locations[0] || ''}
                                 onChange={(e) => {
-                                    const locationsArray = e.target.value.split(',');
-                                    setLead(prev => prev ? {...prev, property: {...prev.property, locations: locationsArray}} : null);
+                                    setLead(prev => prev ? {...prev, property: {...prev.property, locations: [e.target.value]}} : null);
                                 }}
-                                placeholder="Enter location(s). For multiple locations, separate with commas"
-                                className="min-h-[80px]"
+                                placeholder={lead.lead_type === 'Seller' ? t.newLead.placeholders.propertyLocation : t.newLead.placeholders.desiredLocation}
                             />
-                            <p className="text-xs text-muted-foreground mt-1">
-                                You can enter multiple locations separated by commas
-                            </p>
                         </div>
                     </div>
                 ) : (
@@ -1350,7 +1345,7 @@ export default function LeadDetailPage() {
                         <InfoItem label={t.leads.bedrooms} value={lead.property.bedrooms || '-'} />
                         <InfoItem
                           label={lead.lead_type === 'Seller' ? t.leads.propertyLocation : t.leads.desiredLocations}
-                          value={lead.property.locations.join(', ')}
+                          value={lead.property.locations[0] || '-'}
                           className="col-span-2"
                         />
                     </div>

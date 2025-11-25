@@ -12,6 +12,7 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from "@/components/ui/popover";
+import { useLanguage } from "@/hooks/useLanguage";
 
 interface DatePickerProps {
   value?: Date;
@@ -25,11 +26,12 @@ interface DatePickerProps {
 export function DatePicker({
   value,
   onChange,
-  placeholder = "Pick a date",
+  placeholder,
   disabled = false,
   className,
   disablePastDates = true,
 }: DatePickerProps) {
+  const { t } = useLanguage();
   const [open, setOpen] = React.useState(false);
   const today = new Date();
   today.setHours(0, 0, 0, 0);
@@ -52,7 +54,7 @@ export function DatePicker({
           )}
         >
           <CalendarIcon className="mr-2 h-4 w-4" />
-          {value ? format(value, "EEEE - MMMM d, yyyy") : <span>{placeholder}</span>}
+          {value ? format(value, "EEEE - MMMM d, yyyy") : <span>{placeholder || t.common.selectDate}</span>}
         </Button>
       </PopoverTrigger>
       <PopoverContent className="w-auto p-0" align="start">

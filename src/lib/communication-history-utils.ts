@@ -1,7 +1,7 @@
 import type { LucideIcon } from 'lucide-react';
 import type { CommunicationEvent } from '@/types/app-data';
 import { format } from 'date-fns';
-import { ptBR } from 'date-fns/locale';
+import { ptBR, enUS } from 'date-fns/locale';
 import {
   UserPlus,
   Edit,

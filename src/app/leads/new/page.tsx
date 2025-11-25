@@ -158,6 +158,14 @@ export default function NewLeadPage() {
             }
           }
 
+          // Ensure numeric fields have valid defaults
+          if (typeof data.bedrooms !== 'number') {
+            data.bedrooms = 0;
+          }
+          if (typeof data.budget !== 'number') {
+            data.budget = 0;
+          }
+
           form.reset(data);
         } catch (e) {
           console.error("Failed to parse lead form data from session storage", e);
@@ -179,7 +187,7 @@ export default function NewLeadPage() {
   // Watch values for conditional logic
   const leadType = form.watch("leadType");
   const propertyType = form.watch("propertyType");
-  const bedrooms = form.watch("bedrooms");
+  const bedrooms = form.watch("bedrooms") ?? 0;
   const locations = form.watch("locations") || "";
   const financingType = form.watch("financingType");
 
@@ -229,7 +237,7 @@ export default function NewLeadPage() {
       language: values.language,
       leadSource: values.leadSource,
       propertyType: values.propertyType,
-      locations: values.locations ? values.locations.split(',') : [],
+      locations: values.locations ? [values.locations] : [],
       budget: values.budget,
       budgetCurrency: values.budgetCurrency,
       bedrooms: values.bedrooms,
@@ -678,15 +686,11 @@ export default function NewLeadPage() {
                             : t.newLead.propertyLocation}
                         </FormLabel>
                         <FormControl>
-                          <Textarea
-                            placeholder="Enter location(s). For multiple locations, separate with commas (e.g., Lisbon, Porto, Faro)"
-                            className="min-h-[80px]"
+                          <Input
+                            placeholder={isBuyer ? t.newLead.placeholders.desiredLocation : t.newLead.placeholders.propertyLocation}
                             {...field}
                           />
                         </FormControl>
-                        <p className="text-xs text-muted-foreground mt-1">
-                          You can enter multiple locations separated by commas
-                        </p>
                         <FormMessage />
                       </FormItem>
                     )}
