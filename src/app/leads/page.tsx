@@ -40,6 +40,8 @@ import { callAuthApi, callApi } from '@/lib/auth-api';
 import { cachedCallLeadApi, cachedCallLeadStatusApi } from '@/lib/cached-api';
 import { transformWebhookResponseToLeadListItem } from '@/lib/lead-transformer';
 import { format, isValid } from 'date-fns';
+// @ts-ignore - TypeScript declaration issue with date-fns locales
+import { ptBR } from 'date-fns/locale';
 import { useLeads } from '@/hooks/useAppData';
 import { refreshDashboard } from '@/lib/selective-webhooks';
 import { RetryPopup } from '@/components/notifications/retry-popup';
@@ -99,7 +101,8 @@ function LeadsPageContent() {
       lead_stage: lead.lead_stage || lead.Stage || 'New Lead'
     }));
   }, [leadsFromStorage]);
-  const { t } = useLanguage();
+  const { t, language } = useLanguage();
+  const dateLocale = language === 'pt' ? ptBR : undefined;
 
   // Sort and filter state
   const [sortBy, setSortBy] = useState<'name' | 'created' | 'followUp'>('name');
@@ -139,7 +142,8 @@ function LeadsPageContent() {
     try {
       const parsedDate = new Date(dateValue);
       if (isValid(parsedDate)) {
-        return format(parsedDate, 'MMM d, yyyy');
+        // @ts-ignore - TypeScript issue with date-fns locale parameter
+        return format(parsedDate, 'MMM d, yyyy', { locale: dateLocale });
       } else {
         return t.leads.notSet;
       }
@@ -153,12 +157,8 @@ function LeadsPageContent() {
     if (!isoDate) return '';
     try {
       const date = new Date(isoDate);
-      return date.toLocaleDateString('en-US', {
-        month: 'short',
-        day: 'numeric',
-        year: 'numeric',
-        timeZone: 'Europe/Lisbon'
-      });
+      // @ts-ignore - TypeScript issue with date-fns locale parameter
+      return format(date, 'MMM d, yyyy', { locale: dateLocale });
     } catch {
       return '';
     }

@@ -5,6 +5,7 @@ import { format } from 'date-fns';
 import { pt } from 'date-fns/locale';
 import { getEventConfig, getCurrentAgentLanguage } from '@/lib/communication-history-utils';
 import { cn } from '@/lib/utils';
+import { useLanguage } from '@/hooks/useLanguage';
 
 export interface CommunicationEvent {
   id: string;
@@ -25,6 +26,8 @@ export function CommunicationHistoryTimeline({
   events,
   className,
 }: CommunicationHistoryTimelineProps) {
+  const { t } = useLanguage();
+
   // Get agent's language preference
   const agentLanguage = React.useMemo(() => getCurrentAgentLanguage(), []);
 
@@ -40,7 +43,7 @@ export function CommunicationHistoryTimeline({
   if (sortedEvents.length === 0) {
     return (
       <div className="flex flex-col items-center justify-center py-12 text-center">
-        <p className="text-muted-foreground">No communication history available</p>
+        <p className="text-muted-foreground">{t.leads.noCommunicationHistory}</p>
       </div>
     );
   }

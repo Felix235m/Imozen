@@ -28,6 +28,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription } from '@/components/ui/sheet';
 import { Textarea } from '@/components/ui/textarea';
 import { format } from 'date-fns';
+// @ts-ignore - TypeScript declaration issue with date-fns locales
+import { ptBR } from 'date-fns/locale';
 import { LeadStatusDialog } from '@/components/leads/lead-status-dialog';
 import { LeadTypeBadge } from '@/components/leads/lead-badges';
 import { FullLeadHeader, CompactLeadHeader } from '@/components/leads/lead-headers';
@@ -145,7 +147,20 @@ export default function LeadDetailPage() {
   const [isNotesOpen, setIsNotesOpen] = useState(false);
   const [isFollowUpOpen, setIsFollowUpOpen] = useState(false);
   const [isHistoryOpen, setIsHistoryOpen] = useState(false);
-  const { t } = useLanguage();
+  const { t, language } = useLanguage();
+  const dateLocale = language === 'pt' ? ptBR : undefined;
+
+  // Helper function to format created date with locale
+  const formatCreatedDate = (isoDate: string): string => {
+    if (!isoDate) return '';
+    try {
+      const date = new Date(isoDate);
+      // @ts-ignore - TypeScript issue with date-fns locale parameter
+      return format(date, 'MMMM d, yyyy', { locale: dateLocale });
+    } catch {
+      return '';
+    }
+  };
 
   // Helper function to get translated field labels
   const getFieldLabel = useCallback((fieldKey: string): string => {
@@ -1184,7 +1199,7 @@ export default function LeadDetailPage() {
             </div>
           </div>
           <div className='w-full flex items-center justify-end text-xs text-gray-500 mt-1 px-4'>
-            <span>{t.leads.created} {lead.created_at_formatted}</span>
+            <span>{t.leads.created} {formatCreatedDate(lead.created_at)}</span>
           </div>
         </section>
 

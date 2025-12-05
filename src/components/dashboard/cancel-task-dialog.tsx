@@ -4,6 +4,7 @@
 import * as React from "react";
 import { AlertTriangle, CalendarIcon } from "lucide-react";
 import { format, addDays, addMonths } from 'date-fns';
+// @ts-ignore - TypeScript declaration issue with date-fns locales
 import { ptBR } from 'date-fns/locale';
 import {
   Dialog,

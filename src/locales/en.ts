@@ -201,6 +201,7 @@ export const en: Translations = {
     lastUpdated: "Last updated:",
     noPastNotes: "No past notes for this lead.",
     communicationHistory: "Communication History",
+    noCommunicationHistory: "No communication history available",
     eventTypes: {
       // Lead Events
       "lead_created": "Lead Created",
@@ -495,6 +496,8 @@ export const en: Translations = {
   },
   newLead: {
     title: "New Lead",
+    addNewLead: "Add New Lead",
+    fillInformation: "Fill in all the information below",
     step1Title: "Contact Information",
     step2Title: "Property Requirements",
     step3Title: "Qualification",
@@ -551,6 +554,55 @@ export const en: Translations = {
     location: "Location",
     specificRequirements: "Specific Requirements",
     timeframe: "Timeframe",
+    // Form sections
+    contactInformation: "Contact Information",
+    contactInformationDescription: "Basic contact information for the lead",
+    propertyRequirements: "Property Requirements",
+    propertyRequirementsDescription: "Specify the property preferences",
+    qualificationDetailsBuyer: "Understanding the lead's buying position",
+    qualificationDetailsSeller: "Understanding the lead's selling position",
+    // Form labels
+    leadType: "Lead Type",
+    buyer: "Buyer",
+    seller: "Seller",
+    enterBudget: "Enter budget",
+    // Property types
+    propertyTypes: {
+      apartment: "Apartment",
+      house: "House",
+      villa: "Villa",
+      land: "Land",
+      commercial: "Commercial",
+    },
+    // Financing types
+    financingTypes: {
+      cash: "Cash",
+      credit: "Credit",
+    },
+    // Purchase timeframes
+    purchaseTimeframes: {
+      immediately: "Immediately (under 3 months)",
+      threeToSixMonths: "3-6 months",
+      afterSixMonths: "After 6 months",
+    },
+    // Search durations
+    searchDurations: {
+      startingNow: "Starting now",
+      zeroToTwoMonths: "0-2 months",
+      threeToSixMonths: "3-6 months",
+      moreThanSixMonths: "More than 6 months",
+    },
+    // Properties viewed options
+    propertiesViewed: {
+      no: "No",
+      aFew: "A few",
+      many: "Many",
+    },
+    // Contextual note examples
+    noteExamples: {
+      buyer: "e.g., Client very interested in apartments with 2+ bedrooms near the metro. Works in Lisbon and needs parking.",
+      seller: "e.g., Owner of the property for 15 years, wants to sell to move to a smaller house. Property very well maintained.",
+    },
     placeholders: {
       firstName: "Enter first name",
       lastName: "Enter last name",
@@ -563,6 +615,10 @@ export const en: Translations = {
       selectPurpose: "Select purpose",
       minBudget: "Min budget",
       maxBudget: "Max budget",
+      enterBudget: "Enter budget",
+      noteExample: "e.g., Client is very interested in properties with a backyard for their dog. Prefers modern architecture...",
+      propertyLocation: "Enter property location (e.g., Porto)",
+      desiredLocation: "Enter desired location (e.g., Lisbon)",
       selectBedrooms: "Select number of bedrooms",
       selectBathrooms: "Select number of bathrooms",
       minArea: "Min area (m²)",
@@ -577,6 +633,7 @@ export const en: Translations = {
       phoneNumberRequired: "Phone number is required",
       countryCodeRequired: "Country code is required",
       invalidEmail: "Invalid email address",
+      bedroomsNegative: "Bedrooms cannot be negative",
     },
     labels: {
       firstName: "First Name",
@@ -585,18 +642,6 @@ export const en: Translations = {
       email: "Email",
       language: "Language",
       leadSource: "Lead Source",
-    },
-    placeholders: {
-      firstName: "Enter first name",
-      lastName: "Enter last name",
-      phoneNumber: "Phone number",
-      email: "Enter email address",
-      selectLanguage: "Select a language",
-      selectSource: "Select a source",
-      enterBudget: "Enter budget",
-      noteExample: "e.g., Client is very interested in properties with a backyard for their dog. Prefers modern architecture...",
-      propertyLocation: "Enter property location (e.g., Porto)",
-      desiredLocation: "Enter desired location (e.g., Lisbon)",
     },
     languages: {
       english: "English",
@@ -611,13 +656,6 @@ export const en: Translations = {
       century21: "CENTURY 21 (PT)",
       imovirtual: "Imovirtual",
       socialMedia: "Social Media Campaign",
-    },
-    propertyTypes: {
-      apartment: "Apartment",
-      house: "House",
-      villa: "Villa",
-      land: "Land",
-      commercial: "Commercial",
     },
     purposes: {
       buy: "Buy",
@@ -705,6 +743,19 @@ export const en: Translations = {
     tapToView: "Tap to view",
     noNotificationsTitle: "No Notifications Yet",
     noNotificationsDescription: "We'll let you know when something important happens.",
+    followUpCancelled: "Follow-up Cancelled",
+    followUpRescheduled: "Follow-up Rescheduled",
+    cancellationFailed: "Cancellation Failed",
+    tapToRetryCancellation: "Tap to Retry Cancellation",
+    viewCancellationDetails: "View Cancellation Details",
+    viewLeadDetails: "View Lead Details",
+    viewFollowUps: "View Follow-ups",
+    viewTask: "View Task",
+    viewFollowUp: "View Follow-up",
+    viewRescheduledFollowUp: "View Rescheduled Follow-up",
+    notesAdded: "Notes Added",
+    notesUpdated: "Notes Updated",
+    tapToViewNotes: "Tap to View Notes",
     followUpCompleted: "Follow-up Completed",
     followUpCompletedDescription: "Follow-up for {{name}} has been marked as complete.",
     followUpCompletionFailed: "Follow-up Completion Failed",

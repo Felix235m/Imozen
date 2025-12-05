@@ -2,6 +2,8 @@
 
 import * as React from "react";
 import { format } from "date-fns";
+// @ts-ignore - TypeScript declaration issue with date-fns locales
+import { ptBR } from "date-fns/locale";
 import { Calendar as CalendarIcon } from "lucide-react";
 
 import { cn } from "@/lib/utils";
@@ -31,10 +33,12 @@ export function DatePicker({
   className,
   disablePastDates = true,
 }: DatePickerProps) {
-  const { t } = useLanguage();
+  const { t, language } = useLanguage();
   const [open, setOpen] = React.useState(false);
   const today = new Date();
   today.setHours(0, 0, 0, 0);
+
+  const dateLocale = language === 'pt' ? ptBR : undefined;
 
   const handleSelect = (date: Date | undefined) => {
     onChange(date);
@@ -54,7 +58,7 @@ export function DatePicker({
           )}
         >
           <CalendarIcon className="mr-2 h-4 w-4" />
-          {value ? format(value, "EEEE - MMMM d, yyyy") : <span>{placeholder || t.common.selectDate}</span>}
+          {value ? format(value, "EEEE - MMMM d, yyyy", { locale: dateLocale }) : <span>{placeholder || t.common.selectDate}</span>}
         </Button>
       </PopoverTrigger>
       <PopoverContent className="w-auto p-0" align="start">
@@ -62,6 +66,7 @@ export function DatePicker({
           mode="single"
           selected={value}
           onSelect={handleSelect}
+          locale={dateLocale}
           disabled={disablePastDates ? (date) => date < today : undefined}
           initialFocus
         />

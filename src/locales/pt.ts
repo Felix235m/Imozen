@@ -199,6 +199,7 @@ export const pt = {
     lastUpdated: "Última atualização:",
     noPastNotes: "Nenhuma nota anterior para este lead.",
     communicationHistory: "Histórico de Comunicação",
+    noCommunicationHistory: "Nenhum histórico de comunicação disponível",
     eventTypes: {
       // Lead Events
       "lead_created": "Lead Criado",
