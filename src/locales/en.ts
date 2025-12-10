@@ -85,7 +85,7 @@ export const en: Translations = {
     welcomeBack: "Welcome back, {{name}}!",
     stats: {
       leadsForFollowUp: "Follow-ups",
-      newLeadsThisWeek: "New Leads This Week",
+      newLeadsThisWeek: "New Leads from Last 7 Days",
       hotLeads: "Hot Leads",
       conversionRate: "Conversion Rate",
     },
@@ -152,6 +152,8 @@ export const en: Translations = {
     overdue: "Overdue",
     upcoming: "Upcoming (7 days)",
     noDateSet: "No Date Set",
+    filterByCreated: "Filter by Created Date",
+    last7Days: "Last 7 Days",
     reset: "Reset",
     allLeads: "All",
     hotLeads: "Hot",

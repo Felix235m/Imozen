@@ -110,6 +110,7 @@ function LeadsPageContent() {
   const [showOverdue, setShowOverdue] = useState(false);
   const [showUpcoming, setShowUpcoming] = useState(false);
   const [showNoDate, setShowNoDate] = useState(false);
+  const [showLast7Days, setShowLast7Days] = useState(false);
 
   const [isStatusDialogOpen, setIsStatusDialogOpen] = useState(false);
   const [selectedLeadForStatus, setSelectedLeadForStatus] = useState<Lead | null>(null);
@@ -218,7 +219,7 @@ function LeadsPageContent() {
         setShowOverdue(false);
         setShowUpcoming(false);
         setShowNoDate(false);
-        // New this week filter will be handled in filteredLeads
+        setShowLast7Days(true);
         break;
     }
   }, [filterParam]);
@@ -299,17 +300,16 @@ function LeadsPageContent() {
       });
     }
 
-    // 3b. New this week filter (from dashboard)
-    if (filterParam === 'new_this_week') {
-      const now = new Date();
-      const startOfWeek = new Date(now);
-      startOfWeek.setDate(now.getDate() - now.getDay()); // Start of current week (Sunday)
-      startOfWeek.setHours(0, 0, 0, 0);
+    // 3b. Last 7 days filter (created date)
+    if (showLast7Days) {
+      // Calculate 7 days ago for rolling window
+      // This matches the backend's rolling 7 days logic
+      const sevenDaysAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
 
       results = results.filter(lead => {
         if (!lead.created_at) return false;
         const createdDate = new Date(lead.created_at);
-        return createdDate >= startOfWeek;
+        return createdDate >= sevenDaysAgo;
       });
     }
 
@@ -349,7 +349,7 @@ function LeadsPageContent() {
     });
 
     return results;
-  }, [searchTerm, activeTab, leads, sortBy, sortDirection, showOverdue, showUpcoming, showNoDate, filterParam]);
+  }, [searchTerm, activeTab, leads, sortBy, sortDirection, showOverdue, showUpcoming, showNoDate, showLast7Days]);
 
   const leadToDeleteName = useMemo(() => {
     if (!leadToDelete) return '';
@@ -861,9 +861,9 @@ function LeadsPageContent() {
                 <Button variant="outline" className="shrink-0">
                   <ArrowUpDown className="h-4 w-4 md:mr-2" />
                   <span className="hidden md:inline">{t.leads.sortAndFilter}</span>
-                  {(sortBy !== 'name' || sortDirection !== 'asc' || showOverdue || showUpcoming || showNoDate) && (
+                  {(sortBy !== 'name' || sortDirection !== 'asc' || showOverdue || showUpcoming || showNoDate || showLast7Days) && (
                     <Badge variant="secondary" className="ml-2 h-5 w-5 p-0 flex items-center justify-center rounded-full">
-                      {[sortBy !== 'name', sortDirection !== 'asc', showOverdue, showUpcoming, showNoDate].filter(Boolean).length}
+                      {[sortBy !== 'name', sortDirection !== 'asc', showOverdue, showUpcoming, showNoDate, showLast7Days].filter(Boolean).length}
                     </Badge>
                   )}
                 </Button>
@@ -905,12 +905,20 @@ function LeadsPageContent() {
 
                 <DropdownMenuSeparator />
 
+                <DropdownMenuLabel>{t.leads.filterByCreated}</DropdownMenuLabel>
+                <DropdownMenuCheckboxItem checked={showLast7Days} onCheckedChange={setShowLast7Days}>
+                  {t.leads.last7Days}
+                </DropdownMenuCheckboxItem>
+
+                <DropdownMenuSeparator />
+
                 <DropdownMenuItem onClick={() => {
                   setSortBy('name');
                   setSortDirection('asc');
                   setShowOverdue(false);
                   setShowUpcoming(false);
                   setShowNoDate(false);
+                  setShowLast7Days(false);
                 }}>
                   <X className="mr-2 h-4 w-4" />
                   {t.leads.reset}

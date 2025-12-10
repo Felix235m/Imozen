@@ -83,7 +83,7 @@ export const pt = {
     welcomeBack: "Bem-vindo, {{name}}!",
     stats: {
       leadsForFollowUp: "Acompanhamentos",
-      newLeadsThisWeek: "Novos Leads Esta Semana",
+      newLeadsThisWeek: "Novos Leads dos Últimos 7 Dias",
       hotLeads: "Leads Quentes",
       conversionRate: "Taxa de Conversão",
     },
@@ -150,6 +150,8 @@ export const pt = {
     overdue: "Atrasado",
     upcoming: "Próximos (7 dias)",
     noDateSet: "Sem Data Definida",
+    filterByCreated: "Filtrar por Data de Criação",
+    last7Days: "Últimos 7 Dias",
     reset: "Redefinir",
     allLeads: "Todos",
     hotLeads: "Quentes",
