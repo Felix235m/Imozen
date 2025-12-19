@@ -1002,6 +1002,8 @@ export function TaskCard({
 
     localStorageManager.updateNotifications([newNotification, ...currentNotifications]);
     dispatchThrottledStorageEvent('app_data', JSON.stringify(localStorageManager.getAppData()));
+
+    return newNotification.id;
   };
 
   const handleCancellationSuccess = async (responseData: any, cancellationData: any) => {
@@ -1283,7 +1285,7 @@ export function TaskCard({
   const handleCancel = async (note: string, nextFollowUpDate?: Date, scheduleNext?: boolean) => {
     setIsCancelling(true);
 
-    const agentName = getCurrentAgentName();
+    const agentName = getCurrentAgentName() || 'Agent';
 
     // Close dialog immediately - user gets immediate feedback via task hiding
     setShowCancel(false);

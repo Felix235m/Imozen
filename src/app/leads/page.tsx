@@ -610,10 +610,11 @@ function LeadsPageContent() {
       description: `Lead priority changed to ${newStatus}.`,
     });
 
+    let lockResult: any;
     try {
         // Construct payload for the status change API
         // Check if priority change operation is already locked
-        const lockResult = acquirePriorityChangeLock(leadId, newStatus, {
+        lockResult = acquirePriorityChangeLock(leadId, newStatus, {
           source: 'leads-list-page',
           requestId: operationId
         });
@@ -658,8 +659,10 @@ function LeadsPageContent() {
     } catch (error: any) {
          console.error('Priority update error:', error);
 
-         // Release the operation lock on error
-         releasePriorityChangeLock(lockResult.operationId!);
+         // Release the operation lock on error (if it was acquired)
+         if (lockResult?.operationId) {
+           releasePriorityChangeLock(lockResult.operationId);
+         }
 
          // Rollback: Revert to old priority
          updateSingleLead(leadId, { temperature: oldPriority } as any);

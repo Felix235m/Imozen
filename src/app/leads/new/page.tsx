@@ -260,7 +260,7 @@ export default function NewLeadPage() {
       lead_type: values.leadType as 'Buyer' | 'Seller',
       next_follow_up: {
         status: 'Not set',
-        date: null,
+        date: undefined,
       },
       contact: {
         phone: completePhoneNumber,
@@ -355,6 +355,7 @@ export default function NewLeadPage() {
       const updatedDashboard = {
         success: true,
         counts: {
+          ...currentDashboard.counts,
           all: currentDashboard.counts.all + 1,
           new_this_week: currentDashboard.counts.new_this_week + 1,
           hot: currentDashboard.counts.hot + (processed.lead.temperature === 'Hot' ? 1 : 0),
