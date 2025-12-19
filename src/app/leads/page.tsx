@@ -49,6 +49,11 @@ import type { OptimisticOperation } from '@/types/app-data';
 import { checkForDraft, clearDraft, type DraftInfo } from '@/lib/draft-detector';
 import { DraftResumeDialog } from '@/components/leads/draft-resume-dialog';
 import { navigationOptimizer } from '@/lib/navigation-optimizer';
+import {
+  acquirePriorityChangeLock,
+  releasePriorityChangeLock,
+  isPriorityChangeLocked
+} from '@/lib/operation-deduplicator';
 
 
 type LeadTemperature = 'Hot' | 'Warm' | 'Cold';
@@ -607,6 +612,25 @@ function LeadsPageContent() {
 
     try {
         // Construct payload for the status change API
+        // Check if priority change operation is already locked
+        const lockResult = acquirePriorityChangeLock(leadId, newStatus, {
+          source: 'leads-list-page',
+          requestId: operationId
+        });
+
+        if (!lockResult.success) {
+          toast({
+            title: "Operation in Progress",
+            description: "Priority change is already being processed. Please wait...",
+            variant: "destructive"
+          });
+          console.warn('Priority change operation locked:', lockResult.message);
+
+          // Rollback: Revert to old priority
+          updateSingleLead(leadId, { temperature: oldPriority } as any);
+          return;
+        }
+
         const payload = {
             lead_id: leadId,
             operation: 'change_priority',
@@ -628,8 +652,14 @@ function LeadsPageContent() {
         // Refresh dashboard immediately
         await refreshDashboard();
 
+        // Release the operation lock
+        releasePriorityChangeLock(lockResult.operationId!);
+
     } catch (error: any) {
          console.error('Priority update error:', error);
+
+         // Release the operation lock on error
+         releasePriorityChangeLock(lockResult.operationId!);
 
          // Rollback: Revert to old priority
          updateSingleLead(leadId, { temperature: oldPriority } as any);

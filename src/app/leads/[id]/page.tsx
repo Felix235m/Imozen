@@ -31,6 +31,11 @@ import { format } from 'date-fns';
 // @ts-ignore - TypeScript declaration issue with date-fns locales
 import { ptBR } from 'date-fns/locale';
 import { LeadStatusDialog } from '@/components/leads/lead-status-dialog';
+import {
+  acquirePriorityChangeLock,
+  releasePriorityChangeLock,
+  isPriorityChangeLocked
+} from '@/lib/operation-deduplicator';
 import { LeadTypeBadge } from '@/components/leads/lead-badges';
 import { FullLeadHeader, CompactLeadHeader } from '@/components/leads/lead-headers';
 import {
@@ -791,6 +796,22 @@ export default function LeadDetailPage() {
         },
     };
 
+    // Check if priority change operation is already locked
+    const lockResult = acquirePriorityChangeLock(leadId, newStatus, {
+      source: 'lead-details-page',
+      requestId: `priority-${leadId}-${Date.now()}`
+    });
+
+    if (!lockResult.success) {
+      toast({
+        title: "Operation in Progress",
+        description: "Priority change is already being processed. Please wait...",
+        variant: "destructive"
+      });
+      console.warn('Priority change operation locked:', lockResult.message);
+      return;
+    }
+
     console.log('🔍 DEBUG: Sending payload to API:', {
       leadId,
       temperature: fullPayload.temperature,
@@ -872,9 +893,15 @@ export default function LeadDetailPage() {
             title: "Priority updated",
             description: `Lead priority changed to ${newStatus} and note added.`,
         });
+
+        // Release the operation lock
+        releasePriorityChangeLock(lockResult.operationId!);
     }).catch((error) => {
         console.error('❌ DEBUG: Priority update error:', error);
         toast({ variant: 'destructive', title: 'Error', description: 'Could not update priority.' });
+
+        // Release the operation lock on error
+        releasePriorityChangeLock(lockResult.operationId!);
     });
   };
   
