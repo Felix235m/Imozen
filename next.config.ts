@@ -5,6 +5,10 @@ const nextConfig: NextConfig = {
   eslint: {
     ignoreDuringBuilds: true,
   },
+  // Configure compiler for production optimizations
+  compiler: {
+    removeConsole: process.env.NODE_ENV === 'production',
+  },
   images: {
     remotePatterns: [
       {
@@ -30,10 +34,11 @@ const nextConfig: NextConfig = {
   // Experimental features for performance
   experimental: {
     optimizePackageImports: ['lucide-react', '@radix-ui/react-icons'],
-    turbo: {
-      resolveAlias: {
-        // Add any package aliases if needed
-      },
+  },
+  // Turbopack configuration (stable in Next.js 15)
+  turbopack: {
+    resolveAlias: {
+      // Add any package aliases if needed
     },
   },
   // Webpack configuration for chunk splitting
@@ -104,18 +109,7 @@ const nextConfig: NextConfig = {
         })
       );
 
-      // Enable better compression
-      config.optimization.minimizer?.push(
-        new webpack.TerserPlugin({
-          parallel: true,
-          terserOptions: {
-            compress: {
-              drop_console: process.env.NODE_ENV === 'production',
-            },
-          },
-        })
-      );
-    }
+      }
 
     // Add transpilation for specific packages if needed
     if (!isServer) {
@@ -131,8 +125,7 @@ const nextConfig: NextConfig = {
   },
   // Transpile packages that need compilation
   transpilePackages: [],
-  // Configure SWC minification
-  swcMinify: true,
+  // SWC minification is enabled by default in Next.js 15
   // Configure compression
   compress: true,
   // Enable standalone output for better deployment

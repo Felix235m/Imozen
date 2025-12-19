@@ -4,6 +4,7 @@ import React, { createContext, useState, useEffect, ReactNode } from 'react';
 import { pt, Translations } from '@/locales/pt';
 import { en } from '@/locales/en';
 import { LANGUAGE_MAP, REVERSE_LANGUAGE_MAP, type AgentData } from '@/types/agent';
+import { safeGetLocalStorageJSON, safeGetLocalStorage, safeSetLocalStorage } from '@/lib/ssr-safe-storage';
 
 export type Language = 'pt' | 'en';
 
@@ -17,13 +18,12 @@ export const LanguageContext = createContext<LanguageContextType | undefined>(un
 
 const translations = { pt, en };
 
-// Helper function to get language from agent data
+// Helper function to get language from agent data (SSR-safe)
 function getLanguageFromAgentData(): Language | null {
   try {
-    const agentDataString = localStorage.getItem('agent_data');
-    if (!agentDataString) return null;
+    const agentData = safeGetLocalStorageJSON<AgentData>('agent_data');
+    if (!agentData) return null;
 
-    const agentData: AgentData = JSON.parse(agentDataString);
     const agentLang = agentData.agent_language;
 
     if (!agentLang) return null;
@@ -62,7 +62,7 @@ export function LanguageProvider({ children }: { children: ReactNode }) {
       }
 
       // Priority 2: Standalone localStorage language (fallback)
-      const savedLanguage = localStorage.getItem('language') as Language;
+      const savedLanguage = safeGetLocalStorage('language') as Language;
       console.log('🔍 HYDRATION DEBUG: Saved language from localStorage:', savedLanguage);
       
       if (savedLanguage && (savedLanguage === 'pt' || savedLanguage === 'en')) {
@@ -78,15 +78,14 @@ export function LanguageProvider({ children }: { children: ReactNode }) {
 
   const setLanguage = (lang: Language) => {
     setLanguageState(lang);
-    localStorage.setItem('language', lang);
+    safeSetLocalStorage('language', lang);
 
     // Also update agent_data if it exists (bidirectional sync)
     try {
-      const agentDataString = localStorage.getItem('agent_data');
-      if (agentDataString) {
-        const agentData: AgentData = JSON.parse(agentDataString);
+      const agentData = safeGetLocalStorageJSON<AgentData>('agent_data');
+      if (agentData) {
         agentData.agent_language = REVERSE_LANGUAGE_MAP[lang] as AgentData['agent_language'];
-        localStorage.setItem('agent_data', JSON.stringify(agentData));
+        safeSetLocalStorage('agent_data', JSON.stringify(agentData));
       }
     } catch (error) {
       console.error('Failed to update agent_data language:', error);

@@ -2,7 +2,7 @@
 import React, { useEffect, useState, useMemo, useCallback } from 'react';
 import { unstable_batchedUpdates } from 'react-dom';
 import { Card, CardContent } from '@/components/ui/card';
-import { Bell } from 'lucide-react';
+import { Bell, AlertTriangle, RefreshCw } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { formatDistanceToNow, format } from 'date-fns';
 import { ptBR, enUS } from 'date-fns/locale';
@@ -12,12 +12,15 @@ import { useRouter } from 'next/navigation';
 import { useLanguage } from '@/hooks/useLanguage';
 import { useToast } from '@/hooks/use-toast';
 import { Button } from '@/components/ui/button';
+import ErrorBoundary from '@/components/ErrorBoundary';
 
 export default function NotificationsPage() {
     const router = useRouter();
     const [isClient, setIsClient] = useState(false);
     const [iconConfigs, setIconConfigs] = useState<Record<string, any>>({});
-    const { t } = useLanguage();
+    const [hasError, setHasError] = useState(false);
+    const [error, setError] = useState<Error | null>(null);
+    const { t, language } = useLanguage();
     const { toast } = useToast();
 
     // PERFORMANCE LOG: Track when component starts mounting
@@ -29,8 +32,19 @@ export default function NotificationsPage() {
         };
     }, []);
 
-    // Get notifications from localStorage
-    const { notifications: notificationsFromStorage, updateNotifications } = useNotifications();
+    // Get notifications from localStorage with error handling
+    let notificationsFromStorage: any[] = [];
+    let updateNotifications: (notifications: any[]) => void = () => {};
+
+    try {
+        const hookData = useNotifications();
+        notificationsFromStorage = hookData.notifications || [];
+        updateNotifications = hookData.updateNotifications || (() => {});
+    } catch (error) {
+        console.error('Error accessing notifications:', error);
+        setError(error as Error);
+        setHasError(true);
+    }
 
     // REAL-TIME UPDATES: Listen for storage changes to trigger immediate re-renders
     useEffect(() => {
@@ -427,8 +441,8 @@ export default function NotificationsPage() {
     // HYDRATION FIX: Get safe locale for date formatting
     const dateLocale = useMemo(() => {
         // Use consistent locale for both server and client
-        return t.language === 'pt' ? ptBR : enUS;
-    }, [t.language]);
+        return language === 'pt' ? ptBR : enUS;
+    }, [language]);
 
     // HYDRATION FIX: Safe time parsing that uses device time when needed
     const getSafeTime = useCallback((timestamp: string | undefined) => {
@@ -496,78 +510,140 @@ export default function NotificationsPage() {
         });
     }, [notificationsFromStorage, updateNotifications]);
 
-    return (
-        <div className="p-4 pb-20">
-            {/* Header with Mark All as Read button */}
-            {notificationsFromStorage.length > 0 && (
-                <div className="flex justify-end mb-4">
-                    <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={markAllAsRead}
-                        className="text-sm"
-                    >
-                        Mark All as Read
-                    </Button>
-                </div>
-            )}
+    // Handle error state
+    if (hasError) {
+        return (
+            <div className="p-4 pb-20">
+                <Card className="border-red-200 bg-red-50">
+                    <CardContent className="flex flex-col items-center justify-center text-center p-8">
+                        <AlertTriangle className="w-16 h-16 text-red-500 mb-4" />
+                        <h2 className="text-xl font-semibold text-red-700 mb-2">
+                            Notifications Error
+                        </h2>
+                        <p className="text-red-600 mb-4">
+                            {error?.message || 'Failed to load notifications. Please try refreshing the page.'}
+                        </p>
+                        <div className="flex gap-3">
+                            <Button
+                                onClick={() => window.location.reload()}
+                                className="bg-red-600 hover:bg-red-700"
+                            >
+                                <RefreshCw className="w-4 h-4 mr-2" />
+                                Refresh Page
+                            </Button>
+                            <Button
+                                variant="outline"
+                                onClick={() => {
+                                    setHasError(false);
+                                    setError(null);
+                                }}
+                            >
+                                Try Again
+                            </Button>
+                        </div>
+                    </CardContent>
+                </Card>
+            </div>
+        );
+    }
 
-            {/* Always render consistent structure - use conditional content instead of conditional rendering */}
-            <div className="space-y-4">
-                {notifications.map(notification => (
-                    <Card
-                        key={notification.id}
-                        className={`${notification.read ? 'bg-card' : 'bg-blue-50 border-blue-200'} ${notification.isClickable ? 'cursor-pointer hover:shadow-md transition-shadow' : ''}`}
-                        onClick={() => notification.isClickable && handleNotificationClick(notification.originalNotif)}
-                    >
-                        <CardContent className="flex items-start gap-4 p-4">
-                            <div className={`mt-1 flex h-8 w-8 items-center justify-center rounded-full ${notification.read ? 'bg-gray-100' : 'bg-primary/20'}`}>
-                                <notification.icon className={`h-5 w-5 ${notification.read ? 'text-gray-500' : 'text-primary'}`} />
-                            </div>
-                            <div className="flex-1">
-                                <div className="flex items-center justify-between">
-                                    <h3 className="font-semibold">{notification.title}</h3>
-                                    {!notification.read && <Badge className="bg-primary">{t.common.new}</Badge>}
-                                </div>
-                                <p className="text-sm text-gray-600">{notification.description}</p>
-                                {/* HYDRATION FIX: Use safe time display that's consistent */}
-                                <p className="text-xs text-gray-400 mt-1">
-                                    {getSafeTimeDisplay(notification.time)}
-                                </p>
-                                {notification.isClickable && (
-                                    <p className="text-xs text-primary font-medium mt-2">
-                                        {notification.originalNotif.action_type === 'retry_create_lead'
-                                            ? t.notifications.tapToRetry
-                                            : notification.originalNotif.action_type === 'retry_follow_up'
-                                            ? 'Tap to Retry Follow-up'
-                                            : notification.originalNotif.action_type === 'navigate_to_follow_ups'
-                                            ? t.notifications.viewFollowUps
-                                            : notification.originalNotif.action_type === 'navigate_to_lead'
-                                            ? t.notifications.viewLeadDetails
-                                            : notification.originalNotif.action_type === 'navigate_to_task'
-                                            ? t.notifications.viewTask
-                                            : notification.originalNotif.type === 'follow_up_scheduled'
-                                            ? t.notifications.viewFollowUp
-                                            : notification.originalNotif.type === 'follow_up_rescheduled'
-                                            ? t.notifications.viewRescheduledFollowUp
-                                            : notification.originalNotif.type === 'follow_up_cancellation_failed'
-                                            ? t.notifications.tapToRetryCancellation
-                                            : t.notifications.tapToView}
-                                    </p>
-                                )}
-                            </div>
+    return (
+        <ErrorBoundary
+            fallback={({ error: boundaryError, retry }) => (
+                <div className="p-4 pb-20">
+                    <Card className="border-red-200 bg-red-50">
+                        <CardContent className="flex flex-col items-center justify-center text-center p-8">
+                            <AlertTriangle className="w-16 h-16 text-red-500 mb-4" />
+                            <h2 className="text-xl font-semibold text-red-700 mb-2">
+                                Unexpected Error
+                            </h2>
+                            <p className="text-red-600 mb-4">
+                                Something went wrong while loading notifications.
+                            </p>
+                            <Button
+                                onClick={retry}
+                                className="bg-red-600 hover:bg-red-700"
+                            >
+                                <RefreshCw className="w-4 h-4 mr-2" />
+                                Try Again
+                            </Button>
                         </CardContent>
                     </Card>
-                ))}
-            </div>
+                </div>
+            )}
+        >
+            <div className="p-4 pb-20">
+                {/* Header with Mark All as Read button */}
+                {notificationsFromStorage.length > 0 && (
+                    <div className="flex justify-end mb-4">
+                        <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={markAllAsRead}
+                            className="text-sm"
+                        >
+                            Mark All as Read
+                        </Button>
+                    </div>
+                )}
 
-            {/* Empty state - always render but conditionally display */}
-            <div className={`flex flex-col items-center justify-center text-center h-96 ${notifications.length === 0 ? '' : 'hidden'}`}>
-                <Bell className="w-16 h-16 text-gray-300 mb-4" />
-                <h2 className="text-xl font-semibold text-gray-600">{t.notifications.noNotificationsTitle}</h2>
-                <p className="text-gray-400 mt-1">{t.notifications.noNotificationsDescription}</p>
+                {/* Always render consistent structure - use conditional content instead of conditional rendering */}
+                <div className="space-y-4">
+                    {notifications.map(notification => (
+                        <Card
+                            key={notification.id}
+                            className={`${notification.read ? 'bg-card' : 'bg-blue-50 border-blue-200'} ${notification.isClickable ? 'cursor-pointer hover:shadow-md transition-shadow' : ''}`}
+                            onClick={() => notification.isClickable && handleNotificationClick(notification.originalNotif)}
+                        >
+                            <CardContent className="flex items-start gap-4 p-4">
+                                <div className={`mt-1 flex h-8 w-8 items-center justify-center rounded-full ${notification.read ? 'bg-gray-100' : 'bg-primary/20'}`}>
+                                    <notification.icon className={`h-5 w-5 ${notification.read ? 'text-gray-500' : 'text-primary'}`} />
+                                </div>
+                                <div className="flex-1">
+                                    <div className="flex items-center justify-between">
+                                        <h3 className="font-semibold">{notification.title}</h3>
+                                        {!notification.read && <Badge className="bg-primary">{t.common.new}</Badge>}
+                                    </div>
+                                    <p className="text-sm text-gray-600">{notification.description}</p>
+                                    {/* HYDRATION FIX: Use safe time display that's consistent */}
+                                    <p className="text-xs text-gray-400 mt-1">
+                                        {getSafeTimeDisplay(notification.time)}
+                                    </p>
+                                    {notification.isClickable && (
+                                        <p className="text-xs text-primary font-medium mt-2">
+                                            {notification.originalNotif.action_type === 'retry_create_lead'
+                                                ? t.notifications.tapToRetry
+                                                : notification.originalNotif.action_type === 'retry_follow_up'
+                                                ? 'Tap to Retry Follow-up'
+                                                : notification.originalNotif.action_type === 'navigate_to_follow_ups'
+                                                ? t.notifications.viewFollowUps
+                                                : notification.originalNotif.action_type === 'navigate_to_lead'
+                                                ? t.notifications.viewLeadDetails
+                                                : notification.originalNotif.action_type === 'navigate_to_task'
+                                                ? t.notifications.viewTask
+                                                : notification.originalNotif.type === 'follow_up_scheduled'
+                                                ? t.notifications.viewFollowUp
+                                                : notification.originalNotif.type === 'follow_up_rescheduled'
+                                                ? t.notifications.viewRescheduledFollowUp
+                                                : notification.originalNotif.type === 'follow_up_cancellation_failed'
+                                                ? t.notifications.tapToRetryCancellation
+                                                : t.notifications.tapToView}
+                                        </p>
+                                    )}
+                                </div>
+                            </CardContent>
+                        </Card>
+                    ))}
+                </div>
+
+                {/* Empty state - always render but conditionally display */}
+                <div className={`flex flex-col items-center justify-center text-center h-96 ${notifications.length === 0 ? '' : 'hidden'}`}>
+                    <Bell className="w-16 h-16 text-gray-300 mb-4" />
+                    <h2 className="text-xl font-semibold text-gray-600">{t.notifications.noNotificationsTitle}</h2>
+                    <p className="text-gray-400 mt-1">{t.notifications.noNotificationsDescription}</p>
+                </div>
             </div>
-        </div>
+        </ErrorBoundary>
     );
 
 }

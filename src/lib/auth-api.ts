@@ -9,12 +9,90 @@ const LEAD_COMMUNICATION_URL = 'https://eurekagathr.app.n8n.cloud/webhook/domain
 const TASK_OPERATIONS_URL = 'https://eurekagathr.app.n8n.cloud/webhook/task-operation';
 const AGENT_DATABASE_URL = 'https://eurekagathr.app.n8n.cloud/webhook/agent_data';
 
+// Retry configuration
+const MAX_RETRIES = 3;
+const RETRY_DELAYS = [1000, 2000, 4000]; // Exponential backoff: 1s, 2s, 4s
+const RETRYABLE_STATUS_CODES = [408, 429, 500, 502, 503, 504];
+
 
 type Operation = 'login' | 'password_reset_request' | 'password_reset_complete' | 'onboard_agent' | 'update_agent' | 'validate_session' | 'agent_image_url';
 type LeadOperation = 'get_dashboard' | 'get_tasks' | 'get_all_leads' | 'edit_lead' | 'delete_lead' | 'upload_lead_image' | 'upload_lead_profile_image' | 'delete_lead_image' | 'add_new_note' | 'save_note' | 'get_notes';
 type LeadStatus = 'active' | 'inactive';
 type FollowUpOperation = 'regenerate_follow-up_message';
 type TaskOperation = 'reschedule_task' | 'cancel_task' | 'mark_task_done' | 'edit_follow_up_message';
+
+/**
+ * Sleep utility for retry delays
+ */
+const sleep = (ms: number): Promise<void> => {
+  return new Promise(resolve => setTimeout(resolve, ms));
+};
+
+/**
+ * Fetch with retry logic and timeout
+ */
+async function fetchWithRetry(
+  url: string,
+  options: RequestInit,
+  retryCount: number = 0
+): Promise<Response> {
+  // Add timeout to fetch options
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), 10000); // 10 second timeout
+
+  try {
+    const response = await fetch(url, {
+      ...options,
+      signal: controller.signal
+    });
+
+    // Clear timeout on successful response
+    clearTimeout(timeoutId);
+
+    // If response is OK, return it
+    if (response.ok) {
+      return response;
+    }
+
+    // If response is not retryable, throw error immediately
+    if (!RETRYABLE_STATUS_CODES.includes(response.status)) {
+      return response;
+    }
+
+    // If we've exceeded max retries, return the last response
+    if (retryCount >= MAX_RETRIES) {
+      console.warn(`⚠️ Max retries (${MAX_RETRIES}) exceeded for ${url}`);
+      return response;
+    }
+
+    // Retry with exponential backoff
+    const delay = RETRY_DELAYS[Math.min(retryCount, RETRY_DELAYS.length - 1)];
+    console.warn(`⚠️ Request failed (${response.status}), retrying in ${delay}ms (attempt ${retryCount + 1}/${MAX_RETRIES})`);
+
+    await sleep(delay);
+    return fetchWithRetry(url, options, retryCount + 1);
+
+  } catch (error: any) {
+    clearTimeout(timeoutId);
+
+    // If abort error, don't retry
+    if (error.name === 'AbortError') {
+      throw error;
+    }
+
+    // If we've exceeded max retries, throw the error
+    if (retryCount >= MAX_RETRIES) {
+      throw error;
+    }
+
+    // Retry with exponential backoff
+    const delay = RETRY_DELAYS[Math.min(retryCount, RETRY_DELAYS.length - 1)];
+    console.warn(`⚠️ Network error, retrying in ${delay}ms (attempt ${retryCount + 1}/${MAX_RETRIES}):`, error.message);
+
+    await sleep(delay);
+    return fetchWithRetry(url, options, retryCount + 1);
+  }
+}
 
 export async function callApi(url: string, body: any) {
     const headers: HeadersInit = {
@@ -232,6 +310,7 @@ export async function callTaskApi(operation: TaskOperation, payload: any = {}) {
 /**
  * Fetch complete agent database (all app data in single call)
  * This replaces individual calls to get_tasks, get_dashboard, get_all_leads, etc.
+ * Enhanced with retry logic and timeout handling.
  * @param token - Authentication token
  * @returns Complete agent database response
  */
@@ -252,21 +331,21 @@ export async function fetchAgentDatabase(token: string) {
 
     let response;
     try {
-        response = await fetch(AGENT_DATABASE_URL, {
+        response = await fetchWithRetry(AGENT_DATABASE_URL, {
             method: 'POST',
             headers,
             body: JSON.stringify(body),
         });
     } catch (error: any) {
-        console.error('❌ fetchAgentDatabase - Network error:', error);
+        console.error('❌ fetchAgentDatabase - Network error after retries:', error);
 
-        if (error.name === 'TypeError' || error.message.includes('fetch')) {
-            throw new Error('Server is busy or could not be reached. Please check your connection and try again.');
-        }
         if (error.name === 'AbortError') {
-            throw new Error('Request timed out. The server is taking too long to respond.');
+            throw new Error('Request timed out after multiple attempts. The server may be experiencing high load. Please try again later.');
         }
-        throw new Error('Network error occurred. Please check your connection and try again.');
+        if (error.name === 'TypeError' || error.message.includes('fetch')) {
+            throw new Error('Unable to connect to the server after multiple attempts. Please check your internet connection and try again.');
+        }
+        throw new Error('Network error occurred. Please check your connection and try again later.');
     }
 
     console.log('🟠 fetchAgentDatabase - Response status:', response.status, response.statusText);

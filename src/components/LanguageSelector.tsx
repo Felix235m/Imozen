@@ -25,11 +25,13 @@ export function LanguageSelector() {
   React.useEffect(() => {
     if (isMounted) {
       console.log('🔍 HYDRATION DEBUG: LanguageSelector interactive render');
-      // Check for any fdprocessedid attributes
+      // Check for any fdprocessedid attributes (SSR-safe)
       setTimeout(() => {
-        const elements = document.querySelectorAll('[fdprocessedid]');
-        if (elements.length > 0) {
-          console.log('🔍 HYDRATION DEBUG: Found elements with fdprocessedid:', elements);
+        if (typeof window !== 'undefined' && window.document) {
+          const elements = document.querySelectorAll('[fdprocessedid]');
+          if (elements.length > 0) {
+            console.log('🔍 HYDRATION DEBUG: Found elements with fdprocessedid:', elements);
+          }
         }
       }, 100);
     }

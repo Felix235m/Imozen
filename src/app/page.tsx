@@ -11,6 +11,7 @@ import { fetchAgentDatabase } from '@/lib/auth-api';
 import { localStorageManager } from '@/lib/local-storage-manager';
 import { LoadingModal } from '@/components/ui/loading-modal';
 import { useToast } from '@/hooks/use-toast';
+import { getAuthToken, removeAuthToken, removeAgentData } from '@/lib/ssr-safe-storage';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
 import { Loader2 } from 'lucide-react';
 
@@ -37,8 +38,8 @@ export default function LoginPage() {
       setLoadingStep(0);
 
       try {
-        // Get token from localStorage
-        const token = localStorage.getItem('auth_token');
+        // Get token from localStorage (SSR-safe)
+        const token = getAuthToken();
         if (!token) {
           throw new Error('Authentication token not found');
         }
@@ -98,7 +99,7 @@ export default function LoginPage() {
     setIsRetrying(true);
     console.log('🔍 DEBUG: Retry attempt started');
     try {
-      const token = localStorage.getItem('auth_token');
+      const token = getAuthToken();
       if (!token) {
         console.log('🔍 DEBUG: Retry failed - no auth token');
         throw new Error('Authentication token not found');
@@ -140,16 +141,16 @@ export default function LoginPage() {
         description: `Could not load data after retry: ${error.message}. Try again later or contact admin.`,
       });
 
-      localStorage.removeItem('auth_token');
-      localStorage.removeItem('agent_data');
+      removeAuthToken();
+      removeAgentData();
       console.log('🔍 DEBUG: Retry failed - logged out user');
     }
   };
 
   const handleLogoutAfterError = () => {
     setShowRetryDialog(false);
-    localStorage.removeItem('auth_token');
-    localStorage.removeItem('agent_data');
+    removeAuthToken();
+    removeAgentData();
     toast({
       title: 'Logged Out',
       description: 'Please try logging in again',

@@ -35,6 +35,7 @@ import { navigationOptimizer } from '@/lib/navigation-optimizer';
 import { performanceLogger } from '@/lib/performance-logger';
 import { useNotifications } from '@/hooks/useAppData';
 import { Badge } from '@/components/ui/badge';
+import { safeGetLocalStorageJSON, getAuthToken, removeAuthToken, removeAgentData } from '@/lib/ssr-safe-storage';
 
 export default function DashboardLayout({
   children,
@@ -88,9 +89,8 @@ export default function DashboardLayout({
 
   useEffect(() => {
     try {
-      const agentDataString = localStorage.getItem('agent_data');
-      if (agentDataString) {
-        const agentData = JSON.parse(agentDataString);
+      const agentData = safeGetLocalStorageJSON('agent_data');
+      if (agentData) {
         setAgentAvatar(agentData.agent_image_url || undefined);
         setAgentInitial(agentData.agent_name ? agentData.agent_name.charAt(0).toUpperCase() : 'A');
       }
@@ -105,8 +105,8 @@ export default function DashboardLayout({
   }, [pathname]);
 
   const handleLogout = () => {
-    localStorage.removeItem('auth_token');
-    localStorage.removeItem('agent_data');
+    removeAuthToken();
+    removeAgentData();
     router.push('/');
   };
 
@@ -115,7 +115,7 @@ export default function DashboardLayout({
     setRefreshStep(0);
 
     try {
-      const token = localStorage.getItem('auth_token');
+      const token = getAuthToken();
       if (!token) {
         throw new Error('Authentication token not found');
       }

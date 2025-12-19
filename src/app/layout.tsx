@@ -3,6 +3,7 @@ import { UnifiedToaster } from '@/components/ui/unified-toaster';
 import { LanguageProvider } from '@/contexts/LanguageContext';
 import { TranslationProvider } from '@/components/providers/TranslationProvider';
 import { OfflineBanner } from '@/components/ui/offline-banner';
+import ErrorBoundary from '@/components/ErrorBoundary';
 import './globals.css';
 
 export const metadata: Metadata = {
@@ -31,13 +32,15 @@ export default function RootLayout({
         <meta name="viewport" content="width=device-width, initial-scale=1" />
       </head>
       <body className="font-body antialiased" suppressHydrationWarning>
-        <LanguageProvider>
-          <TranslationProvider>
-            <OfflineBanner />
-            {children}
-            <UnifiedToaster />
-          </TranslationProvider>
-        </LanguageProvider>
+        <ErrorBoundary>
+          <LanguageProvider>
+            <TranslationProvider>
+              <OfflineBanner />
+              {children}
+              <UnifiedToaster />
+            </TranslationProvider>
+          </LanguageProvider>
+        </ErrorBoundary>
       </body>
     </html>
   );
