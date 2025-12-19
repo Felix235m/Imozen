@@ -173,35 +173,32 @@ export function useNotes(leadId: string) {
  * Hook for accessing notifications with real-time updates
  */
 export function useNotifications() {
-  const [notifications, setNotifications] = useState<Notification[]>(() => {
-    console.time('useNotifications-InitialLoad');
-    console.log('🔍 [PERF] useNotifications: Initial load from localStorage');
-    const result = localStorageManager.getNotifications();
-    console.timeEnd('useNotifications-InitialLoad');
-    console.log(`🔍 [PERF] useNotifications: Loaded ${result.length} notifications`);
-    return result;
-  });
+  const [isHydrated, setIsHydrated] = useState(false);
+  
+  // Initialize with empty array to ensure server/client consistency
+  const [notifications, setNotifications] = useState<Notification[]>([]);
+
+  // Handle hydration
+  useEffect(() => {
+    setIsHydrated(true);
+  }, []);
 
   useEffect(() => {
-    console.time('useNotifications-Subscribe');
-    console.log('🔍 [PERF] useNotifications: Setting up subscription');
+    // Only subscribe after hydration to prevent mismatch
+    if (!isHydrated) {
+      return;
+    }
+    
+    // Load notifications from localStorage after hydration
+    const initialNotifications = localStorageManager.getNotifications();
+    setNotifications(initialNotifications);
     
     const unsubscribe = localStorageManager.subscribe((newData) => {
-      console.log(`🔍 [PERF] useNotifications: Received update with ${newData.notifications.length} notifications`);
       setNotifications(newData.notifications);
     });
 
-    console.time('useNotifications-Refresh');
-    console.log('🔍 [PERF] useNotifications: Refreshing from localStorage');
-    const refreshedNotifications = localStorageManager.getNotifications();
-    console.timeEnd('useNotifications-Refresh');
-    console.log(`🔍 [PERF] useNotifications: Refreshed ${refreshedNotifications.length} notifications`);
-    setNotifications(refreshedNotifications);
-    
-    console.timeEnd('useNotifications-Subscribe');
-
     return unsubscribe;
-  }, []);
+  }, [isHydrated]);
 
   const updateNotifications = useCallback((newNotifications: Notification[]) => {
     console.time('useNotifications-Update');

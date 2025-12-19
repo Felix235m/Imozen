@@ -9,7 +9,7 @@ import { dispatchThrottledStorageEvent, dispatchImmediateStorageEvent } from '@/
 
 export interface WebhookNoteProcessorOptions {
   leadId: string;
-  operationType: 'cancel_task' | 'reschedule_task' | 'mark_done';
+  operationType?: 'cancel_task' | 'reschedule_task' | 'mark_done' | 'add_note';
   responseData: any;
   operationContext?: {
     taskId?: string;
@@ -41,11 +41,19 @@ export async function processWebhookNotes(
   };
 
   try {
-    console.log(`📝 [${operationType.toUpperCase()}] Processing webhook notes for lead ${leadId}`);
+    const opType = operationType || 'UNKNOWN';
+    console.log(`📝 [${opType.toUpperCase()}] Processing webhook notes for lead ${leadId}`);
 
     // Check if response contains notes data
     if (!responseData.current_note && (!responseData.notes || responseData.notes.length === 0)) {
-      console.log(`📝 [${operationType.toUpperCase()}] No notes data in response, skipping processing`);
+      console.log(`📝 [${opType.toUpperCase()}] No notes data in response, skipping processing`);
+      result.success = true;
+      return result;
+    }
+
+    // Skip note processing for task operations (notes will be saved within task details)
+    if (options.operationType && ['cancel_task', 'reschedule_task', 'mark_done'].includes(options.operationType)) {
+      console.log(`📝 [${options.operationType.toUpperCase()}] Skipping note processing for task operation`);
       result.success = true;
       return result;
     }
@@ -61,20 +69,20 @@ export async function processWebhookNotes(
 
     if (errors.length > 0) {
       result.errors.push(...errors);
-      console.warn(`⚠️ [${operationType.toUpperCase()}] Notes processing warnings:`, errors);
+      console.warn(`⚠️ [${opType.toUpperCase()}] Notes processing warnings:`, errors);
     }
 
     if (processedNotes.length > 0) {
       // Merge with existing notes (deduplication handled by mergeNotes)
       const mergedNotes = mergeNotes(processedNotes, existingNotes);
-      
+
       // Update localStorage
       localStorageManager.updateNotes(leadId, mergedNotes);
-      
+
       result.notesProcessed = processedCount;
       result.uiUpdateRequired = true;
-      
-      console.log(`✅ [${operationType.toUpperCase()}] Successfully processed ${processedCount} notes for lead ${leadId}`);
+
+      console.log(`✅ [${opType.toUpperCase()}] Successfully processed ${processedCount} notes for lead ${leadId}`);
     }
 
     result.success = true;
@@ -82,7 +90,7 @@ export async function processWebhookNotes(
   } catch (error) {
     const errorMessage = error instanceof Error ? error.message : 'Unknown error';
     result.errors.push(`Processing error: ${errorMessage}`);
-    console.error(`❌ [${operationType.toUpperCase()}] Error processing webhook notes:`, error);
+    console.error(`❌ [${opType.toUpperCase()}] Error processing webhook notes:`, error);
   }
 
   return result;
@@ -116,10 +124,10 @@ export async function handleWebhookNoteProcessing(
   options: WebhookNoteProcessorOptions
 ): Promise<WebhookNoteProcessorResult> {
   const result = await processWebhookNotes(options);
-  
+
   if (result.success) {
-    triggerNoteProcessingUIUpdates(options.leadId, options.operationType, result);
+    triggerNoteProcessingUIUpdates(options.leadId, options.operationType || 'UNKNOWN', result);
   }
-  
+
   return result;
 }

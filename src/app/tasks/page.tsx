@@ -2,13 +2,16 @@
 
 import { useState, useEffect, useMemo, Suspense } from 'react';
 import { useSearchParams } from 'next/navigation';
-import { Loader2 } from 'lucide-react';
+import { Loader2, AlertTriangle, RefreshCw } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { useLanguage } from '@/hooks/useLanguage';
 import { format, isToday, isTomorrow, isValid, isPast, startOfDay } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
-import { TaskCard } from '@/components/dashboard/task-card';
+import TaskCard from '@/components/dashboard/task-card';
 import { useTasks } from '@/hooks/useAppData';
+import { generateTaskReactKey } from '@/lib/react-key-utils';
+import { Button } from '@/components/ui/button';
+import { Alert, AlertDescription } from '@/components/ui/alert';
 
 function TasksPageComponent() {
   const [isLoading, setIsLoading] = useState(true);
@@ -18,33 +21,76 @@ function TasksPageComponent() {
     overdueTasks: any[];
     upcomingTasks: any[];
   }>({ overdueTasks: [], upcomingTasks: [] });
+  const [error, setError] = useState<string | null>(null);
+  const [isHydrated, setIsHydrated] = useState(false);
 
   const { toast } = useToast();
   const { t, language } = useLanguage();
   const dateLocale = language === 'pt' ? ptBR : undefined;
   const searchParams = useSearchParams();
 
+  // Hydration check - only render after client-side hydration
+  useEffect(() => {
+    setIsHydrated(true);
+  }, []);
+
+  // Chunk load error handling
+  useEffect(() => {
+    const handleChunkError = (event: ErrorEvent) => {
+      if (event.message && (
+        event.message.includes('ChunkLoadError') ||
+        event.message.includes('Loading chunk') ||
+        event.message.includes('Failed to fetch dynamically imported module')
+      )) {
+        console.error('Chunk load error detected:', event);
+        setError('Failed to load page components. Please refresh the page.');
+      }
+    };
+
+    const handleUnhandledRejection = (event: PromiseRejectionEvent) => {
+      if (event.reason && (
+        event.reason.message?.includes('ChunkLoadError') ||
+        event.reason.message?.includes('Loading chunk')
+      )) {
+        console.error('Chunk load rejection detected:', event.reason);
+        setError('Failed to load page components. Please refresh the page.');
+      }
+    };
+
+    window.addEventListener('error', handleChunkError);
+    window.addEventListener('unhandledrejection', handleUnhandledRejection);
+
+    return () => {
+      window.removeEventListener('error', handleChunkError);
+      window.removeEventListener('unhandledrejection', handleUnhandledRejection);
+    };
+  }, []);
+
   // Use localStorage-based tasks data
   const tasks = useTasks();
 
-  // Handle URL parameter for task expansion
+  // Handle URL parameter for task expansion (only after hydration)
   useEffect(() => {
+    if (!isHydrated) return;
+
     const expandParam = searchParams?.get('expand');
     if (expandParam) {
       // Set expanded task from URL parameter
       setExpandedTaskId(expandParam);
 
-      // Scroll to the expanded task after a short delay
+      // Scroll to the expanded task after a short delay (client-side only)
       const timer = setTimeout(() => {
-        const element = document.getElementById(`task-${expandParam}`);
-        if (element) {
-          element.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        if (typeof document !== 'undefined') {
+          const element = document.getElementById(`task-${expandParam}`);
+          if (element) {
+            element.scrollIntoView({ behavior: 'smooth', block: 'center' });
+          }
         }
       }, 500);
 
       return () => clearTimeout(timer);
     }
-  }, [searchParams]);
+  }, [searchParams, isHydrated]);
 
   // Format task date - helper function
   const formatTaskDate = (dateStr: string) => {
@@ -66,6 +112,8 @@ function TasksPageComponent() {
 
   // Process tasks on CLIENT-SIDE ONLY to avoid hydration mismatch
   useEffect(() => {
+    if (!isHydrated) return; // Wait for hydration
+
     if (!tasks || tasks.length === 0) {
       setProcessedTasks({ overdueTasks: [], upcomingTasks: [] });
       setIsLoading(false);
@@ -102,7 +150,7 @@ function TasksPageComponent() {
     console.log(`📊 Task filtering results: ${overdue.length} overdue groups, ${upcoming.length} upcoming groups (7-day window applied)`);
     setProcessedTasks({ overdueTasks: overdue, upcomingTasks: upcoming });
     setIsLoading(false);
-  }, [tasks, t, dateLocale]);
+  }, [tasks, t, dateLocale, isHydrated]);
 
   const { overdueTasks, upcomingTasks } = processedTasks;
 
@@ -202,7 +250,7 @@ function TasksPageComponent() {
                 <div className="space-y-3">
                   {group.items.map((task: any) => {
                     return (
-                      <div key={task.id} id={`task-${task.id}`}>
+                      <div key={generateTaskReactKey(task)} id={`task-${task.id}`}>
                         <TaskCard
                           task={task}
                           date={group.date}
@@ -234,11 +282,44 @@ function TasksPageComponent() {
     );
   };
 
-  // Show loading state when initially loading
-if (isLoading) {
+  // Show loading state during hydration or initial loading
+if (!isHydrated || isLoading) {
   return (
     <div className="flex items-center justify-center h-96">
       <Loader2 className="h-8 w-8 animate-spin text-gray-400" />
+    </div>
+  );
+}
+
+// Show error state if chunk loading failed
+if (error) {
+  return (
+    <div className="flex items-center justify-center h-96 p-4">
+      <div className="max-w-md w-full space-y-4">
+        <Alert variant="destructive">
+          <AlertTriangle className="h-4 w-4" />
+          <AlertDescription>
+            {error}
+          </AlertDescription>
+        </Alert>
+        <div className="flex gap-2">
+          <Button
+            onClick={() => window.location.reload()}
+            className="flex-1"
+            variant="default"
+          >
+            <RefreshCw className="h-4 w-4 mr-2" />
+            Refresh Page
+          </Button>
+          <Button
+            onClick={() => setError(null)}
+            variant="outline"
+            className="flex-1"
+          >
+            Try Again
+          </Button>
+        </div>
+      </div>
     </div>
   );
 }

@@ -1036,7 +1036,6 @@ export default function LeadDetailPage() {
 
       if (notesArray.length === 0) {
         // No notes exist - show empty state
-        setCurrentNote(null);
         setNotes([]);
         setIsNotesOpen(true);
         setIsFetchingNotes(false);
@@ -1048,18 +1047,8 @@ export default function LeadDetailPage() {
         new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
       );
 
-      // Most recent note is the current note
-      const currentNoteData = sortedNotes[0];
-
-      setCurrentNote({
-        note_id: currentNoteData.note_id,
-        note: currentNoteData.content || currentNoteData.current_note,
-        created_at_formatted: formatDateWithTimezone(currentNoteData.created_at),
-        created_by: currentNoteData.created_by || agentName
-      } as CurrentNote);
-
-      // Rest of notes become history
-      const historyNotes = sortedNotes.slice(1).map((note: any) => ({
+      // All notes become history - no current note concept
+      const historyNotes = sortedNotes.map((note: any) => ({
         id: note.note_id,
         note_id: note.note_id,
         content: note.content || note.current_note,
@@ -1651,11 +1640,8 @@ function LeadNotesSheet({ open, onOpenChange, lead, currentNote, setCurrentNote,
     const { toast } = useToast();
     const { t } = useLanguage();
     const [noteContent, setNoteContent] = useState('');
-    const [originalNoteContent, setOriginalNoteContent] = useState('');
     const textareaRef = useRef<HTMLTextAreaElement>(null);
     const [isSaving, setIsSaving] = useState(false);
-    const [isAddingNewNote, setIsAddingNewNote] = useState(false);
-    const [movedNoteId, setMovedNoteId] = useState<string | null>(null);
 
     const getPriorityLabel = (temperature: 'Hot' | 'Warm' | 'Cold' | null | undefined) => {
         if (!temperature) return '';
@@ -1669,21 +1655,12 @@ function LeadNotesSheet({ open, onOpenChange, lead, currentNote, setCurrentNote,
     
     useEffect(() => {
         if (open) {
-            if (currentNote) {
-                // DEFENSIVE FIX: Ensure noteContent is always a string
-                const noteText = String(currentNote.note || '');
-                setNoteContent(noteText);
-                setOriginalNoteContent(noteText);
-                setIsAddingNewNote(false);
-            } else {
-                setNoteContent('');
-                setOriginalNoteContent('');
-                setIsAddingNewNote(true);
-            }
+            // Always start with empty input - no current note concept
+            setNoteContent('');
         }
-    }, [open, currentNote]);
+    }, [open]);
 
-    const handleSaveNote = async (operation: 'add_new_note' | 'edit_note') => {
+    const handleSaveNote = async () => {
         if (!noteContent.trim()) {
             toast({
                 variant: 'destructive',
@@ -1695,57 +1672,17 @@ function LeadNotesSheet({ open, onOpenChange, lead, currentNote, setCurrentNote,
 
         setIsSaving(true);
 
-        // STEP 1: Backup current state for rollback
-        const backup = {
-            currentNote: currentNote,
-            notes: notes,
-            originalContent: originalNoteContent
-        };
-
         try {
-            // STEP 2: Optimistic update - Update UI immediately
-            const now = new Date();
+            // STEP 1: Call API to add new note
+            const token = localStorage.getItem('auth_token');
             const agentDataString = localStorage.getItem('agent_data');
             const agentName = agentDataString ? JSON.parse(agentDataString).agent_name : 'Agent';
-    
-            const tempNote = {
-                note_id: operation === 'add_new_note' ? 'temp_' + Date.now() : currentNote?.note_id || '',
-                note: noteContent.trim(),
-                created_at: now.toISOString(),
-                created_at_formatted: new Date().toLocaleString(),
-                created_by: agentName,
-                date: now.toISOString()
-            };
-
-            // For edit: move old note to history
-            if (operation === 'edit_note' && currentNote && currentNote.note) {
-                const oldNote = {
-                    id: currentNote.note_id || 'history_' + Date.now(),
-                    note_id: currentNote.note_id,
-                    lead_id: lead.lead_id,
-                    content: originalNoteContent,
-                    current_note: originalNoteContent,
-                    created_at_formatted: currentNote.created_at_formatted || new Date().toLocaleString(),
-                    created_by: currentNote.created_by || agentName
-                };
-                const updatedHistory = [oldNote, ...notes];
-                setNotes(updatedHistory as any);
-            }
-
-            setCurrentNote(tempNote);
-            setOriginalNoteContent(noteContent.trim());
-
-            // STEP 3: Call API
-            const token = localStorage.getItem('auth_token');
-            const payload: any = {
-                operation,
+            
+            const payload = {
+                operation: 'add_new_note',
                 lead_id: lead.lead_id,
                 current_note: noteContent.trim(),
             };
-
-            if (operation === 'edit_note' && backup.currentNote) {
-                payload.note_id = backup.currentNote.note_id;
-            }
 
             const response = await fetch('https://eurekagathr.app.n8n.cloud/webhook/domain/notes', {
                 method: 'POST',
@@ -1757,20 +1694,20 @@ function LeadNotesSheet({ open, onOpenChange, lead, currentNote, setCurrentNote,
             });
 
             if (!response.ok) {
-                throw new Error(`Failed to ${operation === 'edit_note' ? 'update' : 'add'} note`);
+                throw new Error('Failed to add note');
             }
 
             const data = await response.json();
             const result = Array.isArray(data) ? data[0] : data;
 
-            // STEP 4: Process notes from webhook response using centralized processor
+            // STEP 2: Process notes from webhook response using centralized processor
             if (result.current_note || (result.notes && result.notes.length > 0)) {
                 try {
                     console.log('📝 [LEAD_NOTES] Processing notes from webhook response...');
                     const { handleWebhookNoteProcessing } = await import('@/lib/webhook-note-processor');
                     const noteProcessingResult = await handleWebhookNoteProcessing({
                         leadId: lead.lead_id,
-                        operationType: operation === 'add_new_note' ? 'add_note' as any : 'edit_note' as any,
+                        operationType: 'add_note' as any,
                         responseData: result,
                         operationContext: {
                             note: noteContent.trim(),
@@ -1788,29 +1725,30 @@ function LeadNotesSheet({ open, onOpenChange, lead, currentNote, setCurrentNote,
                             new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
                         );
 
-                        // Most recent note is current
-                        const latestNote = sortedNotes[0];
-
-                        setCurrentNote({
-                            note_id: latestNote.note_id,
-                            note: latestNote.content || latestNote.current_note || '',
-                            created_at_formatted: new Date(latestNote.created_at || '').toLocaleString(),
-                            created_by: latestNote.created_by || agentName
-                        } as CurrentNote);
-
-                        setNoteContent(latestNote.content || latestNote.current_note || '');
-                        setOriginalNoteContent(latestNote.content || latestNote.current_note || '');
-
-                        // Rest are history
-                        const history = sortedNotes.slice(1).map((n: any) => ({
-                            id: n.note_id,
-                            note_id: n.note_id,
-                            content: n.content || n.current_note,
-                            created_at: n.created_at,
-                            created_at_formatted: new Date(n.created_at || '').toLocaleString(),
-                            created_by: n.created_by || agentName,
-                            date: n.created_at
-                        }));
+                        // All notes are history now
+                        const history = sortedNotes.map((n: any) => {
+                            const createdDate = new Date(n.created_at || '');
+                            const locale = t.common.languages.portuguese === 'Português' ? 'pt-PT' : 'en-US';
+                            const formattedDate = createdDate.toLocaleString(locale, {
+                                month: 'long',
+                                day: 'numeric',
+                                year: 'numeric',
+                                hour: 'numeric',
+                                minute: '2-digit',
+                                hour12: true,
+                                timeZone: 'Europe/Lisbon'
+                            });
+                            
+                            return {
+                                id: n.note_id,
+                                note_id: n.note_id,
+                                content: n.content || n.current_note,
+                                created_at: n.created_at,
+                                created_at_formatted: formattedDate,
+                                created_by: n.created_by || agentName,
+                                date: n.created_at
+                            };
+                        });
 
                         setNotes(history);
                     }
@@ -1819,23 +1757,16 @@ function LeadNotesSheet({ open, onOpenChange, lead, currentNote, setCurrentNote,
                 }
             }
 
-            // STEP 6: Success message
+            // STEP 3: Success message and clear input
             toast({
-                title: operation === 'add_new_note' ? 'New note added successfully' : 'Note updated successfully',
-                description: operation === 'add_new_note' ? 'Your note has been saved' : 'Your changes have been saved'
+                title: 'New note added successfully',
+                description: 'Your note has been saved'
             });
 
-            if (operation === 'add_new_note') {
-                setIsAddingNewNote(false);
-            }
+            // Clear the input after successful save
+            setNoteContent('');
 
         } catch (error: any) {
-            // ROLLBACK on error
-            setCurrentNote(backup.currentNote);
-            setNotes(backup.notes);
-            setOriginalNoteContent(backup.originalContent);
-            setNoteContent(backup.originalContent || '');
-
             toast({
                 variant: 'destructive',
                 title: t.common.error,
@@ -1846,54 +1777,9 @@ function LeadNotesSheet({ open, onOpenChange, lead, currentNote, setCurrentNote,
         }
     };
 
-    const handleNewNoteClick = () => {
-        if (currentNote && currentNote.note) {
-            // Create properly formatted history note with ALL date fields
-            const historyNote = {
-                id: currentNote.note_id,
-                note_id: currentNote.note_id,
-                content: currentNote.note,
-                current_note: currentNote.note,
-                created_at_formatted: currentNote.created_at_formatted || new Date().toLocaleString(),
-                created_by: currentNote.created_by || 'Agent',
-                date: new Date().toISOString(),
-                timestamp: new Date().toISOString()
-            };
-
-            // Only add if not already in history
-            if (!notes.some(n => n.note_id === currentNote.note_id)) {
-                setNotes(prev => [historyNote, ...prev]);
-            }
-
-            setMovedNoteId(currentNote.note_id);
-        }
-
-        setCurrentNote(null);
-        setIsAddingNewNote(true);
-        setNoteContent('');
-    };
-
     const handleCancelNewNote = () => {
-        if (movedNoteId) {
-            const movedNote = notes.find(n => n.note_id === movedNoteId);
-            if (movedNote) {
-                // Restore the previous note to current
-                const restoredCurrentNote = {
-                    note_id: movedNote.note_id || movedNote.id || '',
-                    note: movedNote.content || movedNote.note || '',
-                    created_at_formatted: movedNote.created_at_formatted || '',
-                    created_by: movedNote.created_by || 'Agent'
-                };
-                setCurrentNote(restoredCurrentNote);
-                // Restore the content to the textarea
-                setNoteContent(restoredCurrentNote.note);
-                setOriginalNoteContent(restoredCurrentNote.note);
-                // Remove from history
-                setNotes(notes.filter(n => n.note_id !== movedNoteId));
-            }
-            setMovedNoteId(null);
-        }
-        setIsAddingNewNote(false);
+        // Simply clear the input when cancel is clicked
+        setNoteContent('');
     };
     
     useEffect(() => {
@@ -1912,7 +1798,7 @@ function LeadNotesSheet({ open, onOpenChange, lead, currentNote, setCurrentNote,
         }
     };
     
-    const isNoteChanged = currentNote && String(noteContent || '').trim() !== String(originalNoteContent || '').trim();
+    // No isNoteChanged logic needed - we only add new notes
     
     const handleCopy = (text: string) => {
         navigator.clipboard.writeText(text);
@@ -1961,14 +1847,8 @@ function LeadNotesSheet({ open, onOpenChange, lead, currentNote, setCurrentNote,
                       stage={lead.lead_stage}
                     />
                     <div>
-                        <div className="flex justify-between items-center mb-2">
-                            <h4 className="text-base font-semibold">{t.leads.currentNote}</h4>
-                            {currentNote && (
-                                <div className="text-xs text-gray-500 text-right">
-                                    <p>{currentNote.created_at_formatted}</p>
-                                    <p className="hidden">By: {currentNote.created_by}</p>
-                                </div>
-                            )}
+                        <div className="mb-2">
+                            <h4 className="text-base font-semibold">{t.leads.addNewNote}</h4>
                         </div>
                         <div className="border rounded-lg p-3">
                              <Textarea
@@ -1979,35 +1859,15 @@ function LeadNotesSheet({ open, onOpenChange, lead, currentNote, setCurrentNote,
                                 onChange={(e) => setNoteContent(e.target.value)}
                             />
                              <div className="flex gap-2 justify-end mt-2">
-                                {isAddingNewNote && (
-                                    <>
-                                        <Button variant="outline" size="sm" onClick={handleCancelNewNote}>
-                                            {t.common.cancel}
-                                        </Button>
-                                        {noteContent.trim() && (
-                                            <Button size="sm" onClick={() => handleSaveNote('add_new_note')} disabled={isSaving}>
-                                                {isSaving ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
-                                                {t.leads.saveNote}
-                                            </Button>
-                                        )}
-                                    </>
-                                )}
-                                {!isAddingNewNote && isNoteChanged && (
-                                     <>
-                                        <Button variant="outline" size="sm" onClick={() => currentNote && setNoteContent(originalNoteContent)}>
-                                            {t.common.cancel}
-                                        </Button>
-                                        <Button size="sm" onClick={() => handleSaveNote('edit_note')} disabled={isSaving}>
-                                            {isSaving ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
-                                            {'Save Changes'}
-                                        </Button>
-                                    </>
-                                )}
-                                {!isAddingNewNote && !isNoteChanged && (
-                                    <Button size="sm" onClick={handleNewNoteClick} disabled={!currentNote && isAddingNewNote}>
-                                         {t.leads.addNewNote}
+                                {noteContent.trim() && (
+                                    <Button variant="outline" size="sm" onClick={handleCancelNewNote}>
+                                        {t.common.cancel}
                                     </Button>
                                 )}
+                                <Button size="sm" onClick={handleSaveNote} disabled={!noteContent.trim() || isSaving}>
+                                    {isSaving ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
+                                    {t.leads.addNewNote}
+                                </Button>
                             </div>
                         </div>
                     </div>

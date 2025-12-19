@@ -49,10 +49,16 @@ export default function DashboardLayout({
   const [agentInitial, setAgentInitial] = useState("A");
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [refreshStep, setRefreshStep] = useState(0);
+  const [isHydrated, setIsHydrated] = useState(false);
+  
+  // Handle hydration
+  useEffect(() => {
+    setIsHydrated(true);
+  }, []);
   
   // Get unread notifications count
   const { notifications } = useNotifications();
-  const unreadCount = notifications.filter(n => !n.read).length;
+  const unreadCount = isHydrated ? notifications.filter(n => !n.read).length : 0;
 
   const navItems = [
     { href: '/tasks', icon: CalendarClock, label: t.navigation.tasks },
@@ -180,8 +186,8 @@ export default function DashboardLayout({
           >
             <Button variant="ghost" size="icon" className="relative">
               <Bell className="h-6 w-6" />
-              {unreadCount > 0 && (
-                <Badge className="absolute -top-1 -right-1 h-5 w-5 flex items-center justify-center rounded-full bg-red-500 text-white text-xs p-0">
+              {isHydrated && unreadCount > 0 && (
+                <Badge className="absolute -top-1 -right-1 h-5 w-5 flex items-center justify-center rounded-full bg-red-500 text-white text-xs p-0" suppressHydrationWarning={true}>
                   {unreadCount > 99 ? '99+' : unreadCount}
                 </Badge>
               )}

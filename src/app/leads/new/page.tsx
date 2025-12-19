@@ -410,7 +410,10 @@ export default function NewLeadPage() {
         read: false,
         action_type: 'retry_create_lead',
         action_target: '/leads/new',
-        action_data: values, // Store failed form data for retry
+        action_data: {
+          ...values, // Store failed form data for retry
+          lead_id: leadId, // Store the original lead_id for reuse
+        },
       };
       updateNotifications([errorNotification, ...notifications]);
 

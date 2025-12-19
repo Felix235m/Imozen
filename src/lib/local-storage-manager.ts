@@ -23,6 +23,8 @@ import type {
 } from '@/types/app-data';
 import { validateLeadData } from './lead-normalization';
 import { transformBackendTasks } from './task-transformer';
+import { generateTaskId, validateTaskId } from './id-generator';
+import { logDuplicateFound, logDuplicateResolution, logValidationError, logTaskCreation, logStorageOperation } from './task-logger';
 
 const APP_DATA_KEY = 'app_data';
 const DATA_VERSION = '1.0';
@@ -199,10 +201,25 @@ export class LocalStorageManager {
         version: DATA_VERSION,
       };
 
+      // Validate task data before storing
+      if (newData.tasks && newData.tasks.length > 0) {
+        const duplicates = this.checkForDuplicateTaskIds();
+        if (duplicates.length > 0) {
+          duplicates.forEach(duplicateId => {
+            const affectedTasks = this.findTasksById(duplicateId);
+            logDuplicateFound(duplicateId, affectedTasks.length, affectedTasks);
+          });
+          this.resolveTaskIdConflicts(duplicates);
+          // Get the updated data after conflict resolution
+          const resolvedData = this.getAppData();
+          newData.tasks = resolvedData.tasks;
+        }
+      }
+
       // Check data size before storing
       const dataSize = JSON.stringify(newData).length;
       console.log('🔍 DEBUG: setAppData - data size:', dataSize, 'bytes');
-      
+
       console.log('🔍 DEBUG: setAppData - about to call localStorage.setItem');
       localStorage.setItem(APP_DATA_KEY, JSON.stringify(newData));
       console.log('🔍 DEBUG: setAppData - localStorage.setItem completed');
@@ -680,11 +697,157 @@ export class LocalStorageManager {
   }
 
   /**
+   * Find a task by its ID across all task groups
+   */
+  private findTaskById(taskId: string): TaskItem | null {
+    const data = this.getAppData();
+
+    for (const group of data.tasks) {
+      const task = group.items.find(item => item.id === taskId);
+      if (task) {
+        return task;
+      }
+    }
+
+    return null;
+  }
+
+  /**
+   * Find all tasks with a specific ID across all task groups
+   */
+  private findTasksById(taskId: string): TaskItem[] {
+    const data = this.getAppData();
+    const foundTasks: TaskItem[] = [];
+
+    for (const group of data.tasks) {
+      const tasks = group.items.filter(item => item.id === taskId);
+      foundTasks.push(...tasks);
+    }
+
+    return foundTasks;
+  }
+
+  /**
+   * Check for duplicate task IDs across all task groups
+   */
+  private checkForDuplicateTaskIds(): string[] {
+    const data = this.getAppData();
+    const seenIds = new Set<string>();
+    const duplicates: string[] = [];
+
+    for (const group of data.tasks) {
+      for (const task of group.items) {
+        if (seenIds.has(task.id)) {
+          if (!duplicates.includes(task.id)) {
+            duplicates.push(task.id);
+          }
+        } else {
+          seenIds.add(task.id);
+        }
+      }
+    }
+
+    return duplicates;
+  }
+
+  /**
+   * Resolve task ID conflicts by generating new IDs for duplicates
+   */
+  private resolveTaskIdConflicts(duplicateIds: string[]): void {
+    if (duplicateIds.length === 0) return;
+
+    const data = this.getAppData();
+
+    for (const duplicateId of duplicateIds) {
+      let counter = 1;
+      data.tasks.forEach(group => {
+        group.items.forEach(task => {
+          if (task.id === duplicateId) {
+            const oldId = task.id;
+            task.id = generateTaskId(task.leadId, {
+              prefix: 'resolved',
+              suffix: String(counter++)
+            });
+
+            logDuplicateResolution(oldId, task.id, task.id, task.leadId);
+          }
+        });
+      });
+    }
+
+    this.setAppData({ tasks: data.tasks });
+  }
+
+  /**
+   * Validate and resolve task ID conflicts before adding new tasks
+   */
+  private validateAndResolveTaskConflicts(task: TaskItem): TaskItem {
+    // Check if the task ID is valid
+    const validation = validateTaskId(task.id);
+    if (!validation.isValid) {
+      if (process.env.NODE_ENV === 'development') {
+        console.warn('⚠️ Invalid task ID detected, generating new one:', {
+          invalid_id: task.id,
+          issues: validation.issues,
+          task: task
+        });
+      }
+
+      // Generate a new valid ID
+      const validatedTask = {
+        ...task,
+        id: generateTaskId(task.leadId)
+      };
+
+      if (process.env.NODE_ENV === 'development') {
+        console.log('✅ Generated new valid task ID:', {
+          old_id: task.id,
+          new_id: validatedTask.id
+        });
+      }
+
+      return validatedTask;
+    }
+
+    // Check for existing task with same ID
+    const existingTask = this.findTaskById(task.id);
+    if (existingTask) {
+      if (process.env.NODE_ENV === 'development') {
+        console.warn('⚠️ Duplicate task ID detected, generating new one:', {
+          duplicate_id: task.id,
+          existing_task: existingTask,
+          new_task: task
+        });
+      }
+
+      // Generate a new unique ID
+      const deduplicatedTask = {
+        ...task,
+        id: generateTaskId(task.leadId)
+      };
+
+      if (process.env.NODE_ENV === 'development') {
+        console.log('✅ Generated new unique task ID:', {
+          old_id: task.id,
+          new_id: deduplicatedTask.id
+        });
+      }
+
+      return deduplicatedTask;
+    }
+
+    return task;
+  }
+
+  /**
    * Add a task to the appropriate task group
    */
   addTaskToGroup(task: TaskItem): void {
+    // Validate and resolve any task ID conflicts before adding
+    const validatedTask = this.validateAndResolveTaskConflicts(task);
+
     const data = this.getAppData();
-    const taskDate = new Date(task.time || Date.now());
+    const taskDate = new Date(validatedTask.time || Date.now());
     const dateKey = taskDate.toISOString().split('T')[0]; // YYYY-MM-DD format
 
     // Find existing task group for this date
@@ -692,17 +855,24 @@ export class LocalStorageManager {
 
     if (existingGroupIndex >= 0) {
       // Add to existing group
-      data.tasks[existingGroupIndex].items.push(task);
+      data.tasks[existingGroupIndex].items.push(validatedTask);
     } else {
       // Create new task group
       const newGroup: TaskGroup = {
         date: dateKey,
-        items: [task]
+        items: [validatedTask]
       };
       data.tasks.push(newGroup);
       // Sort tasks by date
       data.tasks.sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
     }
+
+    // Log successful task creation
+    logTaskCreation(validatedTask.id, validatedTask.leadId, {
+      taskName: validatedTask.name,
+      taskType: validatedTask.type,
+      scheduledDate: dateKey
+    });
 
     this.setAppData({ tasks: data.tasks });
   }

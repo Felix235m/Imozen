@@ -1,5 +1,5 @@
 import type { Metadata } from 'next';
-import { MobileToasterWrapper } from '@/components/mobile-toaster-wrapper';
+import { UnifiedToaster } from '@/components/ui/unified-toaster';
 import { LanguageProvider } from '@/contexts/LanguageContext';
 import { TranslationProvider } from '@/components/providers/TranslationProvider';
 import { OfflineBanner } from '@/components/ui/offline-banner';
@@ -35,7 +35,7 @@ export default function RootLayout({
           <TranslationProvider>
             <OfflineBanner />
             {children}
-            <MobileToasterWrapper />
+            <UnifiedToaster />
           </TranslationProvider>
         </LanguageProvider>
       </body>

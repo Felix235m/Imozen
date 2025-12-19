@@ -5,6 +5,7 @@ import * as ToastPrimitives from "@radix-ui/react-toast"
 import { cva, type VariantProps } from "class-variance-authority"
 import { X } from "lucide-react"
 import { cn } from "@/lib/utils"
+import { useToast } from "@/hooks/use-toast"
 
 const MobileToastProvider = ToastPrimitives.Provider
 
@@ -170,6 +171,31 @@ MobileToastIcon.displayName = "MobileToastIcon"
 type MobileToastProps = React.ComponentPropsWithoutRef<typeof MobileToast>
 
 type MobileToastActionElement = React.ReactElement<typeof MobileToastAction>
+
+export function MobileToaster() {
+  const { toasts } = useToast()
+
+  return (
+    <MobileToastProvider>
+      <MobileToastViewport>
+        {toasts.map(function ({ id, title, description, action, variant, ...props }) {
+          return (
+            <MobileToast key={id} variant={variant} {...props}>
+              <div className="grid gap-1">
+                {title && <MobileToastTitle>{title}</MobileToastTitle>}
+                {description && (
+                  <MobileToastDescription>{description}</MobileToastDescription>
+                )}
+              </div>
+              {action}
+              <MobileToastClose />
+            </MobileToast>
+          )
+        })}
+      </MobileToastViewport>
+    </MobileToastProvider>
+  )
+}
 
 export {
   type MobileToastProps,

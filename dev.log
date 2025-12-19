@@ -1,0 +1,22 @@
+
+> imozen-app@0.1.0 dev
+> next dev
+
+ ⚠ Port 3000 is in use, using available port 3005 instead.
+   ▲ Next.js 15.3.6
+   - Local:        http://localhost:3005
+   - Network:      http://192.168.1.39:3005
+
+ ✓ Starting...
+ ✓ Ready in 3.7s
+ ⚠ Found a change in next.config.ts. Restarting the server to apply the changes...
+   ▲ Next.js 15.3.6
+   - Local:        http://localhost:3005
+   - Network:      http://192.168.1.39:3005
+
+ ✓ Starting...
+ ⚠ Invalid next.config.ts options detected: 
+ ⚠     Unrecognized key(s) in object: 'swcMinify'
+ ⚠ See more info here: https://nextjs.org/docs/messages/invalid-next-config
+ ⚠ The config property `experimental.turbo` is deprecated. Move this setting to `config.turbopack` as Turbopack is now stable.
+ ✓ Ready in 12.9s

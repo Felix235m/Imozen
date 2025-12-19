@@ -2099,5 +2099,3 @@ export function TaskCard({
     </>
   );
 }
-
-export default TaskCard;

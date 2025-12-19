@@ -186,7 +186,10 @@ export default function NotificationsPage() {
             if (notif.action_type === 'retry_create_lead' && notif.action_data) {
                 // Store failed form data in sessionStorage for retry
                 sessionStorage.setItem('leadFormData', JSON.stringify(notif.action_data));
-                sessionStorage.setItem('lead_id', crypto.randomUUID()); // Generate new UUID for retry
+
+                // Use the stored lead_id from action_data, or generate new if not present (backward compatibility)
+                const leadIdToUse = notif.action_data.lead_id || crypto.randomUUID();
+                sessionStorage.setItem('lead_id', leadIdToUse);
 
                 // Mark notification as read
                 markAsRead(notif.id);

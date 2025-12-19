@@ -19,12 +19,22 @@ import { FailedOperationsList } from "./failed-operations-list";
  * - Pulsing animation when there are failures
  * - Opens popover with list of failed operations
  * - Auto-updates when operations change
+ * - Prevents hydration mismatch by delaying client-side data loading
  */
 export function FailedOperationsBadge() {
   const [operations, setOperations] = React.useState<FailedOperation[]>([]);
   const [isOpen, setIsOpen] = React.useState(false);
+  const [isHydrated, setIsHydrated] = React.useState(false);
+
+  // Handle hydration
+  React.useEffect(() => {
+    setIsHydrated(true);
+  }, []);
 
   React.useEffect(() => {
+    // Only subscribe to failed operations changes after hydration
+    if (!isHydrated) return;
+    
     console.time('FailedOperationsBadge-Init');
     console.log('🔍 [PERF] FailedOperationsBadge: Initializing');
     
@@ -37,10 +47,10 @@ export function FailedOperationsBadge() {
     console.timeEnd('FailedOperationsBadge-Init');
 
     return unsubscribe;
-  }, []);
+  }, [isHydrated]);
 
-  // Don't show badge if no failed operations
-  if (operations.length === 0) {
+  // Don't show badge if no failed operations (but only after hydration)
+  if (!isHydrated || operations.length === 0) {
     return null;
   }
 

@@ -15,6 +15,7 @@ import type { LeadData } from '@/lib/leads-data';
 import { callFollowUpApi } from '@/lib/auth-api';
 import { useToast } from '@/hooks/use-toast';
 import { useLanguage } from '@/hooks/useLanguage';
+import { getTaskIdForLead } from '@/lib/task-utils';
 import { Input } from '../ui/input';
 import { LeadTypeBadge } from './lead-badges';
 import { CompactLeadHeader } from './lead-headers';
@@ -35,7 +36,7 @@ export function LeadFollowUpSheet({ open, onOpenChange, lead }: LeadFollowUpShee
     useEffect(() => {
         if (lead) {
             setLanguage(lead.contact.language || 'English');
-            setAiMessage(lead.management.ai_generated_message || lead.management.ai_message || '');
+            setAiMessage(lead.management.ai_message || '');
         }
     }, [lead]);
     
@@ -54,14 +55,24 @@ export function LeadFollowUpSheet({ open, onOpenChange, lead }: LeadFollowUpShee
     const handleRegenerate = async () => {
         setIsRegenerating(true);
         try {
-            const response = await callFollowUpApi('regenerate_follow-up_message', { 
+            // Get task_id for the current lead's follow-up task
+            const taskId = getTaskIdForLead(lead);
+            
+            const payload: any = {
                 lead_id: lead.lead_id,
-                language: language 
-            });
+                language: language
+            };
+            
+            // Include task_id if available
+            if (taskId) {
+                payload.task_id = taskId;
+            }
+            
+            const response = await callFollowUpApi('regenerate_follow-up_message', payload);
             const responseData = Array.isArray(response) ? response[0] : null;
 
-            if (responseData && responseData["AI-Generated Message"] && responseData.lead_id === lead.lead_id) {
-                setAiMessage(responseData["AI-Generated Message"]);
+            if (responseData && responseData.followUpMessage && responseData.lead_id === lead.lead_id) {
+                setAiMessage(responseData.followUpMessage);
                 toast({ title: 'Message regenerated successfully!' });
             } else {
                 throw new Error('Invalid response from server.');

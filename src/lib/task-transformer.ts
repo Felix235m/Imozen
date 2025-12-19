@@ -6,6 +6,8 @@
  */
 
 import type { TaskGroup, TaskItem } from '@/types/app-data';
+import { generateFallbackTaskId } from '@/lib/id-generator';
+import { logValidationError, logIdGeneration, logApiOperation } from '@/lib/task-logger';
 
 /**
  * Normalize backend task type to frontend task type
@@ -115,7 +117,8 @@ export function transformBackendTask(backendTask: any): TaskItem {
   }
 
   const transformed: TaskItem = {
-    id: backendTask.id || backendTask.task_id || String(Date.now()),
+    // Use robust ID generation for backend tasks missing IDs
+    id: backendTask.id || backendTask.task_id || generateFallbackTaskId(backendTask),
     name: backendTask.name || backendTask.lead_name || '',
     description: backendTask.description || backendTask.note || '',
     type: taskType,
@@ -132,11 +135,16 @@ export function transformBackendTask(backendTask: any): TaskItem {
     propertyRequirements,
   };
 
-  // Log transformation for debugging
+  // Enhanced logging for task transformation
+  if (!backendTask.id && !backendTask.task_id) {
+    logIdGeneration(transformed.id, transformed.leadId, 'Backend task missing ID');
+  }
+
   if (process.env.NODE_ENV === 'development') {
     console.log('📋 Transformed task:', {
       original_type: backendTask.task_type || backendTask.type,
       normalized_type: transformed.type,
+      task_id: transformed.id,
       has_message: !!transformed.followUpMessage,
       lead_id: transformed.leadId,
       lead_type: transformed.leadType,

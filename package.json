@@ -8,9 +8,13 @@
     "genkit:dev": "genkit start -- tsx src/ai/dev.ts",
     "genkit:watch": "genkit start -- tsx --watch src/ai/dev.ts",
     "build": "next build",
+    "build:analyze": "npm run build && npm run analyze",
     "start": "next start",
     "lint": "next lint",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "analyze": "node scripts/analyze-bundle.js",
+    "analyze:bundle": "ANALYZE=true npm run build",
+    "test:bundle-size": "npm run build && node scripts/analyze-bundle.js"
   },
   "dependencies": {
     "@genkit-ai/google-genai": "^1.20.0",

@@ -31,6 +31,7 @@ import { LeadBadgeGroup } from './lead-badges';
 import { localStorageManager } from '@/lib/local-storage-manager';
 import { dispatchThrottledStorageEvent } from '@/lib/storage-event-throttle';
 import { transformBackendTask } from '@/lib/task-transformer';
+import { generateTaskId } from '@/lib/id-generator';
 import type { Notification } from '@/types/app-data';
 
 interface ScheduleFollowUpDialogProps {
@@ -48,15 +49,6 @@ interface ScheduleFollowUpDialogProps {
   onSuccess?: () => void; // Callback to refresh leads list
 }
 
-/**
- * Generate a unique task ID in the format: task_{timestamp}_{randomString}
- * Example: task_1761224347322_sv0x9gx7k
- */
-function generateTaskId(): string {
-  const timestamp = Date.now();
-  const randomStr = Math.random().toString(36).substring(2, 11);
-  return `task_${timestamp}_${randomStr}`;
-}
 
 export function ScheduleFollowUpDialog({
   open,
@@ -137,8 +129,8 @@ export function ScheduleFollowUpDialog({
       const followUpDate = selectedDate.toISOString();
       console.log('🔍 [DEBUG] Follow-up date:', followUpDate);
 
-      // Generate unique task ID
-      const taskId = generateTaskId();
+      // Generate unique task ID with lead context for better uniqueness
+      const taskId = generateTaskId(lead.lead_id);
       console.log('🔍 [DEBUG] Generated task ID:', taskId);
 
       const webhookPayload = {
